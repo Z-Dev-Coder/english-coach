@@ -57,16 +57,24 @@ tests pass.
   where a browser lacks support
 - **302 backend tests, all green**
 
-## Phase 4 — AI lessons and conversation
+## Phase 4 — AI lessons and conversation ✅ COMPLETE
 
-- `Lesson`, `LessonActivity`, `LessonGenerator` service
-- Learner context (level, weak skills, recent mistakes, due vocabulary,
-  interests, available time) fed into generation
-- Writing evaluation with explanations, never silent rewrites
-- `ConversationSession` / `ConversationMessage`, feedback after the conversation
-- All generations cached by content hash
-- **Done when:** lessons generate from real learner state and survive a model
-  that returns malformed JSON
+**Goal:** the daily plan becomes a lesson, and the learner can talk to someone.
+
+- `Lesson` and `LessonActivity`, one lesson per learner per day, idempotent so
+  a refresh never discards progress
+- `learner_context()` assembles level, measured weaknesses, recent mistake
+  categories, due vocabulary, interests and available time from the database,
+  and is exposed at `/api/learner-context/` so personalisation is not a black box
+- **Hybrid generation**: structure (skills, minutes, routing) is computed;
+  only text is taken from the model, so a hallucination cannot rewrite the
+  schedule and a partial response still produces a complete lesson
+- Generation cached by content hash — identical learner state runs the model once
+- `ConversationSession` / `ConversationMessage` with 13 scenarios
+- Feedback after the conversation, never during it, and only on the learner's
+  own turns
+- Speaking and fluency credited by how much was actually said
+- **346 backend tests, all green**
 
 ## Phase 5 — Real-world English
 

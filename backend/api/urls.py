@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import review_views, skills_views, views
+from . import lesson_views, review_views, skills_views, views
 
 router = DefaultRouter()
 router.register("sessions", views.StudySessionViewSet, basename="session")
@@ -10,6 +10,8 @@ router.register(
 )
 router.register("vocabulary", review_views.VocabularyViewSet, basename="vocabulary")
 router.register("skills/passages", skills_views.PassageViewSet, basename="passage")
+router.register("lessons", lesson_views.LessonViewSet, basename="lesson")
+router.register("conversations", lesson_views.ConversationViewSet, basename="conversation")
 
 urlpatterns = [
     path("auth/register/", views.RegisterView.as_view(), name="register"),
@@ -18,7 +20,11 @@ urlpatterns = [
     path("auth/me/", views.MeView.as_view(), name="me"),
     path("profile/", views.ProfileView.as_view(), name="profile"),
     path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
-    path("lessons/today/", views.TodayLessonView.as_view(), name="today-lesson"),
+    # The plan (time allocation) and the lesson (concrete activities) are
+    # separate resources: the plan is cheap and always available, the lesson is
+    # generated and stateful.
+    path("plan/today/", views.TodayLessonView.as_view(), name="today-lesson"),
+    path("learner-context/", lesson_views.LearnerContextView.as_view(), name="learner-context"),
     path("review/queue/", review_views.ReviewQueueView.as_view(), name="review-queue"),
     path("review/answer/", review_views.ReviewAnswerView.as_view(), name="review-answer"),
     path("review/stats/", review_views.ReviewStatsView.as_view(), name="review-stats"),

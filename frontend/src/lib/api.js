@@ -73,7 +73,7 @@ export const api = {
   logout: () => request("/auth/logout/", { method: "POST" }),
   me: () => request("/auth/me/"),
   dashboard: () => request("/dashboard/"),
-  todayLesson: (minutes) => request(`/lessons/today/${minutes ? `?minutes=${minutes}` : ""}`),
+  todayPlan: (minutes) => request(`/plan/today/${minutes ? `?minutes=${minutes}` : ""}`),
   profile: () => request("/profile/"),
   updateProfile: (data) => request("/profile/", { method: "PATCH", body: data }),
   aiStatus: () => request("/ai/status/"),
@@ -117,6 +117,22 @@ export const api = {
     return request(`/skills/attempts/${query ? `?${query}` : ""}`);
   },
   skillSummary: () => request("/skills/summary/"),
+
+  // --- Lessons ---
+  todayLesson: () => request("/lessons/today/"),
+  regenerateLesson: (body = {}) =>
+    request("/lessons/regenerate/", { method: "POST", body }),
+  completeActivity: (lessonId, activityId) =>
+    request(`/lessons/${lessonId}/activities/${activityId}/complete/`, { method: "POST" }),
+  learnerContext: () => request("/learner-context/"),
+
+  // --- Conversation ---
+  conversationScenarios: () => request("/conversations/scenarios/"),
+  startConversation: (body) => request("/conversations/start/", { method: "POST", body }),
+  sendConversationMessage: (id, body) =>
+    request(`/conversations/${id}/say/`, { method: "POST", body }),
+  endConversation: (id) => request(`/conversations/${id}/end/`, { method: "POST" }),
+  conversations: () => request("/conversations/"),
   scripts: () => request("/practice/speaking-scripts/"),
   generateScript: (data) =>
     request("/practice/speaking-scripts/generate/", { method: "POST", body: data }),

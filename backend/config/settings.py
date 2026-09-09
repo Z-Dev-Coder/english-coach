@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "apps.vocabulary",
     "apps.review",
     "apps.skills",
+    "apps.lessons",
+    "apps.conversation",
     "apps.practice",
 ]
 

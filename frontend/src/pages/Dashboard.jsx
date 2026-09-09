@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
+import TodayLesson from "../components/TodayLesson";
 import { skillIcon, skillLabel } from "../lib/skills";
 import {
   Card,
@@ -98,12 +99,15 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [aiStatus, setAiStatus] = useState(null);
+  const [lesson, setLesson] = useState(null);
 
   const load = useCallback(() => {
     setError(null);
     api.dashboard().then(setData).catch(setError);
-    // AI status must never block the dashboard: the page renders without it.
+    // Neither of these may block the dashboard: the page is useful without
+    // them, and lesson generation can be slow on a local model.
     api.aiStatus().then(setAiStatus).catch(() => setAiStatus(null));
+    api.todayLesson().then(setLesson).catch(() => setLesson(null));
   }, []);
 
   useEffect(() => {
@@ -129,52 +133,56 @@ export default function Dashboard() {
         sessions={data.sessions_this_week}
       />
 
-      <section aria-labelledby="plan-heading">
-        <SectionHeading
-          id="plan-heading"
-          title="Today's plan"
-          action={
-            <span className="text-sm tabular-nums text-slate-400">{totalMinutes} min total</span>
-          }
-        />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {plan.map((block, index) => (
-            <Card
-              key={block.skill}
-              interactive
-              className="animate-rise"
-              style={{ animationDelay: `${index * 45}ms` }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-lg dark:bg-brand-500/15"
-                  >
-                    {skillIcon(block.skill)}
-                  </span>
-                  <span className="font-semibold">{skillLabel(block.skill)}</span>
+      {lesson ? (
+        <TodayLesson lesson={lesson} onChange={setLesson} />
+      ) : (
+        <section aria-labelledby="plan-heading">
+          <SectionHeading
+            id="plan-heading"
+            title="Today's plan"
+            action={
+              <span className="text-sm tabular-nums text-slate-400">{totalMinutes} min total</span>
+            }
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {plan.map((block, index) => (
+              <Card
+                key={block.skill}
+                interactive
+                className="animate-rise"
+                style={{ animationDelay: `${index * 45}ms` }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-lg dark:bg-brand-500/15"
+                    >
+                      {skillIcon(block.skill)}
+                    </span>
+                    <span className="font-semibold">{skillLabel(block.skill)}</span>
+                  </div>
+                  <Pill tone="brand">{block.minutes} min</Pill>
                 </div>
-                <Pill tone="brand">{block.minutes} min</Pill>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                {block.reason}
-              </p>
-              {block.skill === "review" && data.review && (
-                <Link
-                  to="/review"
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:gap-2 dark:text-brand-300"
-                >
-                  {data.review.due_now > 0
-                    ? `${data.review.due_now} due now`
-                    : "Nothing due — add words"}
-                  <span aria-hidden="true">→</span>
-                </Link>
-              )}
-            </Card>
-          ))}
-        </div>
-      </section>
+                <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                  {block.reason}
+                </p>
+                {block.skill === "review" && data.review && (
+                  <Link
+                    to="/review"
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:gap-2 dark:text-brand-300"
+                  >
+                    {data.review.due_now > 0
+                      ? `${data.review.due_now} due now`
+                      : "Nothing due — add words"}
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

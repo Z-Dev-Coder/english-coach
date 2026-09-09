@@ -6,6 +6,7 @@ import { applyTheme, isDark, setTheme } from "./lib/theme";
 import { cx } from "./lib/cx";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import Conversation from "./pages/Conversation";
 import Practice from "./pages/Practice";
 import Profile from "./pages/Profile";
 import Review from "./pages/Review";
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/", label: "Home", icon: "🏠" },
   { to: "/review", label: "Review", icon: "🔁" },
   { to: "/practice", label: "Practice", icon: "🎧" },
+  { to: "/conversation", label: "Talk", icon: "💬" },
   { to: "/speaking", label: "Speaking", icon: "🗣️" },
   { to: "/profile", label: "Profile", icon: "👤" },
 ];
@@ -230,6 +232,7 @@ export default function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/drill" element={<Drill />} />
+          <Route path="/conversation" element={<Conversation />} />
           <Route path="/speaking" element={<SpeakingStudio />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

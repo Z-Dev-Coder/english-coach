@@ -203,7 +203,44 @@ knows, and the code deliberately does not:
 Scoring is also asymmetric: `MAX_LOSS` exceeds `MAX_GAIN`, and the neutral pivot
 sits at 70% rather than 50%, so a mediocre attempt is not recorded as progress.
 
-## 14. Frontend
+## 14. Lessons are generated as a hybrid
+
+Lesson *structure* — which skills, how many minutes, in what order, pointing at
+which passage or queue — is computed from the database by
+`_template_activities()`. Lesson *content* — a theme, prompts using the
+learner's interests, target expressions — is AI-enriched by `_enrich_with_ai()`.
+
+The enrichment overlays text onto the skeleton and nothing else. Kinds, minutes
+and routes stay authoritative, and each generated activity is matched to a
+skeleton slot by kind rather than by position.
+
+**Why not let the model write the whole lesson:** it would make the single most
+important screen depend on a local model behaving, let a hallucination decide
+the learner's schedule, and turn a partial response into a broken day. As built,
+a model that returns two activities for a six-block plan improves two of them
+and leaves the rest with their (deliberately useful) template wording; a model
+that returns nonsense produces a complete template lesson.
+
+Lessons are unique per learner per day. Asking for today's lesson twice returns
+the same lesson, so refreshing never regenerates it or discards progress.
+Replacing it is a separate, explicit `regenerate` action.
+
+## 15. Conversation: talk first, correct afterwards
+
+The conversation partner is instructed never to correct the learner mid-flow,
+and `reply()` has no correction path at all. Being stopped every sentence
+destroys fluency practice, which is the entire point of the activity.
+
+All correction happens in `generate_feedback()` once the learner ends the
+session, and only the learner's own turns are sent for review — including the
+partner's replies would invite the model to critique its own output.
+
+Two robustness details worth keeping: every scenario has a scripted opener, so a
+conversation can start with no model running; and the learner's turn is saved
+*before* the model is called, so their words are never lost because a reply
+failed.
+
+## 16. Frontend
 
 Vite + React 19 + Tailwind 4, with a dev proxy so the frontend is
 origin-relative (no CORS surprises, and the same build works behind one domain

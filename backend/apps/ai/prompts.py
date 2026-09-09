@@ -190,3 +190,136 @@ Rules:
 - Ask a natural follow-up question most turns so the conversation keeps moving.
 - Match their level: be understandable, but do not sound like a textbook.
 """
+
+
+# --- Lesson generation -----------------------------------------------------
+LESSON_SCHEMA = {
+    "type": "object",
+    "required": ["title", "theme", "activities"],
+    "properties": {
+        "title": {"type": "string"},
+        "theme": {"type": "string"},
+        "encouragement": {"type": "string"},
+        "activities": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["kind", "title", "instructions"],
+                "properties": {
+                    "kind": {"type": "string"},
+                    "title": {"type": "string"},
+                    "instructions": {"type": "string"},
+                    "prompt": {"type": "string"},
+                    "target_expressions": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+        },
+    },
+}
+
+
+def generate_lesson(context: dict) -> str:
+    """Ask for today's lesson, given the learner's actual state.
+
+    The context is assembled from the database by LessonGenerator, never by the
+    model: what the learner is weak at and what is due are facts, not something
+    to be invented.
+    """
+    weak = ", ".join(context.get("weak_skills") or []) or "nothing in particular yet"
+    mistakes = ", ".join(context.get("recent_mistakes") or []) or "none recorded yet"
+    interests = ", ".join(context.get("interests") or []) or "general everyday life"
+    blocks = "\n".join(
+        f"- {block['skill']}: {block['minutes']} minutes" for block in context.get("plan", [])
+    )
+
+    return f"""Design today's English lesson for one specific learner.
+
+LEARNER
+Overall level: {context.get('overall_level', 'B1')}
+Target level: {context.get('target_level', 'C1')}
+Weakest skills: {weak}
+Recent mistakes to work on: {mistakes}
+Interests: {interests}
+Vocabulary due for review today: {context.get('due_count', 0)}
+Time available: {context.get('total_minutes', 30)} minutes
+
+TIME ALREADY ALLOCATED (do not change these)
+{blocks}
+
+Write ONE activity for each block above, in the same order, using the same
+"kind" value as the block's skill. Tie them together with a single theme drawn
+from the learner's interests, so the lesson feels like one session rather than
+six unrelated exercises.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- title: a short, specific name for today's lesson
+- theme: the thread connecting the activities, in one sentence
+- encouragement: one honest, non-patronising sentence about their progress
+- activities: one object per block, each with
+    kind (matching the block's skill),
+    title (short),
+    instructions (what the learner should actually do, 1-2 sentences),
+    prompt (the writing/speaking prompt or discussion question, if the activity needs one),
+    target_expressions (up to 4 expressions to work in, or an empty list)
+"""
+
+
+# --- Conversation feedback -------------------------------------------------
+CONVERSATION_FEEDBACK_SCHEMA = {
+    "type": "object",
+    "required": ["summary", "did_well", "corrections"],
+    "properties": {
+        "summary": {"type": "string"},
+        "estimated_level": {"type": "string"},
+        "did_well": {"type": "array", "items": {"type": "string"}},
+        "corrections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["original", "natural", "explanation"],
+                "properties": {
+                    "original": {"type": "string"},
+                    "natural": {"type": "string"},
+                    "explanation": {"type": "string"},
+                    "category": {"type": "string"},
+                },
+            },
+        },
+        "useful_expressions": {"type": "array", "items": {"type": "string"}},
+        "focus_next_time": {"type": "string"},
+    },
+}
+
+
+def conversation_feedback(turns: list[str], *, scenario: str = "casual", level: str = "B1") -> str:
+    """Review what the learner said, after the conversation rather than during it.
+
+    Only the learner's own turns are sent: the assistant's replies are not under
+    review, and excluding them keeps the model from critiquing its own output.
+    """
+    said = "\n".join(f"{index + 1}. {turn}" for index, turn in enumerate(turns))
+    return f"""You are an English teacher reviewing what a CEFR {level} learner said
+during a {scenario.replace('_', ' ')} conversation.
+
+WHAT THE LEARNER SAID
+{said}
+
+Judge only their English, not the conversation topic. Be specific and kind:
+point at real phrases, not general advice. Do not invent mistakes — if
+something was already natural, leave it alone.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- summary: one sentence on how the conversation went
+- estimated_level: the CEFR level this speech suggests
+- did_well: 2-3 specific things they got right, quoting them
+- corrections: each with original (their exact words), natural (how a native
+  speaker would say it), explanation (one sentence, why), and category (one of:
+  grammar, vocabulary, word_choice, preposition, article, word_order,
+  naturalness, collocation, fluency)
+- useful_expressions: up to 4 expressions that would have fitted this conversation
+- focus_next_time: one specific thing to work on
+"""
