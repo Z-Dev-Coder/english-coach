@@ -331,9 +331,10 @@ export function ErrorNote({ error, onRetry }) {
   return (
     <div
       role="alert"
-      className="animate-rise rounded-l-sm rounded-r-xl border-l-2 border-[color:var(--color-accent)] bg-[color:var(--color-bad-bg)] px-4 py-3 text-[13px] text-[color:var(--color-accent)] dark:bg-rose-400/[0.07] dark:text-rose-200"
+      className="animate-rise border-t border-[color:var(--color-accent)]/40 pt-3 text-[13px]"
     >
-      <p className="font-medium">{error.message}</p>
+      <p className="micro mb-1 text-[color:var(--color-accent)]">Something went wrong</p>
+      <p className="text-ink-2 dark:text-white/70">{error.message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
@@ -350,38 +351,28 @@ export function ErrorNote({ error, onRetry }) {
 
 // A thin rule on the left over a near-white wash. A filled mint or indigo
 // block is what made the old interface read as a default framework alert.
+// No panel, no border, no tint. A note is a hairline, a small monospace label,
+// and text. Colour appears only in the label, which is the one place it means
+// something rather than decorating.
 const CALLOUT_TONES = {
-  tip: {
-    box: "bg-[color:var(--color-warn-bg)] border-[color:var(--color-warn-ink)]/45 dark:bg-amber-400/[0.06] dark:border-amber-300/40",
-    label: "text-[color:var(--color-warn-ink)] dark:text-amber-200",
-  },
-  info: {
-    box: "bg-sunken border-ink/25 dark:bg-white/[0.04] dark:border-white/25",
-    label: "text-ink dark:text-white/80",
-  },
-  good: {
-    box: "bg-[color:var(--color-good-bg)] border-[color:var(--color-good-ink)]/45 dark:bg-emerald-400/[0.06] dark:border-emerald-300/40",
-    label: "text-[color:var(--color-good-ink)] dark:text-emerald-200",
-  },
-  warn: {
-    box: "bg-[color:var(--color-bad-bg)] border-[color:var(--color-accent)]/45 dark:bg-rose-400/[0.06] dark:border-rose-300/40",
-    label: "text-[color:var(--color-accent)] dark:text-rose-200",
-  },
+  tip: "text-[color:var(--color-warn-ink)] dark:text-amber-300",
+  info: "text-ink-3",
+  good: "text-[color:var(--color-good-ink)] dark:text-emerald-300",
+  warn: "text-[color:var(--color-accent)]",
 };
 
 /** A highlighted note. Use for the one thing on a screen worth reading twice. */
 export function Callout({ tone = "info", title, children, className = "" }) {
-  const style = CALLOUT_TONES[tone] ?? CALLOUT_TONES.info;
+  const label = CALLOUT_TONES[tone] ?? CALLOUT_TONES.info;
   return (
     <div
       className={cx(
-        "rounded-l-sm rounded-r-xl border-l-2 px-4 py-3 text-[13px] leading-relaxed",
-        "text-ink/85 dark:text-white/75",
-        style.box,
+        "border-t border-[color:var(--color-line)] pt-3 dark:border-white/10",
+        "text-[13px] leading-relaxed text-ink-2 dark:text-white/60",
         className,
       )}
     >
-      {title && <p className={cx("micro mb-1.5", style.label)}>{title}</p>}
+      {title && <p className={cx("micro mb-1.5", label)}>{title}</p>}
       <div>{children}</div>
     </div>
   );

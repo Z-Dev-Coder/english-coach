@@ -61,9 +61,9 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
             <span className="text-[15px] font-semibold tracking-tight">English Coach</span>
           </div>
 
-          <h1 className="text-[40px] font-semibold leading-[1.08]">
+          <h1 className="display text-[46px]">
             Real English, turned into your{" "}
-            <span className="text-[color:var(--color-highlight)]">daily plan</span>.
+            <em className="italic text-[color:var(--color-highlight)]">daily plan</em>.
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-white/55">
             Not flashcards. A coach that measures what you struggle with and decides what you
@@ -103,7 +103,7 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
             </button>
           </div>
 
-          <h2 className="text-[22px] font-semibold">
+          <h2 className="display text-[30px]">
             {mode === "login" ? "Welcome back" : "Create your account"}
           </h2>
           <p className="mt-1.5 mb-8 text-sm text-ink-2 dark:text-white/55">

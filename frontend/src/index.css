@@ -45,6 +45,9 @@
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* Display only. High-contrast serif at large sizes is what gives the
+     hierarchy somewhere to go; using it for body text would be costume. */
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
 
   --shadow-soft: 0 1px 2px rgb(10 10 10 / 0.05);
   --shadow-lift: 0 2px 4px rgb(10 10 10 / 0.05), 0 14px 30px -16px rgb(10 10 10 / 0.25);
@@ -89,11 +92,11 @@
     letter-spacing: -0.011em;
   }
 
-  /* Headings do the separating, so they are heavy and optically tightened
-     rather than relying on coloured blocks. */
-  h1, h2, h3 {
+  /* Section headings stay in the text face. Only display sizes get the
+     serif, applied deliberately with .display. */
+  h2, h3 {
     @apply font-semibold;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
   }
 
   /* A visible, consistent focus ring everywhere — keyboard users should never
@@ -127,6 +130,14 @@
 /* The signature device from the reference: a tiny monospace label in brackets.
    Cheap to apply, and it does most of the work of making an interface look
    deliberate rather than generic. */
+/* The editorial voice: big, light, serif. One per screen at most. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+}
+
 @utility micro {
   @apply font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3;
 }

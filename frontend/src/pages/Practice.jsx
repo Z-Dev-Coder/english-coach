@@ -383,7 +383,7 @@ function Writing() {
           />
 
           {detail.source !== "ai" && (
-            <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+            <p className="mb-4 border-t border-[color:var(--color-line)] pt-3 text-[13px] text-ink-2 dark:border-white/10 dark:text-white/55">
               The local AI isn't running, so these are structural checks only. Start Ollama for
               full grammar and naturalness feedback — your writing was still saved.
             </p>
@@ -397,7 +397,7 @@ function Writing() {
               <ul className="space-y-1 text-ink dark:text-white/85">
                 {detail.strengths.map((item, index) => (
                   <li key={index} className="flex gap-2">
-                    <span aria-hidden="true" className="text-emerald-500">
+                    <span aria-hidden="true" className="text-[color:var(--color-good-ink)]">
                       ✓
                     </span>
                     {item}
@@ -420,13 +420,13 @@ function Writing() {
                   >
                     {issue.original && (
                       <p>
-                        <span className="rounded bg-rose-100 px-1 line-through dark:bg-rose-500/20">
+                        <span className="text-[color:var(--color-accent)] line-through">
                           {issue.original}
                         </span>
                         {issue.correction && (
                           <>
                             {" → "}
-                            <span className="rounded bg-emerald-100 px-1 font-medium dark:bg-emerald-500/20">
+                            <span className="font-medium text-ink dark:text-white">
                               {issue.correction}
                             </span>
                           </>
@@ -506,7 +506,7 @@ export default function Practice() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Practice</h1>
+        <h1 className="display text-[38px]">Practice</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Each activity updates the skill it trains, which is what reshapes tomorrow's plan.
         </p>

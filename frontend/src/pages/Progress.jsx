@@ -31,11 +31,11 @@ function MistakeRow({ mistake, onAvoided, busy }) {
     <li className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="min-w-0">
-          <span className="rounded bg-rose-100 px-1 line-through dark:bg-rose-500/20">
+          <span className="text-[color:var(--color-accent)] line-through">
             {mistake.incorrect}
           </span>
           <span className="mx-1.5 text-ink-3">→</span>
-          <span className="rounded bg-emerald-100 px-1 font-medium dark:bg-emerald-500/20">
+          <span className="font-medium text-ink dark:text-white">
             {mistake.correct}
           </span>
         </p>
@@ -63,7 +63,7 @@ function MistakeRow({ mistake, onAvoided, busy }) {
           </Button>
         )}
         {mistake.times_avoided > 0 && (
-          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="text-xs text-[color:var(--color-good-ink)]">
             avoided {mistake.times_avoided}×
           </span>
         )}
@@ -136,7 +136,7 @@ export default function Progress() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
+        <h1 className="display text-[38px]">Progress</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           What has actually changed — not how long you sat here.
         </p>
@@ -217,14 +217,14 @@ export default function Progress() {
       </Card>
 
       {practice.length > 0 && (
-        <Card className="ring-amber-200 dark:ring-amber-500/20">
+        <Card className="border-dashed">
           <SectionHeading title="Work on these today" />
           <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
             You have made each of these at least twice. They are the ones worth fixing on purpose.
           </p>
           <ul className="space-y-3">
             {practice.map((item) => (
-              <li key={item.id} className="rounded-xl bg-amber-50 p-4 dark:bg-amber-500/10">
+              <li key={item.id} className="border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
                 <p>
                   <span className="line-through opacity-60">{item.incorrect}</span>
                   <span className="mx-1.5">→</span>
@@ -235,7 +235,7 @@ export default function Progress() {
                     {item.explanation}
                   </p>
                 )}
-                <p className="mt-2 text-sm font-medium text-amber-900 dark:text-amber-200">
+                <p className="mt-2 text-[13px] font-medium text-ink dark:text-white/85">
                   {item.task}
                 </p>
               </li>

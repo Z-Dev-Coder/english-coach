@@ -228,8 +228,8 @@ export default function SpeakingStudio() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Speaking <span className="text-gradient">Script Studio</span>
+        <h1 className="display text-[38px]">
+          Speaking <em className="italic">Script Studio</em>
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           A roleplay script pitched at your speaking level — practise it here, or take the prompt

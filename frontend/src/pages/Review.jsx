@@ -23,13 +23,13 @@ const RATINGS = [
   { value: 4, label: "Easy", hint: "Instant", key: "4", tone: "sky" },
 ];
 
+// Four grades, one visual language: outlined, and told apart by their words
+// rather than by four different pastel fills.
 const RATING_STYLES = {
-  rose: "bg-rose-50 text-rose-700 ring-rose-200 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20",
-  amber:
-    "bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20",
-  emerald:
-    "bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20",
-  sky: "bg-sky-50 text-sky-700 ring-sky-200 hover:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20",
+  rose: "ring-[color:var(--color-accent)]/40 text-[color:var(--color-accent)] hover:bg-[color:var(--color-bad-bg)]",
+  amber: "ring-[color:var(--color-line)] text-ink-2 hover:bg-sunken dark:ring-white/15 dark:text-white/70",
+  emerald: "ring-[color:var(--color-line)] text-ink hover:bg-sunken dark:ring-white/15 dark:text-white/85",
+  sky: "ring-ink text-ink hover:bg-ink hover:text-white dark:ring-white dark:text-white dark:hover:bg-white dark:hover:text-ink",
 };
 
 const STATE_TONES = {
@@ -113,7 +113,7 @@ function ReviewCard({ item, onAnswer, submitting }) {
             )}
 
             {expression.common_mistake && (
-              <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              <p className="mt-4 border-t border-[color:var(--color-line)] pt-3 text-[13px] text-ink-2 dark:border-white/10 dark:text-white/55">
                 <span className="font-semibold">Watch out: </span>
                 {expression.common_mistake}
               </p>
@@ -276,7 +276,7 @@ export default function Review() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Review</h1>
+          <h1 className="display text-[38px]">Review</h1>
           <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
             Spaced repetition. Each answer decides when you next see the card.
           </p>

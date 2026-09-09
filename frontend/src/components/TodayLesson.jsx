@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
-import { Button, Callout, Card, ErrorNote, Pill, ProgressRing, SectionHeading } from "../lib/ui";
+import { Button, Card, ErrorNote, Pill, ProgressRing, SectionHeading } from "../lib/ui";
 
 /**
  * Today's lesson: the plan made concrete.
@@ -100,7 +100,9 @@ export default function TodayLesson({ lesson, onChange }) {
       )}
 
       {lesson.encouragement && (
-        <Callout tone="good">{lesson.encouragement}</Callout>
+        <p className="text-[13px] leading-relaxed text-ink-2 dark:text-white/55">
+          {lesson.encouragement}
+        </p>
       )}
 
       <ErrorNote error={error} />
@@ -189,14 +191,14 @@ export default function TodayLesson({ lesson, onChange }) {
       </ol>
 
       {lesson.status === "completed" && (
-        <Card className="bg-[color:var(--color-good-bg)] text-center ring-[color:var(--color-good-ink)]/25">
+        <Card className="border-dashed text-center">
           <p className="micro" aria-hidden="true">
             ( done )
           </p>
-          <p className="mt-2 font-semibold text-emerald-900 dark:text-emerald-200">
+          <p className="mt-2 font-semibold text-ink dark:text-white/85">
             Today's lesson is done.
           </p>
-          <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-300/90">
+          <p className="mt-1 text-[13px] text-ink-2 dark:text-white/55">
             Tomorrow's plan will shift based on how today went.
           </p>
         </Card>

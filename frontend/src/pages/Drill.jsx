@@ -47,7 +47,7 @@ function StepRail({ current, furthest, onJump }) {
               className={cx(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
                 active && "bg-ink text-white dark:bg-white dark:text-ink",
-                !active && done && "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+                !active && done && "text-[color:var(--color-good-ink)] ring-1 ring-[color:var(--color-good-ink)]/30",
                 !active && !done && "bg-sunken text-ink-3 dark:bg-white/[0.05] dark:text-ink-2",
                 index > furthest && "cursor-not-allowed",
               )}
@@ -86,7 +86,7 @@ function PlayButton({ text, rate, label, voice }) {
         <span aria-hidden="true">{playing ? "🔊" : "▶"}</span>
         {label}
       </Button>
-      {error && <p className="mt-1 text-xs text-rose-600">{error.message}</p>}
+      {error && <p className="mt-1 text-xs text-[color:var(--color-accent)]">{error.message}</p>}
     </div>
   );
 }
@@ -187,8 +187,8 @@ export default function Drill() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Listen <span className="text-gradient">Speak</span> Write
+        <h1 className="display text-[38px]">
+          Listen <em className="italic">Speak</em> Write
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           One sentence, five ways. Listening, pronunciation, spelling and production from a single
@@ -211,8 +211,8 @@ export default function Drill() {
       <StepRail current={step} furthest={furthest} onJump={setStep} />
 
       {!canSpeak && (
-        <Card className="bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/20">
-          <p className="text-sm text-amber-900 dark:text-amber-200">
+        <Card className="border-dashed">
+          <p className="text-[13px] text-ink-2 dark:text-white/60">
             This browser can't play audio speech. Chrome or Edge will work; you can still do the
             writing steps by reading the sentence.
           </p>

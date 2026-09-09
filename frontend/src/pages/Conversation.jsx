@@ -57,9 +57,9 @@ function Feedback({ feedback }) {
 
   if (!feedback.available) {
     return (
-      <Card className="bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/20">
-        <p className="text-sm text-amber-900 dark:text-amber-200">{feedback.summary}</p>
-        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300/90">
+      <Card className="border-dashed">
+        <p className="text-[13px] text-ink-2 dark:text-white/60">{feedback.summary}</p>
+        <p className="mt-1 text-xs text-ink-3">
           Start Ollama and have another conversation to get a full review. The practice still
           counted.
         </p>
@@ -85,7 +85,7 @@ function Feedback({ feedback }) {
           <ul className="space-y-1.5">
             {feedback.did_well.map((item, index) => (
               <li key={index} className="flex gap-2 text-ink dark:text-white/85">
-                <span aria-hidden="true" className="text-emerald-500">
+                <span aria-hidden="true" className="text-[color:var(--color-good-ink)]">
                   ✓
                 </span>
                 {item}
@@ -104,11 +104,11 @@ function Feedback({ feedback }) {
             {feedback.corrections.map((item, index) => (
               <li key={index} className="rounded-xl bg-sunken p-3 text-sm dark:bg-white/[0.04]">
                 <p>
-                  <span className="rounded bg-rose-100 px-1 line-through dark:bg-rose-500/20">
+                  <span className="text-[color:var(--color-accent)] line-through">
                     {item.original}
                   </span>
                   {" → "}
-                  <span className="rounded bg-emerald-100 px-1 font-medium dark:bg-emerald-500/20">
+                  <span className="font-medium text-ink dark:text-white">
                     {item.natural}
                   </span>
                 </p>
@@ -140,7 +140,7 @@ function Feedback({ feedback }) {
       )}
 
       {feedback.focus_next_time && (
-        <div className="mt-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+        <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/10">
           <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
             Next time
           </p>
@@ -251,7 +251,7 @@ export default function Conversation() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Conversation</h1>
+        <h1 className="display text-[38px]">Conversation</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Talk freely. Nothing corrects you while you speak — the review comes at the end.
         </p>

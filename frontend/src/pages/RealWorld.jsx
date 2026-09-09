@@ -50,7 +50,7 @@ function AddToReview({ items, sourceUrl, label = "Add all to review" }) {
 
   if (state === "done") {
     return (
-      <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+      <p className="micro text-[color:var(--color-good-ink)]">
         ✓ {added} added to your review queue
       </p>
     );
@@ -62,7 +62,7 @@ function AddToReview({ items, sourceUrl, label = "Add all to review" }) {
         <span aria-hidden="true">＋</span> {label} ({items.length})
       </Button>
       {state === "error" && (
-        <p className="mt-1 text-xs text-rose-600">Could not add those. Try again.</p>
+        <p className="mt-1 text-xs text-[color:var(--color-accent)]">Could not add those. Try again.</p>
       )}
     </div>
   );
@@ -117,7 +117,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
       </div>
 
       {article.preparation_error && !material && (
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+        <p className="mt-2 text-xs text-[color:var(--color-accent)]">
           {article.preparation_error}
         </p>
       )}
@@ -190,7 +190,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             {article.speaking_prompt && (
-              <div className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]">
+              <div className="border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
                 <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
                   Say it
                 </p>
@@ -198,7 +198,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
               </div>
             )}
             {article.writing_prompt && (
-              <div className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]">
+              <div className="border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
                 <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                   Write it
                 </p>
@@ -258,8 +258,8 @@ function DialogueStudio() {
       <ErrorNote error={error} />
 
       {result && !result.available && (
-        <Card className="bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/20">
-          <p className="text-sm text-amber-900 dark:text-amber-200">
+        <Card className="border-dashed">
+          <p className="text-[13px] text-ink-2 dark:text-white/60">
             The local AI isn't running, so this needs Ollama. Everything else in the app still
             works.
           </p>
@@ -285,7 +285,7 @@ function DialogueStudio() {
                 </div>
                 <p className="mt-1 text-ink-2 dark:text-white/70">{item.meaning}</p>
                 {item.literal_trap && (
-                  <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+                  <p className="mt-2 text-[13px] text-ink-2 dark:text-white/55">
                     <span className="font-medium">Careful: </span>
                     {item.literal_trap}
                   </p>
@@ -312,7 +312,7 @@ function DialogueStudio() {
           </div>
 
           {result.roleplay_prompt && (
-            <div className="mt-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+            <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/10">
               <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
                 Try using them
               </p>
@@ -384,8 +384,8 @@ export default function RealWorld() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Real <span className="text-gradient">World</span> English
+        <h1 className="display text-[38px]">
+          Real <em className="italic">World</em> English
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Current stories and real dialogue, turned into things you can actually study.

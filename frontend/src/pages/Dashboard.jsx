@@ -49,11 +49,11 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
           <p className="micro text-white/50">
             {greeting()}, {learner.username}
           </p>
-          <h1 className="mt-2 text-[26px] font-semibold leading-[1.15] sm:text-[32px]">
+          <h1 className="display mt-3 text-[34px] sm:text-[44px]">
             {focus ? (
               <>
                 Today's focus is{" "}
-                <span className="whitespace-nowrap text-[color:var(--color-highlight)]">{focus}</span>
+                <em className="whitespace-nowrap italic text-[color:var(--color-highlight)]">{focus}</em>
               </>
             ) : (
               "Let's find your starting point"
@@ -256,14 +256,14 @@ export default function Dashboard() {
           </Card>
 
           {aiStatus && !aiStatus.reachable && (
-            <Card className="bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/20">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            <Card className="border-dashed">
+              <p className="micro text-[color:var(--color-accent)]">
                 Local AI is offline
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-300/90">
+              <p className="mt-1 text-xs leading-relaxed text-ink-3">
                 {aiStatus.setup_hint}
               </p>
-              <p className="mt-2 text-xs text-amber-700 dark:text-amber-400/80">
+              <p className="mt-2 text-xs text-ink-3">
                 Everything else still works — your plan and practice scripts don't need it.
               </p>
             </Card>
