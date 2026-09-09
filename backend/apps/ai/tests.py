@@ -15,7 +15,7 @@ from apps.ai.providers.base import (
 from apps.ai.providers.ollama import OllamaProvider
 from apps.ai.registry import get_ai_provider
 from apps.ai.services import cache_key, cached
-from apps.ai.models import AICache
+from apps.ai.models import AICache, AIRequestLog
 
 
 class JSONRecoveryTests(TestCase):
@@ -364,3 +364,64 @@ class TierRoutingTests(TestCase):
             models={"small": "s", "medium": "m", "large": None}
         )
         self.assertEqual(provider.model_for("large"), "m")
+
+
+class TokenLoggingTests(TestCase):
+    """Real usage must be measurable, or cost is guesswork."""
+
+    @mock.patch("apps.ai.providers.ollama.requests.post")
+    def test_a_call_records_its_token_counts(self, post):
+        post.return_value = mock.Mock(
+            raise_for_status=lambda: None,
+            json=lambda: {"response": "hi", "prompt_eval_count": 120, "eval_count": 45},
+        )
+        provider = OllamaProvider(models={"small": "m", "medium": "m", "large": None})
+        provider.generate("hello")
+
+        log = AIRequestLog.objects.get()
+        self.assertEqual(log.prompt_tokens, 120)
+        self.assertEqual(log.completion_tokens, 45)
+        self.assertEqual(log.provider, "ollama")
+
+    @mock.patch("apps.ai.providers.ollama.requests.post")
+    def test_logging_never_breaks_the_call_it_is_measuring(self, post):
+        """Observability must not be able to fail a lesson."""
+        post.return_value = mock.Mock(
+            raise_for_status=lambda: None, json=lambda: {"response": "hi"}
+        )
+        provider = OllamaProvider(models={"small": "m", "medium": "m", "large": None})
+        with mock.patch(
+            "apps.ai.models.AIRequestLog.objects.create", side_effect=RuntimeError("db gone")
+        ):
+            result = provider.generate("hello")
+        self.assertEqual(result.text, "hi")
+
+    def test_the_cost_report_is_safe_with_no_history(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        call_command("ai_costs", stdout=out)
+        self.assertIn("No AI calls logged yet", out.getvalue())
+
+    @mock.patch("apps.ai.providers.ollama.requests.post")
+    def test_the_cost_report_prices_real_usage(self, post):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        post.return_value = mock.Mock(
+            raise_for_status=lambda: None,
+            json=lambda: {"response": "hi", "prompt_eval_count": 1000, "eval_count": 500},
+        )
+        provider = OllamaProvider(models={"small": "m", "medium": "m", "large": None})
+        provider.generate("hello")
+
+        out = StringIO()
+        call_command("ai_costs", stdout=out)
+        text = out.getvalue()
+        self.assertIn("1000", text)
+        self.assertIn("cost nothing", text)
+        # Local usage should still show what a hosted provider would charge.
+        self.assertIn("deepseek-v4-flash", text)

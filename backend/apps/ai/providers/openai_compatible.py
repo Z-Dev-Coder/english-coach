@@ -121,7 +121,7 @@ class OpenAICompatibleProvider(AIProvider):
         choices = data.get("choices") or []
         text = choices[0].get("message", {}).get("content", "") if choices else ""
         usage = data.get("usage") or {}
-        return AIResult(
+        return self._log(AIResult(
             text=text,
             model=model,
             tier=tier,
@@ -129,7 +129,7 @@ class OpenAICompatibleProvider(AIProvider):
             prompt_tokens=usage.get("prompt_tokens"),
             completion_tokens=usage.get("completion_tokens"),
             meta={"cached_tokens": usage.get("prompt_cache_hit_tokens")},
-        )
+        ))
 
     def generate(self, prompt, *, system=None, tier=TIER_MEDIUM, temperature=0.7,
                  json_mode=False, max_tokens=None) -> AIResult:

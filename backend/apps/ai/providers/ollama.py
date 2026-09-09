@@ -90,14 +90,14 @@ class OllamaProvider(AIProvider):
         started = time.perf_counter()
         data = self._post("generate", payload)
         duration_ms = int((time.perf_counter() - started) * 1000)
-        return AIResult(
+        return self._log(AIResult(
             text=data.get("response", ""),
             model=model,
             tier=tier,
             duration_ms=duration_ms,
             prompt_tokens=data.get("prompt_eval_count"),
             completion_tokens=data.get("eval_count"),
-        )
+        ))
 
     def chat(
         self,
@@ -118,14 +118,14 @@ class OllamaProvider(AIProvider):
             },
         )
         duration_ms = int((time.perf_counter() - started) * 1000)
-        return AIResult(
+        return self._log(AIResult(
             text=data.get("message", {}).get("content", ""),
             model=model,
             tier=tier,
             duration_ms=duration_ms,
             prompt_tokens=data.get("prompt_eval_count"),
             completion_tokens=data.get("eval_count"),
-        )
+        ), task="chat")
 
     def health(self) -> dict[str, Any]:
         """Report reachability and per-tier model availability with setup hints."""

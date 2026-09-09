@@ -126,6 +126,30 @@ class AIProvider(abc.ABC):
         """Multi-turn conversation."""
 
     # -- shared behaviour ---------------------------------------------------
+    def _log(self, result: "AIResult", task: str = "") -> "AIResult":
+        """Record token usage so real cost can be measured, not estimated.
+
+        Deliberately fail-safe: observability must never be able to break a
+        lesson. Any problem writing the log (no database, a migration mid-flight)
+        is swallowed and the result is returned regardless.
+        """
+        try:
+            from ..models import AIRequestLog
+
+            AIRequestLog.objects.create(
+                provider=self.name,
+                model=result.model,
+                tier=result.tier,
+                task=task or "generate",
+                duration_ms=result.duration_ms,
+                prompt_tokens=result.prompt_tokens,
+                completion_tokens=result.completion_tokens,
+                success=True,
+            )
+        except Exception:  # noqa: BLE001 - logging must never break the app
+            pass
+        return result
+
     def generate_json(
         self,
         prompt: str,

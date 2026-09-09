@@ -117,6 +117,18 @@ Peak hours are 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday; everything
 else is charged at half rate. Rates from
 <https://api-docs.deepseek.com/quick_start/pricing/> (September 2026).
 
+**Don't trust that table — measure it.** Every provider call logs its real token
+counts, including local ones, so you can know your own rate before paying
+anything:
+
+```bash
+cd backend && ../.venv/Scripts/python manage.py ai_costs --days 7
+```
+
+It prices what actually happened and shows what the same work would have cost on
+each hosted model. Use the app normally for a week first; a couple of calls
+extrapolate to nonsense.
+
 Model defaults, verified September 2026: `deepseek-v4-flash` for small and
 medium, `deepseek-v4-pro` for large. The older `deepseek-chat` /
 `deepseek-reasoner` aliases were retired on 2026-07-24 and no longer route.
