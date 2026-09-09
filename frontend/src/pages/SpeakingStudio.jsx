@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
+import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import {
   Button,
@@ -148,7 +149,7 @@ function ScriptView({ script, onPracticed }) {
               rel="noreferrer noopener"
               className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
             >
-              {assistant.name} ↗
+              {assistant.name}
             </a>
           ))}
         </div>
@@ -174,7 +175,7 @@ function ScriptView({ script, onPracticed }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="secondary" onClick={() => onPracticed(script.id)}>
-          <span aria-hidden="true">✓</span> I practised this
+          <Icon name="check" size={13} /> I practised this
         </Button>
         {script.times_practiced > 0 && (
           <span className="text-sm text-ink-2 dark:text-white/55">
@@ -304,7 +305,7 @@ export default function SpeakingStudio() {
         <ScriptView script={script} onPracticed={markPracticed} />
       ) : (
         <EmptyState
-          icon="🗣️"
+          icon="speak"
           title="No script yet"
           body="Pick a situation and generate one. Built-in scripts are instant and need no AI at all."
           action={

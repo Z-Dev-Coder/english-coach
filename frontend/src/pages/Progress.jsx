@@ -275,7 +275,7 @@ export default function Progress() {
 
         {visible.length === 0 ? (
           <EmptyState
-            icon="✨"
+            icon="sparkle"
             title="No mistakes recorded yet"
             body="Write something or have a conversation, and anything you get wrong will be collected here — so the same error stops slipping past."
           />

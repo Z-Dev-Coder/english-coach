@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import PracticeNav from "../components/PracticeNav";
 import WordDiff from "../components/WordDiff";
 import { api } from "../lib/api";
+import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canSpeak, pickVoice, speak, stopSpeaking } from "../lib/speech";
 import {
@@ -112,7 +113,7 @@ function Listening({ passages, voice }) {
             }}
             disabled={!canSpeak}
           >
-            <span aria-hidden="true">▶</span> Play
+            <Icon name="play" size={13} /> Play
           </Button>
           <Button
             variant="secondary"
@@ -122,7 +123,7 @@ function Listening({ passages, voice }) {
             }}
             disabled={!canSpeak}
           >
-            <span aria-hidden="true">🐢</span> Slowly
+            <Icon name="slow" size={13} /> Slowly
           </Button>
         </div>
 
@@ -206,7 +207,7 @@ function Reading({ passages, onAdded }) {
     return (
       <div className="space-y-5">
         <Button variant="secondary" onClick={() => setReading(null)}>
-          ← Back to passages
+          Back to passages
         </Button>
         <Card>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -221,10 +222,10 @@ function Reading({ passages, onAdded }) {
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Button onClick={finish} disabled={saved}>
-              {saved ? "✓ Recorded" : "I've finished reading"}
+              {saved ? "Recorded" : "I've finished reading"}
             </Button>
             <Button variant="secondary" onClick={() => speak(reading.text)} disabled={!canSpeak}>
-              <span aria-hidden="true">▶</span> Read it aloud
+              <Icon name="play" size={13} /> Read it aloud
             </Button>
           </div>
           <p className="mt-3 text-xs text-ink-3">
@@ -397,9 +398,7 @@ function Writing() {
               <ul className="space-y-1 text-ink dark:text-white/85">
                 {detail.strengths.map((item, index) => (
                   <li key={index} className="flex gap-2">
-                    <span aria-hidden="true" className="text-[color:var(--color-good-ink)]">
-                      ✓
-                    </span>
+                    <Icon name="check" size={14} className="mt-1 shrink-0 text-[color:var(--color-good-ink)]" />
                     {item}
                   </li>
                 ))}

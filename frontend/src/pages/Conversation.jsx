@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
+import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
 import {
@@ -44,7 +45,7 @@ function Bubble({ message, onSpeak }) {
             aria-label="Play this reply"
             className="ml-2 align-middle text-xs opacity-0 transition group-hover:opacity-60 hover:!opacity-100"
           >
-            🔊
+            <Icon name="volume" size={13} />
           </button>
         )}
       </div>
@@ -85,9 +86,7 @@ function Feedback({ feedback }) {
           <ul className="space-y-1.5">
             {feedback.did_well.map((item, index) => (
               <li key={index} className="flex gap-2 text-ink dark:text-white/85">
-                <span aria-hidden="true" className="text-[color:var(--color-good-ink)]">
-                  ✓
-                </span>
+                <Icon name="check" size={14} className="mt-1 shrink-0 text-[color:var(--color-good-ink)]" />
                 {item}
               </li>
             ))}
@@ -341,7 +340,7 @@ export default function Conversation() {
                 </Button>
                 {canListen && (
                   <Button variant={recording ? "danger" : "secondary"} onClick={record}>
-                    <span aria-hidden="true">{recording ? "⏹" : "🎙"}</span>
+                    <Icon name={recording ? "stop" : "mic"} size={13} />
                     {recording ? "Stop" : "Speak"}
                   </Button>
                 )}
@@ -370,7 +369,7 @@ export default function Conversation() {
 
       {!session && scenarios.length === 0 && (
         <EmptyState
-          icon="💬"
+          icon="talk"
           title="Scenarios could not be loaded"
           body="The backend may not be running. Conversation needs the local AI model to reply."
         />

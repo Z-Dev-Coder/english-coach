@@ -10,6 +10,7 @@
 import { useState } from "react";
 
 import { cx } from "./cx";
+import Icon from "./icons";
 
 /* ---------------------------------------------------------------- Surface */
 
@@ -440,11 +441,11 @@ export function HowTo({ id, title = "How this works", steps = [], children }) {
   );
 }
 
-export function EmptyState({ icon = "✦", title, body, action }) {
+export function EmptyState({ icon = "sparkle", title, body, action }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[color:var(--color-line)] p-10 text-center dark:border-white/10">
-      <div aria-hidden="true" className="text-2xl text-ink-3">
-        {icon}
+    <div className="rounded-2xl border border-dashed border-[color:var(--color-line)] p-10 text-center">
+      <div className="flex justify-center text-ink-3">
+        <Icon name={icon} size={22} />
       </div>
       <p className="mt-3 text-[15px] font-semibold text-ink dark:text-white/90">{title}</p>
       {body && (

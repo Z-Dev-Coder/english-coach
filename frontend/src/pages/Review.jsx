@@ -163,9 +163,7 @@ function SessionComplete({ answered, stats, onReload }) {
   return (
     <div className="space-y-6">
       <Card className="animate-rise text-center">
-        <div className="text-4xl" aria-hidden="true">
-          🎉
-        </div>
+        <p className="micro text-[color:var(--color-accent)]">( session complete )</p>
         <h2 className="mt-3 text-xl font-bold">Review done</h2>
         <p className="mt-1 text-ink-2 dark:text-white/55">
           {answered} {answered === 1 ? "card" : "cards"} reviewed. Everything due today is
@@ -311,7 +309,7 @@ export default function Review() {
       {total === 0 ? (
         <>
           <EmptyState
-            icon="✅"
+            icon="check"
             title="Nothing due right now"
             body="Your review queue is empty. Add expressions as you meet them, or seed the starter set with: python manage.py seed_vocabulary --user <you>"
             action={

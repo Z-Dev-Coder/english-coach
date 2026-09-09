@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "../lib/api";
+import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canSpeak, pickVoice, speak, stopSpeaking } from "../lib/speech";
 import {
@@ -51,7 +52,7 @@ function AddToReview({ items, sourceUrl, label = "Add all to review" }) {
   if (state === "done") {
     return (
       <p className="micro text-[color:var(--color-good-ink)]">
-        ✓ {added} added to your review queue
+        {added} added to your review queue
       </p>
     );
   }
@@ -59,7 +60,7 @@ function AddToReview({ items, sourceUrl, label = "Add all to review" }) {
   return (
     <div>
       <Button variant="secondary" size="sm" onClick={add} loading={state === "saving"}>
-        <span aria-hidden="true">＋</span> {label} ({items.length})
+        + {label} ({items.length})
       </Button>
       {state === "error" && (
         <p className="mt-1 text-xs text-[color:var(--color-accent)]">Could not add those. Try again.</p>
@@ -112,7 +113,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
           rel="noreferrer noopener"
           className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-300"
         >
-          Read the original ↗
+          Read the original
         </a>
       </div>
 
@@ -135,7 +136,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
                     onClick={() => speak(article.adapted_text, { voice })}
                     className="text-xs text-brand-600 hover:underline dark:text-brand-300"
                   >
-                    🔊 Listen
+                    Listen
                   </button>
                 )}
               </div>
@@ -394,8 +395,8 @@ export default function RealWorld() {
 
       <div className="flex gap-1.5">
         {[
-          { key: "today", label: "Today in English", icon: "🌍" },
-          { key: "dialogue", label: "Movies & TV", icon: "🎬" },
+          { key: "today", label: "Today in English", icon: "world" },
+          { key: "dialogue", label: "Movies & TV", icon: "film" },
         ].map((item) => (
           <button
             key={item.key}
@@ -407,7 +408,7 @@ export default function RealWorld() {
                 : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3 dark:hover:bg-white/10",
             )}
           >
-            <span aria-hidden="true">{item.icon}</span>
+            <Icon name={item.icon} size={15} />
             {item.label}
           </button>
         ))}
@@ -482,7 +483,7 @@ export default function RealWorld() {
 
           {articles.length === 0 ? (
             <EmptyState
-              icon="📰"
+              icon="world"
               title="No stories yet"
               body="Fetch the latest to pull in current news, or run: python manage.py ingest_content --seed"
               action={

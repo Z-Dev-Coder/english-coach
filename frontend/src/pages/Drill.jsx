@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import WordDiff from "../components/WordDiff";
 import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
+import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
 import {
@@ -26,11 +27,11 @@ import {
  */
 
 const STEPS = [
-  { key: "listen", label: "Listen", icon: "🎧", hint: "Play it a few times. Don't read anything yet." },
-  { key: "repeat", label: "Repeat", icon: "🗣️", hint: "Say it out loud, matching the rhythm." },
-  { key: "write", label: "Write", icon: "✍️", hint: "Type what you heard, from memory." },
-  { key: "change", label: "Change", icon: "🔀", hint: "Swap one word for another that still works." },
-  { key: "personalise", label: "Make it yours", icon: "💡", hint: "Rewrite it as something true about you." },
+  { key: "listen", label: "Listen", icon: "practice", hint: "Play it a few times. Don't read anything yet." },
+  { key: "repeat", label: "Repeat", icon: "speak", hint: "Say it out loud, matching the rhythm." },
+  { key: "write", label: "Write", icon: "write", hint: "Type what you heard, from memory." },
+  { key: "change", label: "Change", icon: "shuffle", hint: "Swap one word for another that still works." },
+  { key: "personalise", label: "Make it yours", icon: "idea", hint: "Rewrite it as something true about you." },
 ];
 
 function StepRail({ current, furthest, onJump }) {
@@ -52,7 +53,7 @@ function StepRail({ current, furthest, onJump }) {
                 index > furthest && "cursor-not-allowed",
               )}
             >
-              <span aria-hidden="true">{done && !active ? "✓" : step.icon}</span>
+              <Icon name={done && !active ? "check" : step.icon} size={14} />
               {step.label}
             </button>
           </li>
@@ -83,7 +84,7 @@ function PlayButton({ text, rate, label, voice }) {
   return (
     <div>
       <Button variant={rate < 1 ? "secondary" : "primary"} onClick={play} disabled={!canSpeak}>
-        <span aria-hidden="true">{playing ? "🔊" : "▶"}</span>
+        <Icon name={playing ? "volume" : "play"} size={14} />
         {label}
       </Button>
       {error && <p className="mt-1 text-xs text-[color:var(--color-accent)]">{error.message}</p>}
@@ -251,7 +252,7 @@ export default function Drill() {
               <PlayButton text={drill.sentence} rate={1} label="Play again" voice={voice} />
               {canListen && (
                 <Button variant={recording ? "danger" : "secondary"} onClick={record}>
-                  <span aria-hidden="true">{recording ? "⏹" : "🎙"}</span>
+                  <Icon name={recording ? "stop" : "mic"} size={14} />
                   {recording ? "Stop" : "Record my attempt"}
                 </Button>
               )}
