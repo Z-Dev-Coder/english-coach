@@ -29,7 +29,29 @@ Three decisions shape everything else:
 - [Ollama](https://ollama.com) — optional, but needed for AI features
 - PostgreSQL — optional; SQLite is the dev default
 
-## Setup
+## Quick start (Windows)
+
+Double-click **`start.bat`**, or the **English Coach** shortcut on your desktop.
+
+It installs anything missing on first run, starts both servers, waits until the
+app actually answers, and opens your browser. Running it twice is safe: it
+detects servers that are already up instead of starting duplicates.
+
+Double-click **`stop.bat`** when you are finished. It closes only what is
+listening on ports 8000 and 5173, leaving your other Python and Node processes
+alone.
+
+To recreate the desktop shortcut:
+
+```powershell
+$s = (New-Object -ComObject WScript.Shell).CreateShortcut("$env:USERPROFILE\Desktop\English Coach.lnk")
+$s.TargetPath = "D:\Projects\english-coach\start.bat"
+$s.WorkingDirectory = "D:\Projects\english-coach"
+$s.WindowStyle = 7
+$s.Save()
+```
+
+## Manual setup
 
 ```bash
 git clone <this repo> && cd english-coach
