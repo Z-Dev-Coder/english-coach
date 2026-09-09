@@ -68,7 +68,7 @@ export default function Profile() {
   if (error && !profile) return <ErrorNote error={error} />;
   if (!profile) {
     return (
-      <div className="max-w-3xl space-y-6">
+      <div className="space-y-5">
         {Array.from({ length: 4 }).map((_, index) => (
           <CardSkeleton key={index} lines={3} />
         ))}
@@ -77,10 +77,10 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6 pb-24">
+    <div className="space-y-5 pb-24">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Your learning profile</h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight">Your learning profile</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           This is what the daily planner uses to decide what you study.
         </p>
       </header>

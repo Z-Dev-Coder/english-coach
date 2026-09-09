@@ -7,6 +7,7 @@ import { skillIcon, skillLabel } from "../lib/skills";
 import {
   Card,
   CardSkeleton,
+  HowTo,
   ErrorNote,
   Pill,
   ProgressBar,
@@ -131,6 +132,16 @@ export default function Dashboard() {
         weeklyMinutes={data.weekly_minutes}
         goal={data.weekly_goal_sessions}
         sessions={data.sessions_this_week}
+      />
+
+      <HowTo
+        id="home"
+        title="How to use this each day"
+        steps={[
+          "Work down today's plan in order. Each step links straight to the activity.",
+          "Aim to finish it — the plan is already sized to the minutes you set.",
+          "Tomorrow's plan changes based on how today went, so honest answers matter.",
+        ]}
       />
 
       {lesson ? (

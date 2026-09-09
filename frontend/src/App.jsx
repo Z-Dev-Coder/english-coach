@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { api, getToken, setToken } from "./lib/api";
 import { applyTheme, isDark, setTheme } from "./lib/theme";
@@ -15,13 +15,14 @@ import Review from "./pages/Review";
 import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
 
+// Six entries, not eight. Speaking and Conversation were separate top-level
+// items called "Speaking" and "Talk" — two names for the same idea. They now
+// sit under Practice, which is where the rest of the skill work already lives.
 const NAV = [
   { to: "/", label: "Home", icon: "🏠" },
   { to: "/review", label: "Review", icon: "🔁" },
-  { to: "/practice", label: "Practice", icon: "🎧" },
+  { to: "/practice", label: "Practice", icon: "🎧", family: ["/speaking", "/conversation", "/drill"] },
   { to: "/real-world", label: "Real World", icon: "🌍" },
-  { to: "/conversation", label: "Talk", icon: "💬" },
-  { to: "/speaking", label: "Speaking", icon: "🗣️" },
   { to: "/progress", label: "Progress", icon: "📈" },
   { to: "/profile", label: "Profile", icon: "👤" },
 ];
@@ -54,6 +55,9 @@ function ThemeToggle({ dark, onToggle }) {
  *  where thumbs actually are — a horizontally scrolling top nav is the classic
  *  "desktop layout shrunk down" mistake. */
 function Shell({ dark, onToggleTheme, onSignOut, children }) {
+  const location = useLocation();
+  const inFamily = (item) => (item.family || []).includes(location.pathname);
+
   const railLink = ({ isActive }) =>
     cx(
       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition duration-150",
@@ -73,7 +77,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
   return (
     <div className="mx-auto flex min-h-full w-full max-w-6xl gap-6 px-4 md:px-6">
       {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col py-6 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-48 shrink-0 flex-col py-5 md:flex">
         <div className="mb-6 flex items-center justify-between pl-1">
           <Brand />
           <ThemeToggle dark={dark} onToggle={onToggleTheme} />
@@ -81,7 +85,12 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
 
         <nav aria-label="Main" className="flex flex-1 flex-col gap-1">
           {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={railLink} end={item.to === "/"}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              className={({ isActive }) => railLink({ isActive: isActive || inFamily(item) })}
+            >
               <span aria-hidden="true" className="text-base">
                 {item.icon}
               </span>
@@ -113,7 +122,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
         </div>
       </header>
 
-      <main className="min-w-0 flex-1 pt-20 pb-28 md:py-8 md:pb-16">{children}</main>
+      <main className="min-w-0 flex-1 pt-16 pb-24 md:py-5 md:pb-12">{children}</main>
 
       {/* Mobile bottom tabs */}
       <nav
@@ -122,16 +131,19 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
       >
         {/* Five tabs is the practical maximum on a phone; the rest stay
             reachable from the desktop rail and by URL. */}
-        {NAV.filter((item) => item.to !== "/speaking" && item.to !== "/profile")
-          .slice(0, 5)
-          .map((item) => (
-            <NavLink key={item.to} to={item.to} className={tabLink} end={item.to === "/"}>
-              <span aria-hidden="true" className="text-lg">
-                {item.icon}
-              </span>
-              {item.label}
-            </NavLink>
-          ))}
+        {NAV.filter((item) => item.to !== "/profile").map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            className={({ isActive }) => tabLink({ isActive: isActive || inFamily(item) })}
+          >
+            <span aria-hidden="true" className="text-lg">
+              {item.icon}
+            </span>
+            {item.label}
+          </NavLink>
+        ))}
       </nav>
     </div>
   );

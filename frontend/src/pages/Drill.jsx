@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import WordDiff from "../components/WordDiff";
+import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
@@ -9,6 +10,7 @@ import {
   Card,
   CardSkeleton,
   ErrorNote,
+  HowTo,
   Pill,
   SectionHeading,
 } from "../lib/ui";
@@ -183,16 +185,28 @@ export default function Drill() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight">
           Listen <span className="text-gradient">Speak</span> Write
         </h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           One sentence, five ways. Listening, pronunciation, spelling and production from a single
           piece of material.
         </p>
       </header>
+
+      <PracticeNav />
+
+      <HowTo
+        id="drill"
+        title="How the drill works"
+        steps={[
+          "One sentence, five steps. Do them in order — each one builds on the last.",
+          "Don't read ahead: the sentence stays hidden until step 4 on purpose.",
+          "The last two steps are where the learning is. Write something true about you.",
+        ]}
+      />
 
       <StepRail current={step} furthest={furthest} onJump={setStep} />
 

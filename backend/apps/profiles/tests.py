@@ -212,3 +212,125 @@ class DashboardPayloadTests(TestCase):
             self.assertIn(key, payload)
         self.assertEqual(len(payload["skills"]), len(ALL_SKILLS))
         self.assertLessEqual(len(payload["focus"]), 2)
+
+
+class ResetLearnerTests(TestCase):
+    """Contaminated history makes every later decision wrong, so a clean reset
+    has to be complete — and has to leave the shared library alone."""
+
+    def setUp(self):
+        from io import StringIO
+
+        self.out = StringIO()
+        self.user = User.objects.create_user(username="dirty", password="pw-for-tests-123")
+        self.other = User.objects.create_user(username="clean", password="pw-for-tests-123")
+
+    def _make_history(self, user):
+        from apps.conversation.models import ConversationMessage, ConversationSession
+        from apps.lessons.services import generate_lesson
+        from apps.mistakes.services import record
+        from apps.review.services import add_to_learning, answer
+        from apps.skills.services import check_dictation
+        from apps.vocabulary.models import Expression
+
+        expression = Expression.objects.create(text=f"deal with {user.id}", meaning="handle")
+        progress = add_to_learning(user, expression)
+        answer(progress, 3)
+        check_dictation(user, expected="one two", written="one three")
+        record(user, incorrect="I discussed about it", correct="I discussed it")
+        session = ConversationSession.objects.create(user=user)
+        ConversationMessage.objects.create(session=session, role="learner", content="hi")
+        generate_lesson(user, use_ai=False)
+        StudySession.objects.create(user=user, active_seconds=600)
+        record_practice(user, "writing", -40)
+
+    def _reset(self, **kwargs):
+        from django.core.management import call_command
+
+        call_command("reset_learner", user="dirty", yes=True, stdout=self.out, **kwargs)
+
+    def test_all_personal_history_is_removed(self):
+        from apps.conversation.models import ConversationSession
+        from apps.lessons.models import Lesson
+        from apps.mistakes.models import Mistake
+        from apps.review.models import Review
+        from apps.skills.models import SkillAttempt
+        from apps.vocabulary.models import VocabularyProgress
+
+        self._make_history(self.user)
+        self._reset()
+
+        for model in (Review, SkillAttempt, Mistake, Lesson, StudySession, VocabularyProgress):
+            with self.subTest(model=model.__name__):
+                self.assertEqual(model.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(ConversationSession.objects.filter(user=self.user).count(), 0)
+
+    def test_skill_scores_return_to_their_starting_values(self):
+        self._make_history(self.user)
+        self.assertLess(
+            SkillProgress.objects.get(user=self.user, skill="writing").score, 50
+        )
+        self._reset()
+        rows = SkillProgress.objects.filter(user=self.user)
+        self.assertEqual(rows.count(), len(ALL_SKILLS))
+        for row in rows:
+            with self.subTest(skill=row.skill):
+                self.assertEqual(row.score, 50.0)
+                self.assertEqual(row.attempts, 0)
+                self.assertEqual(row.confidence, 0.0)
+
+    def test_another_learner_is_untouched(self):
+        from apps.review.models import Review
+
+        self._make_history(self.user)
+        self._make_history(self.other)
+        self._reset()
+        self.assertGreater(Review.objects.filter(user=self.other).count(), 0)
+        self.assertGreater(self.other.vocabulary.count(), 0)
+
+    def test_the_shared_library_survives(self):
+        """Expressions, passages and articles are not personal history."""
+        from apps.skills.models import Passage
+        from apps.vocabulary.models import Expression
+
+        Passage.objects.create(title="Shared", text="A shared passage.")
+        self._make_history(self.user)
+        expressions = Expression.objects.count()
+        self._reset()
+        self.assertEqual(Expression.objects.count(), expressions)
+        self.assertEqual(Passage.objects.filter(owner__isnull=True).count(), 1)
+
+    def test_the_account_and_its_settings_survive(self):
+        profile = LearnerProfile.objects.get(user=self.user)
+        profile.interests = ["technology"]
+        profile.daily_minutes = 45
+        profile.save()
+
+        self._make_history(self.user)
+        self._reset()
+
+        self.assertTrue(User.objects.filter(username="dirty").exists())
+        profile.refresh_from_db()
+        self.assertEqual(profile.interests, ["technology"])
+        self.assertEqual(profile.daily_minutes, 45)
+
+    def test_keep_vocabulary_retains_the_words_but_clears_the_schedule(self):
+        from apps.vocabulary.models import MasteryState, VocabularyProgress
+
+        self._make_history(self.user)
+        self._reset(keep_vocabulary=True)
+
+        rows = VocabularyProgress.objects.filter(user=self.user)
+        self.assertGreater(rows.count(), 0)
+        for row in rows:
+            with self.subTest(word=row.expression_id):
+                self.assertEqual(row.state, MasteryState.NEW)
+                self.assertIsNone(row.stability)
+                self.assertEqual(row.reps, 0)
+
+    def test_an_unknown_user_is_a_clean_error(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        with self.assertRaises(CommandError):
+            call_command("reset_learner", user="nobody", yes=True, stdout=self.out)

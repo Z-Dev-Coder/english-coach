@@ -9,6 +9,7 @@ import {
   CardSkeleton,
   EmptyState,
   ErrorNote,
+  HowTo,
   Pill,
   ProgressBar,
   SectionHeading,
@@ -133,13 +134,23 @@ export default function Progress() {
   const measured = dashboard.skills.filter((skill) => skill.confidence > 0);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Progress</h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           What has actually changed — not how long you sat here.
         </p>
       </header>
+
+      <HowTo
+        id="progress"
+        title="What this page is for"
+        steps={[
+          "Skill scores move only when you actually do an activity, not when you browse.",
+          "Anything you get wrong twice becomes a task under “Work on these today”.",
+          "Press “I've got this now” when a mistake stops happening, and it retires.",
+        ]}
+      />
 
       <Card>
         <SectionHeading title="Where you are" />

@@ -10,6 +10,7 @@ import {
   ErrorNote,
   Pill,
   ProgressRing,
+  HowTo,
   SectionHeading,
   StatTile,
 } from "../lib/ui";
@@ -272,11 +273,11 @@ export default function Review() {
   const progressPct = total ? (index / total) * 100 : 100;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Review</h1>
-          <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold tracking-tight">Review</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Spaced repetition. Each answer decides when you next see the card.
           </p>
         </div>
@@ -288,6 +289,16 @@ export default function Review() {
           </ProgressRing>
         )}
       </header>
+
+      <HowTo
+        id="review"
+        title="How review works"
+        steps={[
+          "Try to answer out loud before you reveal — the effort is what makes it stick.",
+          "Press space to show the answer, then 1–4 to say how it went.",
+          "Be honest. Saying “Easy” when you struggled just means you see it too late next time.",
+        ]}
+      />
 
       {lastResult && index > 0 && index <= total && (
         <p className="text-sm text-slate-400" aria-live="polite">

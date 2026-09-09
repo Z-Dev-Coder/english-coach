@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import {
@@ -8,6 +9,7 @@ import {
   EmptyState,
   ErrorNote,
   Field,
+  HowTo,
   Input,
   Pill,
   SectionHeading,
@@ -224,16 +226,28 @@ export default function SpeakingStudio() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight">
           Speaking <span className="text-gradient">Script Studio</span>
         </h1>
-        <p className="mt-1.5 max-w-2xl text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           A roleplay script pitched at your speaking level — practise it here, or take the prompt
           to any AI assistant.
         </p>
       </header>
+
+      <PracticeNav />
+
+      <HowTo
+        id="speaking"
+        title="How to use a script"
+        steps={[
+          "Generate a script, then say the lines out loud — quietly is fine.",
+          "Or press Copy prompt and paste it into ChatGPT, Gemini or Claude to roleplay there.",
+          "Type FEEDBACK in that chat when you're done and it reviews your English.",
+        ]}
+      />
 
       <Card>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

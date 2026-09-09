@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
+import PracticeNav from "../components/PracticeNav";
 import WordDiff from "../components/WordDiff";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
@@ -12,17 +13,12 @@ import {
   EmptyState,
   ErrorNote,
   Field,
+  HowTo,
   Input,
   Pill,
   SectionHeading,
   Select,
 } from "../lib/ui";
-
-const TABS = [
-  { key: "listening", label: "Listening", icon: "🎧" },
-  { key: "reading", label: "Reading", icon: "📖" },
-  { key: "writing", label: "Writing", icon: "✍️" },
-];
 
 const WRITING_PROMPTS = [
   "What did you do today? Write it as if you were telling a friend.",
@@ -482,7 +478,11 @@ function Writing() {
 /* ------------------------------------------------------------------- Hub */
 
 export default function Practice() {
-  const [tab, setTab] = useState("listening");
+  // The tab lives in the URL so the practice sub-nav can link straight to it,
+  // and so a lesson activity can deep-link to the right exercise.
+  // Read-only: PracticeNav owns switching, via links rather than state.
+  const [params] = useSearchParams();
+  const tab = params.get("tab") || "listening";
   const [passages, setPassages] = useState(null);
   const [voice, setVoice] = useState(null);
   const [error, setError] = useState(null);
@@ -504,48 +504,48 @@ export default function Practice() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Practice</h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight">Practice</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Each activity updates the skill it trains, which is what reshapes tomorrow's plan.
         </p>
       </header>
 
-      <Card className="bg-gradient-to-br from-brand-600 to-violet-600 text-white ring-0">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold">Listen → Speak → Write</h2>
-            <p className="mt-1 text-sm text-white/75">
-              One sentence, five ways. The most efficient single exercise here.
-            </p>
-          </div>
-          <Link
-            to="/drill"
-            className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-white/90"
-          >
-            Start drill →
-          </Link>
-        </div>
-      </Card>
+      <PracticeNav />
 
-      <div className="flex gap-1.5 overflow-x-auto">
-        {TABS.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setTab(item.key)}
-            className={cx(
-              "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition",
-              tab === item.key
-                ? "bg-brand-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
-            )}
-          >
-            <span aria-hidden="true">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {tab === "listening" && (
+        <HowTo
+          id="listening"
+          title="How dictation works"
+          steps={[
+            "Press Play and listen. The text stays hidden on purpose.",
+            "Type what you hear, then Check. Punctuation and capitals don't count against you.",
+            "Use Slowly only after two normal plays — the struggle is the practice.",
+          ]}
+        />
+      )}
+      {tab === "reading" && (
+        <HowTo
+          id="reading"
+          title="How to use reading"
+          steps={[
+            "Read once for the gist, then again for phrases you couldn't have written yourself.",
+            "Add your own text to study an email, article or message you actually received.",
+          ]}
+        />
+      )}
+      {tab === "writing" && (
+        <HowTo
+          id="writing"
+          title="How writing feedback works"
+          steps={[
+            "Write 3–4 sentences. Don't avoid words you're unsure of — mistakes are the point.",
+            "Every correction goes into your mistake bank automatically.",
+            "Compare the natural version with yours. The differences are the lesson.",
+          ]}
+        />
+      )}
 
       <ErrorNote error={error} onRetry={load} />
 

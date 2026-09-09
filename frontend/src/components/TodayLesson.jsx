@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
-import { skillIcon, skillLabel } from "../lib/skills";
-import { Button, Card, ErrorNote, Pill, ProgressRing, SectionHeading } from "../lib/ui";
+import { skillIcon } from "../lib/skills";
+import { Button, Callout, Card, ErrorNote, Pill, ProgressRing, SectionHeading } from "../lib/ui";
 
 /**
  * Today's lesson: the plan made concrete.
@@ -54,6 +54,8 @@ export default function TodayLesson({ lesson, onChange }) {
   };
 
   const done = lesson.activities.filter((activity) => activity.is_complete).length;
+  // The single most useful thing on the whole screen: the next unfinished step.
+  const next = lesson.activities.find((activity) => !activity.is_complete);
 
   return (
     <section aria-labelledby="lesson-heading" className="space-y-4">
@@ -82,10 +84,23 @@ export default function TodayLesson({ lesson, onChange }) {
         </div>
       </div>
 
+      {next && (
+        <Link
+          to={activityHref(next)}
+          className="flex items-center justify-between gap-3 rounded-xl bg-brand-600 px-4 py-3.5 text-white shadow-sm transition hover:bg-brand-700"
+        >
+          <span className="min-w-0">
+            <span className="block text-xs font-medium text-white/70">Do this next</span>
+            <span className="block truncate font-semibold">{next.title}</span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2 text-sm font-semibold">
+            {next.minutes} min <span aria-hidden="true">→</span>
+          </span>
+        </Link>
+      )}
+
       {lesson.encouragement && (
-        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 dark:bg-brand-500/10 dark:text-brand-200">
-          {lesson.encouragement}
-        </p>
+        <Callout tone="good">{lesson.encouragement}</Callout>
       )}
 
       <ErrorNote error={error} />
@@ -122,21 +137,23 @@ export default function TodayLesson({ lesson, onChange }) {
                     >
                       {activity.title}
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                      {activity.instructions}
-                    </p>
+                    {!activity.is_complete && (
+                      <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                        {activity.instructions}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Pill tone="brand">{activity.minutes} min</Pill>
               </div>
 
-              {activity.prompt && (
+              {activity.prompt && !activity.is_complete && (
                 <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm italic text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
                   {activity.prompt}
                 </p>
               )}
 
-              {activity.target_expressions?.length > 0 && (
+              {activity.target_expressions?.length > 0 && !activity.is_complete && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <span className="text-xs text-slate-400">Try to use:</span>
                   {activity.target_expressions.map((expression) => (
@@ -145,27 +162,23 @@ export default function TodayLesson({ lesson, onChange }) {
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Link
-                  to={activityHref(activity)}
-                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
-                >
-                  {activity.is_complete ? "Do it again" : "Start"} →
-                </Link>
-                {!activity.is_complete && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => complete(activity.id)}
-                    loading={busy === activity.id}
+              {!activity.is_complete && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Link
+                    to={activityHref(activity)}
+                    className="rounded-lg bg-brand-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-700"
                   >
-                    Mark done
-                  </Button>
-                )}
-                <span className="ml-auto text-xs text-slate-400">
-                  {skillLabel(activity.kind)}
-                </span>
-              </div>
+                    Start →
+                  </Link>
+                  <button
+                    onClick={() => complete(activity.id)}
+                    disabled={busy === activity.id}
+                    className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline dark:hover:text-slate-300"
+                  >
+                    mark done
+                  </button>
+                </div>
+              )}
             </Card>
           </li>
         ))}

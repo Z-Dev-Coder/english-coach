@@ -7,6 +7,8 @@
  * classes out of page files and makes a restyle a one-file change.
  */
 
+import { useState } from "react";
+
 import { cx } from "./cx";
 
 /* ---------------------------------------------------------------- Surface */
@@ -15,7 +17,7 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
   return (
     <Tag
       className={cx(
-        "rounded-2xl bg-white p-5 shadow-soft ring-1 ring-slate-900/5",
+        "rounded-xl bg-white p-4 shadow-soft ring-1 ring-slate-900/5",
         "dark:bg-slate-900 dark:ring-white/10",
         interactive &&
           "transition duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:-translate-y-0.5",
@@ -30,8 +32,8 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
 
 export function SectionHeading({ title, action, id }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4">
-      <h2 id={id} className="text-lg font-semibold tracking-tight">
+    <div className="mb-2.5 flex items-baseline justify-between gap-4">
+      <h2 id={id} className="text-base font-semibold tracking-tight">
         {title}
       </h2>
       {action}
@@ -344,9 +346,114 @@ export function ErrorNote({ error, onRetry }) {
   );
 }
 
+/* --------------------------------------------------------------- Guidance */
+
+const CALLOUT_TONES = {
+  tip: {
+    box: "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/25",
+    label: "text-amber-700 dark:text-amber-300",
+    icon: "💡",
+  },
+  info: {
+    box: "bg-brand-50 text-brand-900 ring-brand-200 dark:bg-brand-500/10 dark:text-brand-50 dark:ring-brand-500/25",
+    label: "text-brand-700 dark:text-brand-300",
+    icon: "ℹ️",
+  },
+  good: {
+    box: "bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/25",
+    label: "text-emerald-700 dark:text-emerald-300",
+    icon: "✓",
+  },
+  warn: {
+    box: "bg-rose-50 text-rose-900 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-100 dark:ring-rose-500/25",
+    label: "text-rose-700 dark:text-rose-300",
+    icon: "⚠",
+  },
+};
+
+/** A highlighted note. Use for the one thing on a screen worth reading twice. */
+export function Callout({ tone = "info", title, children, className = "" }) {
+  const style = CALLOUT_TONES[tone] ?? CALLOUT_TONES.info;
+  return (
+    <div className={cx("rounded-xl px-3.5 py-3 text-sm ring-1", style.box, className)}>
+      <div className="flex gap-2.5">
+        <span aria-hidden="true" className="mt-px shrink-0">
+          {style.icon}
+        </span>
+        <div className="min-w-0">
+          {title && <p className={cx("mb-0.5 font-semibold", style.label)}>{title}</p>}
+          <div className="leading-relaxed">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Numbered instructions, dismissible and remembered.
+ *
+ * Instructions are only useful the first few times. Leaving them on screen
+ * forever turns them into furniture that gets scrolled past, so this collapses
+ * to a single quiet link once the learner has read it.
+ */
+export function HowTo({ id, title = "How this works", steps = [], children }) {
+  const storageKey = `english-coach:howto:${id}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) !== "done";
+    } catch {
+      return true;
+    }
+  });
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(storageKey, "done");
+    } catch {
+      /* private mode: it just reappears next time, which is harmless */
+    }
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-brand-600 hover:underline dark:hover:text-brand-300"
+      >
+        {title}?
+      </button>
+    );
+  }
+
+  return (
+    <Callout tone="info" title={title}>
+      {steps.length > 0 && (
+        <ol className="mt-1 space-y-1.5">
+          {steps.map((step, index) => (
+            <li key={index} className="flex gap-2.5">
+              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-600 text-[10px] font-bold text-white">
+                {index + 1}
+              </span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {children}
+      <button
+        onClick={dismiss}
+        className="mt-2.5 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
+      >
+        Got it, hide this
+      </button>
+    </Callout>
+  );
+}
+
 export function EmptyState({ icon = "✨", title, body, action }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center dark:border-slate-700">
+    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
       <div aria-hidden="true" className="text-3xl">
         {icon}
       </div>

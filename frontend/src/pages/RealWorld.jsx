@@ -9,6 +9,7 @@ import {
   CardSkeleton,
   EmptyState,
   ErrorNote,
+  HowTo,
   Pill,
   SectionHeading,
 } from "../lib/ui";
@@ -381,12 +382,12 @@ export default function RealWorld() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight">
           Real <span className="text-gradient">World</span> English
         </h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Current stories and real dialogue, turned into things you can actually study.
         </p>
       </header>
@@ -413,6 +414,28 @@ export default function RealWorld() {
       </div>
 
       <ErrorNote error={error} onRetry={load} />
+
+      {tab === "today" ? (
+        <HowTo
+          id="realworld"
+          title="Turn the news into study material"
+          steps={[
+            "Pick a story you'd actually want to read anyway.",
+            "Make a lesson — you get a simpler retelling, vocabulary and questions.",
+            "Add all to review, so those words come back on schedule instead of being forgotten.",
+          ]}
+        />
+      ) : (
+        <HowTo
+          id="dialogue"
+          title="Study real spoken English"
+          steps={[
+            "Paste a few lines from a film, show, or a message someone sent you.",
+            "You get the expressions explained — especially ones whose meaning isn't obvious.",
+            "Add them to review to keep them.",
+          ]}
+        />
+      )}
 
       {tab === "dialogue" ? (
         <DialogueStudio />

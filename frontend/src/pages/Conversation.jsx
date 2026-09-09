@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import PracticeNav from "../components/PracticeNav";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
@@ -9,6 +10,7 @@ import {
   EmptyState,
   ErrorNote,
   Field,
+  HowTo,
   Pill,
   SectionHeading,
   Select,
@@ -247,15 +249,29 @@ export default function Conversation() {
   const ended = session?.status === "ended";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Conversation</h1>
-        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight">Conversation</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Talk freely. Nothing corrects you while you speak — the review comes at the end.
         </p>
       </header>
 
+      <PracticeNav />
+
       <ErrorNote error={error} />
+
+      {!session && (
+        <HowTo
+          id="conversation"
+          title="How to get the most from this"
+          steps={[
+            "Talk freely and make mistakes — nothing corrects you while you speak.",
+            "Answer in full sentences, not one word. Longer replies are worth more.",
+            "Press Finish when you're done, and you get the full review then.",
+          ]}
+        />
+      )}
 
       {!session ? (
         <Card>
