@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #10151f;
+  --color-ink-soft: #5b6577;
+  --color-surface: #ffffff;
+  --color-canvas: #f6f7fb;
+  --color-brand: #4f46e5;
+  --color-brand-soft: #eef2ff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
