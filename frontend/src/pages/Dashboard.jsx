@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
-import TodayLesson from "../components/TodayLesson";
+import LessonPath from "../components/LessonPath";
 import Icon from "../lib/icons";
 import { skillLabel } from "../lib/skills";
 import {
@@ -145,7 +145,7 @@ export default function Dashboard() {
       />
 
       {lesson ? (
-        <TodayLesson lesson={lesson} onChange={setLesson} />
+        <LessonPath lesson={lesson} onChange={setLesson} />
       ) : (
         <section aria-labelledby="plan-heading">
           <SectionHeading
