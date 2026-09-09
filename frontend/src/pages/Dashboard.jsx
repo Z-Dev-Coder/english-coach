@@ -160,6 +160,17 @@ export default function Dashboard() {
               <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                 {block.reason}
               </p>
+              {block.skill === "review" && data.review && (
+                <Link
+                  to="/review"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:gap-2 dark:text-brand-300"
+                >
+                  {data.review.due_now > 0
+                    ? `${data.review.due_now} due now`
+                    : "Nothing due — add words"}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              )}
             </Card>
           ))}
         </div>

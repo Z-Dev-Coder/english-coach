@@ -112,13 +112,63 @@ so the switch is a one-line `.env` change plus `migrate`.
 **Tradeoff:** SQLite will not survive concurrent writes at scale. For a
 single-learner app it is irrelevant, and the escape hatch costs one line.
 
+## 9a. Relative SQLite paths are anchored to the project root
+
+`DATABASE_URL=sqlite:///db.sqlite3` is a *relative* path, so SQLite opens it
+against the process working directory. The server (launched from the repo root)
+and management commands (run from `backend/`) therefore used **different
+database files** — which presents as vanished accounts and seeded data that is
+not there.
+
+`_database_config()` in settings resolves relative SQLite paths against
+`PROJECT_ROOT`, making the database a property of the project rather than of the
+shell. Absolute paths, in-memory databases and Postgres URLs pass through
+untouched. Covered by regression tests in `config/tests.py`.
+
 ## 10. Custom User from day one
 
 `AUTH_USER_MODEL = "accounts.User"` even though the app is single-learner.
 Swapping the user model later is one of Django's genuinely painful migrations;
 doing it now costs nothing and keeps multi-user viable.
 
-## 11. Frontend
+## 10a. Token authentication
+
+DRF token auth, with three properties that are easy to get wrong:
+
+- **Logout revokes.** `POST /api/auth/logout/` deletes the token server-side.
+  Without it, signing out only forgets the token locally while it stays valid
+  forever — anyone holding it keeps access.
+- **Login rotates.** Each login issues a fresh token and deletes the previous
+  one, so signing out on one device cannot be undone by a stale token on
+  another.
+- **The client verifies before trusting.** The frontend restores a token from
+  `localStorage` on boot and calls `/api/auth/me/` before rendering the app.
+  Otherwise a revoked token produces a shell where every request fails. Any 401
+  from any endpoint clears the token centrally in `lib/api.js` and returns the
+  learner to the login screen.
+
+## 11. FSRS scheduling
+
+`apps/review/fsrs.py` implements FSRS-5 as pure functions over a frozen
+dataclass: no Django, no database, no clock. Two numbers model each item —
+`stability` (days until recall falls to 90%) and `difficulty` (1-10) — updated
+after every review from the grade and the *real* elapsed time.
+
+**Why implement rather than depend:** the algorithm is ~120 lines, and vendoring
+it pins the behaviour and keeps the dependency surface small. The weights are
+the published FSRS-5 defaults; optimising them per learner needs a few hundred
+reviews of history, which is why `Review` logs before/after state in full.
+
+**Why FSRS over SM-2:** SM-2 applies fixed multipliers. FSRS uses a memory model
+fitted to millions of real reviews, so it exploits things SM-2 throws away —
+most importantly that reviewing *late* and still recalling is evidence of
+stronger memory, and that a hard-won recall teaches more than an easy one.
+
+Two invariants are enforced beyond the raw formulas, because the maths alone can
+violate them at the edges: forgetting never lengthens an interval, and repeating
+an item the same day cannot inflate its schedule.
+
+## 12. Frontend
 
 Vite + React 19 + Tailwind 4, with a dev proxy so the frontend is
 origin-relative (no CORS surprises, and the same build works behind one domain

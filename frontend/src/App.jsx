@@ -1,25 +1,26 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
 
-import { getToken, setToken } from "./lib/api";
+import { api, getToken, setToken } from "./lib/api";
 import { applyTheme, isDark, setTheme } from "./lib/theme";
 import { cx } from "./lib/cx";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import Review from "./pages/Review";
 import SpeakingStudio from "./pages/SpeakingStudio";
 
-// Phase 1 ships Home, Speaking and Profile. Review / Real World / Progress
-// appear as disabled entries so the information architecture is visible from
-// the start and later phases slot in without a navigation redesign.
+// Real World and Progress stay as disabled entries so the information
+// architecture is visible from the start and later phases slot in without a
+// navigation redesign.
 const NAV = [
   { to: "/", label: "Home", icon: "🏠" },
+  { to: "/review", label: "Review", icon: "🔁" },
   { to: "/speaking", label: "Speaking", icon: "🗣️" },
   { to: "/profile", label: "Profile", icon: "👤" },
 ];
 
 const COMING_SOON = [
-  { label: "Review", icon: "🔁" },
   { label: "Real World", icon: "🌍" },
   { label: "Progress", icon: "📈" },
 ];
@@ -147,13 +148,35 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
 }
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(Boolean(getToken()));
+  // "checking" until a stored token has been verified: a token in localStorage
+  // may be stale or revoked, and rendering the app around one produces a shell
+  // where every request fails.
+  const [authState, setAuthState] = useState(() => (getToken() ? "checking" : "anonymous"));
   const [dark, setDark] = useState(isDark);
 
   // The class lives on <html>, outside React's tree, so it is synced here.
   useEffect(() => {
     applyTheme(dark);
   }, [dark]);
+
+  useEffect(() => {
+    if (authState !== "checking") return;
+    let cancelled = false;
+    api
+      .me()
+      .then(() => !cancelled && setAuthState("authenticated"))
+      .catch(() => !cancelled && setAuthState("anonymous"));
+    return () => {
+      cancelled = true;
+    };
+  }, [authState]);
+
+  // Any 401 anywhere in the app drops us back to the login screen.
+  useEffect(() => {
+    const onSignedOut = () => setAuthState("anonymous");
+    window.addEventListener("english-coach:signed-out", onSignedOut);
+    return () => window.removeEventListener("english-coach:signed-out", onSignedOut);
+  }, []);
 
   const toggleTheme = () => {
     setDark((previous) => {
@@ -162,15 +185,38 @@ export default function App() {
     });
   };
 
-  if (!authenticated) {
+  if (authState === "checking") {
     return (
-      <Login dark={dark} onToggleTheme={toggleTheme} onAuthenticated={() => setAuthenticated(true)} />
+      <div className="grid min-h-full place-items-center">
+        <span
+          aria-label="Signing you in"
+          role="status"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600"
+        />
+      </div>
     );
   }
 
-  const signOut = () => {
+  if (authState === "anonymous") {
+    return (
+      <Login
+        dark={dark}
+        onToggleTheme={toggleTheme}
+        onAuthenticated={() => setAuthState("authenticated")}
+      />
+    );
+  }
+
+  const signOut = async () => {
+    // Revoke server-side first so the token cannot be reused, but sign out
+    // locally regardless -- a failed request must never trap someone signed in.
+    try {
+      await api.logout();
+    } catch {
+      /* already invalid, or offline */
+    }
     setToken(null);
-    setAuthenticated(false);
+    setAuthState("anonymous");
   };
 
   return (
@@ -178,6 +224,7 @@ export default function App() {
       <Shell dark={dark} onToggleTheme={toggleTheme} onSignOut={signOut}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/review" element={<Review />} />
           <Route path="/speaking" element={<SpeakingStudio />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

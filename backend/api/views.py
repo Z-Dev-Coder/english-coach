@@ -57,8 +57,46 @@ class LoginView(APIView):
                 {"error": {"code": "invalid_credentials", "message": "Wrong username or password."}},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        token, _ = Token.objects.get_or_create(user=user)
+        # Issue a fresh token per login so that signing out on one device
+        # cannot be undone by an old token still sitting on another.
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
         return Response({"token": token.key, "username": user.get_username()})
+
+
+class LogoutView(APIView):
+    """Revoke the caller's token.
+
+    Without this, signing out only forgets the token client-side while it stays
+    valid forever on the server. Anyone who captured it keeps access, and the
+    learner has no way to cut off a device they no longer have.
+    """
+
+    def post(self, request):
+        Token.objects.filter(user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MeView(APIView):
+    """Who the current token belongs to.
+
+    The frontend restores a token from localStorage on boot. Without a cheap way
+    to check it, a revoked or stale token renders the whole app shell and then
+    fails on every request. This lets the client verify once and show the login
+    screen instead.
+    """
+
+    def get(self, request):
+        profile = LearnerProfile.objects.get(user=request.user)
+        return Response(
+            {
+                "username": request.user.get_username(),
+                "email": request.user.email,
+                "native_language": request.user.native_language,
+                "overall_level": profile.overall_level,
+                "daily_minutes": profile.daily_minutes,
+            }
+        )
 
 
 class ProfileView(RetrieveUpdateAPIView):
@@ -69,8 +107,19 @@ class ProfileView(RetrieveUpdateAPIView):
 
 
 class DashboardView(APIView):
+    """Home screen data.
+
+    Composed here from two services rather than having profiles import review:
+    the planner must stay usable without the vocabulary app, and views are the
+    right place to join domains.
+    """
+
     def get(self, request):
-        return Response(dashboard_payload(request.user))
+        from apps.review.services import stats as review_stats
+
+        payload = dashboard_payload(request.user)
+        payload["review"] = review_stats(request.user)
+        return Response(payload)
 
 
 class TodayLessonView(APIView):

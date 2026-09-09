@@ -47,6 +47,14 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
+    // A 401 means the stored token is gone, expired or revoked. Clear it once,
+    // centrally, so no caller has to remember to -- and tell the app to show
+    // the login screen instead of leaving a shell that fails every request.
+    if (response.status === 401 && auth) {
+      setToken(null);
+      window.dispatchEvent(new Event("english-coach:signed-out"));
+    }
+
     // The backend wraps every error as {error: {code, message, detail}}.
     const err = payload?.error ?? {};
     throw new ApiError(err.message || `Request failed (${response.status})`, {
@@ -62,12 +70,31 @@ export const api = {
   login: (username, password) =>
     request("/auth/login/", { method: "POST", body: { username, password }, auth: false }),
   register: (data) => request("/auth/register/", { method: "POST", body: data, auth: false }),
+  logout: () => request("/auth/logout/", { method: "POST" }),
+  me: () => request("/auth/me/"),
   dashboard: () => request("/dashboard/"),
   todayLesson: (minutes) => request(`/lessons/today/${minutes ? `?minutes=${minutes}` : ""}`),
   profile: () => request("/profile/"),
   updateProfile: (data) => request("/profile/", { method: "PATCH", body: data }),
   aiStatus: () => request("/ai/status/"),
   scenarios: () => request("/practice/speaking-scripts/scenarios/"),
+
+  // --- Review and vocabulary ---
+  reviewQueue: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/review/queue/${query ? `?${query}` : ""}`);
+  },
+  reviewAnswer: (body) => request("/review/answer/", { method: "POST", body }),
+  reviewStats: () => request("/review/stats/"),
+  vocabulary: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/vocabulary/${query ? `?${query}` : ""}`);
+  },
+  addVocabulary: (body) => request("/vocabulary/add/", { method: "POST", body }),
   scripts: () => request("/practice/speaking-scripts/"),
   generateScript: (data) =>
     request("/practice/speaking-scripts/generate/", { method: "POST", body: data }),

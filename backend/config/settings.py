@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.ai",
+    "apps.vocabulary",
+    "apps.review",
     "apps.practice",
 ]
 
@@ -71,12 +73,27 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": dj_database_url.parse(
+def _database_config() -> dict:
+    """Resolve DATABASE_URL, anchoring relative SQLite paths to the project root.
+
+    A URL like `sqlite:///db.sqlite3` is relative, so SQLite would open it
+    against whatever directory the process happens to start in. That silently
+    produces *different databases* depending on whether you launch from the
+    repo root, from backend/, or from a scheduler -- which looks exactly like
+    lost data. Anchoring the path here makes the database location a property
+    of the project rather than of the shell.
+    """
+    config = dj_database_url.parse(
         os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'db.sqlite3'}"),
         conn_max_age=600,
     )
-}
+    name = config.get("NAME")
+    if "sqlite" in config.get("ENGINE", "") and name and name != ":memory:":
+        config["NAME"] = str(Path(name) if Path(name).is_absolute() else PROJECT_ROOT / name)
+    return config
+
+
+DATABASES = {"default": _database_config()}
 
 AUTH_USER_MODEL = "accounts.User"
 

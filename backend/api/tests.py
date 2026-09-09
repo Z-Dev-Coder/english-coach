@@ -45,6 +45,98 @@ class AuthTests(APITestCase):
                 self.assertEqual(self.client.get(reverse(name)).status_code, 401)
 
 
+class TokenLifecycleTests(APITestCase):
+    """Tokens must be revocable, and a stored one must be checkable."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="tok", password=PASSWORD)
+
+    def _login(self):
+        return self.client.post(
+            reverse("login"), {"username": "tok", "password": PASSWORD}
+        ).data["token"]
+
+    def test_logout_revokes_the_token(self):
+        token = self._login()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)
+
+        self.assertEqual(self.client.post(reverse("logout")).status_code, 204)
+        self.assertEqual(
+            self.client.get(reverse("dashboard")).status_code,
+            401,
+            "the token still works after logging out",
+        )
+
+    def test_logout_requires_authentication(self):
+        self.assertEqual(self.client.post(reverse("logout")).status_code, 401)
+
+    def test_logging_in_again_invalidates_the_previous_token(self):
+        """Signing out on one device must not be undone by an old token
+        still sitting on another."""
+        first = self._login()
+        second = self._login()
+        self.assertNotEqual(first, second)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {first}")
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 401)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {second}")
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)
+
+    def test_me_identifies_the_token_holder(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self._login()}")
+        response = self.client.get(reverse("me"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["username"], "tok")
+
+    def test_me_rejects_a_garbage_token(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Token deadbeefdeadbeef")
+        self.assertEqual(self.client.get(reverse("me")).status_code, 401)
+
+    def test_me_rejects_a_revoked_token(self):
+        token = self._login()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        self.client.post(reverse("logout"))
+        self.assertEqual(self.client.get(reverse("me")).status_code, 401)
+
+    def test_a_malformed_auth_header_is_rejected_cleanly(self):
+        for header in ("Token", "Bearer abc", "Token a b c", "garbage"):
+            with self.subTest(header=header):
+                self.client.credentials(HTTP_AUTHORIZATION=header)
+                self.assertEqual(self.client.get(reverse("dashboard")).status_code, 401)
+
+
+class DataIsolationTests(APITestCase):
+    """One learner must never see another's data through any endpoint."""
+
+    def setUp(self):
+        self.mine = User.objects.create_user(username="mine", password=PASSWORD)
+        self.theirs = User.objects.create_user(username="theirs", password=PASSWORD)
+        self.client.force_authenticate(self.mine)
+
+    def test_profile_returns_only_the_callers_profile(self):
+        self.assertEqual(self.client.get(reverse("profile")).data["username"], "mine")
+
+    def test_me_returns_only_the_callers_identity(self):
+        self.assertEqual(self.client.get(reverse("me")).data["username"], "mine")
+
+    def test_dashboard_is_scoped_to_the_caller(self):
+        self.assertEqual(
+            self.client.get(reverse("dashboard")).data["learner"]["username"], "mine"
+        )
+
+    def test_every_protected_endpoint_refuses_anonymous_access(self):
+        self.client.force_authenticate(None)
+        for name in ("dashboard", "profile", "today-lesson", "me", "review-queue",
+                     "review-stats", "review-history", "ai-status"):
+            with self.subTest(endpoint=name):
+                self.assertEqual(
+                    self.client.get(reverse(name)).status_code,
+                    401,
+                    f"{name} is reachable without authentication",
+                )
+
+
 class AuthenticatedAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="learner", password=PASSWORD)

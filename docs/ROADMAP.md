@@ -17,19 +17,24 @@ tests pass.
 - React frontend: login, dashboard, script studio, profile
 - **93 backend tests, all green**
 
-## Phase 2 — Vocabulary and spaced repetition
+## Phase 2 — Vocabulary and spaced repetition ✅ COMPLETE
 
 **Goal:** review is real, not random.
 
-- Models: `Expression` (word/phrase/idiom/phrasal verb/collocation/pattern),
-  `ExampleSentence`, `VocabularyProgress`, `Flashcard`, `Review`
-- FSRS scheduling (stability, difficulty, next_review) — a proven algorithm, not
-  invented intervals
-- Mastery states: NEW → LEARNING → REVIEW → WEAK → MASTERED
-- Review queue endpoint driving the plan's review block
-- Mixed review types: recall, production, gap-fill — not only multiple choice
-- **Done when:** the queue is deterministic, tested against known FSRS cases,
-  and the dashboard's review count is real
+- `Expression` (word / phrase / idiom / phrasal verb / collocation / pattern),
+  `ExampleSentence` with automatic cloze, `VocabularyProgress`, `Review` log
+- **FSRS-5** scheduling implemented from the published algorithm, as pure
+  functions with no Django imports (32 dedicated tests)
+- Mastery states: NEW → LEARNING → REVIEW → WEAK → MASTERED, derived from
+  stability and lapses rather than stored ad hoc
+- Queue: most-overdue first, new items capped per day and interleaved rather
+  than dumped at the end; length derived from the planner's review minutes
+- Mixed exercise types (meet / recall / produce / cloze / use) chosen by mastery
+  state, so review is never all recognition
+- 30 hand-written starter expressions, idempotently seedable
+- Review UI with keyboard grading, forecast chart and session summary
+- Dashboard's review block now shows the real due count
+- **208 backend tests, all green**
 
 ## Phase 3 — The four skills
 
