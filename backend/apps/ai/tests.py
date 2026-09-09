@@ -258,7 +258,7 @@ class HostedProviderTests(TestCase):
         result = self.provider.generate("hi")
         self.assertEqual(result.text, "Hello there.")
         self.assertEqual(result.prompt_tokens, 10)
-        self.assertEqual(result.model, "deepseek-chat")
+        self.assertEqual(result.model, "deepseek-v4-flash")
 
     @mock.patch("apps.ai.providers.openai_compatible.requests.post")
     def test_json_mode_asks_for_a_json_object(self, post):
@@ -301,7 +301,17 @@ class HostedProviderTests(TestCase):
         self.assertEqual(provider.model_for("medium"), "only-one")
         self.assertTrue(provider.model_for("large"))
 
-    def test_the_reasoning_model_is_reserved_for_the_large_tier(self):
-        """It is slower and dearer; wasteful for vocabulary extraction."""
-        self.assertEqual(self.provider.model_for("small"), "deepseek-chat")
-        self.assertEqual(self.provider.model_for("large"), "deepseek-reasoner")
+    def test_the_expensive_model_is_reserved_for_the_large_tier(self):
+        """Pro costs about three times Flash; wasteful for vocabulary extraction."""
+        self.assertEqual(self.provider.model_for("small"), "deepseek-v4-flash")
+        self.assertEqual(self.provider.model_for("medium"), "deepseek-v4-flash")
+        self.assertEqual(self.provider.model_for("large"), "deepseek-v4-pro")
+
+    def test_retired_model_aliases_are_not_used(self):
+        """deepseek-chat and deepseek-reasoner stopped being routed on
+        2026-07-24; anything still naming them fails outright."""
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        configured = set(DeepSeekProvider.default_models.values())
+        self.assertNotIn("deepseek-chat", configured)
+        self.assertNotIn("deepseek-reasoner", configured)

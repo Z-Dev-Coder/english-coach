@@ -89,17 +89,29 @@ notice that something is wrong but are vague about which exact words, and tend
 to label every error "grammar" — which matters, because the mistake bank keys on
 the corrected pair.
 
-For one learner the volume is a few thousand tokens a day, so the cost is small.
-Check current pricing before committing.
-
 ```bash
 # in .env
 DEEPSEEK_API_KEY=sk-...
 AI_PROVIDER=deepseek
 ```
 
-Then restart. Nothing else changes: no business logic knows which provider is in
-use. `openai` is registered the same way, and switching back is one line.
+Restart. Nothing else changes: no business logic knows which provider is in use.
+`openai` is registered the same way, and switching back is one line.
+
+**Cost.** Measured from this app's own prompt sizes, a heavy day (a lesson, 3
+articles, 2 writing submissions, a 10-turn conversation with review, plus
+vocabulary lookups) is about **9k input / 7k output tokens**. Over 30 active
+days that is roughly 0.27M in and 0.21M out — on the order of **$0.10–$0.30 a
+month**, before the app's own content-hash cache makes repeats free.
+
+Model defaults, verified September 2026: `deepseek-v4-flash` for the small and
+medium tiers, `deepseek-v4-pro` for large (writing and conversation review).
+The older `deepseek-chat` / `deepseek-reasoner` aliases were retired on
+2026-07-24 and no longer route anywhere.
+
+Published rates disagree between DeepSeek's own page and third-party trackers,
+including whether peak-hour pricing is active. Check
+<https://api-docs.deepseek.com/quick_start/pricing> before committing.
 
 ### Optional: PostgreSQL
 

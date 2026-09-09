@@ -175,18 +175,28 @@ class OpenAICompatibleProvider(AIProvider):
 
 
 class DeepSeekProvider(OpenAICompatibleProvider):
-    """DeepSeek: notably cheap, and strong at exactly the structured-feedback
-    work this app leans on."""
+    """DeepSeek: cheap, and strong at the structured-feedback work this app
+    leans on.
+
+    Model names verified against api-docs.deepseek.com in September 2026. The
+    older `deepseek-chat` and `deepseek-reasoner` aliases were retired on
+    2026-07-24 and are no longer routed, so anything still using them fails
+    outright rather than degrading.
+
+    Tiering reflects cost, not capability worship: Flash handles vocabulary
+    extraction, lessons and conversation perfectly well and is roughly a third
+    of the price. Pro is reserved for the large tier, which is where detailed
+    writing and conversation review live -- the one place where being vague
+    about *which words* were wrong actually costs the learner something.
+    """
 
     name = "deepseek"
-    base_url = "https://api.deepseek.com/v1"
+    base_url = "https://api.deepseek.com"
     api_key_setting = "DEEPSEEK_API_KEY"
     default_models = {
-        "small": "deepseek-chat",
-        "medium": "deepseek-chat",
-        # The reasoning model is slower and dearer; useful for detailed writing
-        # review, wasteful for vocabulary extraction.
-        "large": "deepseek-reasoner",
+        "small": "deepseek-v4-flash",
+        "medium": "deepseek-v4-flash",
+        "large": "deepseek-v4-pro",
     }
 
 
