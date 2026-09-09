@@ -46,9 +46,9 @@ function StepRail({ current, furthest, onJump }) {
               disabled={index > furthest}
               className={cx(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                active && "bg-ink text-white dark:bg-white dark:text-ink",
+                active && "bg-ink text-white dark:bg-white dark:text-black",
                 !active && done && "text-[color:var(--color-good-ink)] ring-1 ring-[color:var(--color-good-ink)]/30",
-                !active && !done && "bg-sunken text-ink-3 dark:bg-white/[0.05] dark:text-ink-2",
+                !active && !done && "bg-sunken text-ink-3 dark:bg-white/[0.05]",
                 index > furthest && "cursor-not-allowed",
               )}
             >
@@ -188,7 +188,7 @@ export default function Drill() {
     <div className="space-y-5">
       <header>
         <h1 className="display text-[38px]">
-          Listen <em className="italic">Speak</em> Write
+          Listen <span className="text-[color:var(--color-accent)]">Speak</span> Write
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           One sentence, five ways. Listening, pronunciation, spelling and production from a single

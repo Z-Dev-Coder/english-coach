@@ -385,7 +385,7 @@ export default function RealWorld() {
     <div className="space-y-5">
       <header>
         <h1 className="display text-[38px]">
-          Real <em className="italic">World</em> English
+          Real <span className="text-[color:var(--color-accent)]">World</span> English
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Current stories and real dialogue, turned into things you can actually study.
@@ -403,7 +403,7 @@ export default function RealWorld() {
             className={cx(
               "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition",
               tab === item.key
-                ? "bg-ink text-white dark:bg-white dark:text-ink"
+                ? "bg-ink text-white dark:bg-white dark:text-black"
                 : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3 dark:hover:bg-white/10",
             )}
           >
@@ -454,7 +454,7 @@ export default function RealWorld() {
                 "rounded-full px-3 py-1.5 text-sm transition",
                 !topic
                   ? "bg-ink text-white"
-                  : "bg-sunken text-ink-2 dark:bg-white/[0.05] dark:text-ink-3",
+                  : "bg-sunken text-ink-2 dark:bg-white/[0.05]",
               )}
             >
               All
@@ -467,7 +467,7 @@ export default function RealWorld() {
                   "rounded-full px-3 py-1.5 text-sm transition",
                   topic === item
                     ? "bg-ink text-white"
-                    : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3",
+                    : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05]",
                 )}
               >
                 {item}

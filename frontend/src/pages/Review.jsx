@@ -29,7 +29,7 @@ const RATING_STYLES = {
   rose: "ring-[color:var(--color-accent)]/40 text-[color:var(--color-accent)] hover:bg-[color:var(--color-bad-bg)]",
   amber: "ring-[color:var(--color-line)] text-ink-2 hover:bg-sunken dark:ring-white/15 dark:text-white/70",
   emerald: "ring-[color:var(--color-line)] text-ink hover:bg-sunken dark:ring-white/15 dark:text-white/85",
-  sky: "ring-ink text-ink hover:bg-ink hover:text-white dark:ring-white dark:text-white dark:hover:bg-white dark:hover:text-ink",
+  sky: "ring-ink text-ink hover:bg-ink hover:text-white dark:ring-white dark:text-white dark:hover:bg-white dark:hover:text-black",
 };
 
 const STATE_TONES = {
@@ -107,7 +107,7 @@ function ReviewCard({ item, onAnswer, submitting }) {
             <p className="mt-1 text-ink-2 dark:text-white/70">{expression.meaning}</p>
 
             {example && (
-              <p className="mt-4 border-l-2 border-ink/25 pl-3 text-ink-2 italic dark:text-ink-3">
+              <p className="mt-4 border-l-2 border-ink/25 pl-3 text-ink-2 italic">
                 {example.text}
               </p>
             )}

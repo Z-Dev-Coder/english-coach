@@ -229,7 +229,7 @@ export default function SpeakingStudio() {
     <div className="space-y-5">
       <header>
         <h1 className="display text-[38px]">
-          Speaking <em className="italic">Script Studio</em>
+          Speaking <span className="text-[color:var(--color-accent)]">Script Studio</span>
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           A roleplay script pitched at your speaking level — practise it here, or take the prompt

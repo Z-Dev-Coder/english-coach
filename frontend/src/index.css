@@ -5,52 +5,70 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Drawn from the Trend Forecasting reference: near-white ground, near-black
-     ink, and a single hot accent used in very small amounts. The old palette
-     failed because saturated indigo and mint did the work that type and
-     spacing should be doing. */
+  /* Light mode: kept for daylight study, but secondary now. */
   --color-paper: #ffffff;
   --color-surface: #ffffff;
-  --color-sunken: #f6f5f3;
-  --color-line: #e6e3de;
-  --color-line-strong: #0a0a0a;
-  --color-ink: #0a0a0a;
-  --color-ink-2: #55524d;
-  --color-ink-3: #918d86;
+  --color-sunken: #f4f4f4;
+  --color-line: #e4e4e4;
+  --color-line-strong: #000000;
+  --color-ink: #000000;
+  --color-ink-2: #5c5c5c;
+  --color-ink-3: #999999;
 
-  /* The accent. Used for one word, one dot, one number — never a filled bar. */
-  --color-accent: #ff4b2b;
-  --color-accent-soft: #fff1ee;
-  --color-highlight: #ffd60a;
+  /* HydraDB's orange, sampled from the live site. The only hue in the system. */
+  --color-accent: #ff571a;
+  --color-accent-soft: #fff1eb;
+  --color-highlight: #ff571a;
 
-  /* Kept so existing brand-* classes resolve, but pulled toward ink so they
-     stop shouting. */
-  --color-brand-50: #f6f5f3;
-  --color-brand-100: #ecebe7;
-  --color-brand-200: #d9d6d0;
-  --color-brand-300: #b3aea6;
-  --color-brand-400: #6b6862;
-  --color-brand-500: #ff4b2b;
-  --color-brand-600: #0a0a0a;
-  --color-brand-700: #0a0a0a;
+  /* brand-* kept so existing classes resolve; pulled to ink and accent. */
+  --color-brand-50: #f4f4f4;
+  --color-brand-100: #ebebeb;
+  --color-brand-200: #d6d6d6;
+  --color-brand-300: #999999;
+  --color-brand-400: #5c5c5c;
+  --color-brand-500: #ff571a;
+  --color-brand-600: #000000;
+  --color-brand-700: #000000;
   --color-brand-800: #000000;
   --color-brand-900: #000000;
 
-  --color-good-bg: #eefaf2;
-  --color-good-ink: #1f7a4d;
-  --color-warn-bg: #fff8e6;
-  --color-warn-ink: #8a6320;
-  --color-bad-bg: #fff1ee;
-  --color-bad-ink: #c9391c;
+  --color-good-bg: #f2f7f4;
+  --color-good-ink: #2f7d57;
+  --color-warn-bg: #fff6f2;
+  --color-warn-ink: #b8431a;
+  --color-bad-bg: #fff1eb;
+  --color-bad-ink: #ff571a;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  /* Display only. High-contrast serif at large sizes is what gives the
-     hierarchy somewhere to go; using it for body text would be costume. */
-  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  /* The reference sets headlines in a pixel monospace. A pixel face would hurt
+     reading in an app about reading, so the same register arrives via a
+     legible mono. */
+  --font-display: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-  --shadow-soft: 0 1px 2px rgb(10 10 10 / 0.05);
-  --shadow-lift: 0 2px 4px rgb(10 10 10 / 0.05), 0 14px 30px -16px rgb(10 10 10 / 0.25);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.06), 0 16px 32px -18px rgb(0 0 0 / 0.4);
+}
+
+/* Dark is the default presentation, as on the reference: pure black ground,
+   white type, grey secondary, one orange accent. */
+@layer base {
+  .dark {
+    --color-paper: #000000;
+    --color-surface: #0c0c0c;
+    --color-sunken: #121212;
+    --color-line: #232323;
+    --color-line-strong: #333333;
+    --color-ink: #ffffff;
+    --color-ink-2: #999999;
+    --color-ink-3: #6b6b6b;
+    --color-good-bg: #0e1e1d;
+    --color-good-ink: #4ec38a;
+    --color-warn-bg: #1a0f0a;
+    --color-warn-ink: #ff8a5c;
+    --color-bad-bg: #1a0d08;
+    --color-bad-ink: #ff571a;
+  }
 }
 
 @keyframes rise {
@@ -88,7 +106,6 @@
 
   body {
     @apply bg-paper font-sans text-ink antialiased;
-    @apply dark:bg-[#0d0d0c] dark:text-[#f0eee9];
     letter-spacing: -0.011em;
   }
 
@@ -130,12 +147,12 @@
 /* The signature device from the reference: a tiny monospace label in brackets.
    Cheap to apply, and it does most of the work of making an interface look
    deliberate rather than generic. */
-/* The editorial voice: big, light, serif. One per screen at most. */
+/* The headline voice: large, monospace, wide. One per screen at most. */
 @utility display {
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.02;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
 @utility micro {
@@ -145,7 +162,7 @@
 /* A word marked with the accent, the way the reference highlights one word in
    a headline. */
 @utility marker {
-  @apply bg-[color:var(--color-highlight)] px-1 text-ink dark:text-ink;
+  @apply bg-[color:var(--color-accent)] px-1 text-white;
   box-decoration-break: clone;
 }
 

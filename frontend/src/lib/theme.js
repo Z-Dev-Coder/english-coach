@@ -14,9 +14,11 @@ export function prefersDark() {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
+// Dark is this app's default presentation, not merely the OS preference.
+// Someone who wants light can still choose it, and that choice sticks.
 export function isDark() {
   const stored = storedTheme();
-  return stored ? stored === "dark" : prefersDark();
+  return stored ? stored === "dark" : true;
 }
 
 export function applyTheme(dark) {

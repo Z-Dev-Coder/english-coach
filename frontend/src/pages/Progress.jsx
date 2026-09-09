@@ -265,7 +265,7 @@ export default function Progress() {
                 "rounded-full px-3 py-1.5 text-sm transition",
                 filter === value
                   ? "bg-ink text-white"
-                  : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3",
+                  : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05]",
               )}
             >
               {value || "all"}

@@ -87,10 +87,10 @@ export default function TodayLesson({ lesson, onChange }) {
       {next && (
         <Link
           to={activityHref(next)}
-          className="flex items-center justify-between gap-3 rounded-xl bg-ink px-4 py-3.5 text-white transition hover:opacity-90 dark:bg-white dark:text-ink"
+          className="flex items-center justify-between gap-3 rounded-xl bg-ink px-4 py-3.5 text-white transition hover:opacity-90 dark:bg-white dark:text-black"
         >
           <span className="min-w-0">
-            <span className="micro block text-white/50 dark:text-ink/50">Do this next</span>
+            <span className="micro block text-white/50 dark:text-black/50">Do this next</span>
             <span className="block truncate font-semibold">{next.title}</span>
           </span>
           <span className="flex shrink-0 items-center gap-2 text-sm font-semibold">
@@ -154,7 +154,7 @@ export default function TodayLesson({ lesson, onChange }) {
               </div>
 
               {activity.prompt && !activity.is_complete && (
-                <p className="mt-3 rounded-xl bg-sunken p-3 text-sm italic text-ink-2 dark:bg-white/[0.04] dark:text-ink-3">
+                <p className="mt-3 rounded-xl bg-sunken p-3 text-sm italic text-ink-2 dark:bg-white/[0.04]">
                   {activity.prompt}
                 </p>
               )}
@@ -172,14 +172,14 @@ export default function TodayLesson({ lesson, onChange }) {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Link
                     to={activityHref(activity)}
-                    className="rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 dark:bg-white dark:text-ink"
+                    className="rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 dark:bg-white dark:text-black"
                   >
                     Start →
                   </Link>
                   <button
                     onClick={() => complete(activity.id)}
                     disabled={busy === activity.id}
-                    className="text-xs text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline dark:hover:text-ink-3"
+                    className="text-xs text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline dark:hover:text-black-3"
                   >
                     mark done
                   </button>

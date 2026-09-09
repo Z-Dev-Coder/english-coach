@@ -11,7 +11,7 @@ import { Pill } from "../lib/ui";
 const OP_STYLES = {
   correct: "text-ink dark:text-white/85",
   wrong:
-    "rounded bg-[color:var(--color-highlight)]/45 px-1 text-ink dark:text-ink",
+    "rounded bg-[color:var(--color-highlight)]/45 px-1 text-ink dark:text-black",
   missing:
     "rounded bg-[color:var(--color-bad-bg)] px-1 text-[color:var(--color-accent)] line-through",
   extra: "rounded bg-sunken px-1 text-ink-3 line-through dark:bg-white/[0.06]",

@@ -43,26 +43,26 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
   const goalPct = goal > 0 ? Math.min(100, (sessions / goal) * 100) : 0;
 
   return (
-    <section className="animate-rise overflow-hidden rounded-2xl bg-ink p-6 text-white sm:p-7 dark:bg-white/[0.05]">
+    <section className="animate-rise overflow-hidden rounded-2xl bg-sunken p-6 ring-1 ring-[color:var(--color-line)] sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
-          <p className="micro text-white/50">
+          <p className="micro">
             {greeting()}, {learner.username}
           </p>
           <h1 className="display mt-3 text-[34px] sm:text-[44px]">
             {focus ? (
               <>
                 Today's focus is{" "}
-                <em className="whitespace-nowrap italic text-[color:var(--color-highlight)]">{focus}</em>
+                <span className="whitespace-nowrap text-[color:var(--color-accent)]">{focus}</span>
               </>
             ) : (
               "Let's find your starting point"
             )}
           </h1>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Pill className="text-white/70 ring-white/25">Now {learner.overall_level}</Pill>
-            <Pill className="text-white/70 ring-white/25">Goal {learner.target_level}</Pill>
-            <Pill className="text-white/70 ring-white/25">{learner.daily_minutes} min a day</Pill>
+            <Pill>Now {learner.overall_level}</Pill>
+            <Pill>Goal {learner.target_level}</Pill>
+            <Pill>{learner.daily_minutes} min a day</Pill>
           </div>
         </div>
 
@@ -70,23 +70,23 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
           <div className="text-center">
             <ProgressRing value={goalPct} size={78} tone="brand">
               <span className="text-xl font-bold tabular-nums">{streak}</span>
-              <span className="micro text-white/40">day{streak === 1 ? "" : "s"}</span>
+              <span className="micro">day{streak === 1 ? "" : "s"}</span>
             </ProgressRing>
-            <p className="micro mt-2 text-white/40">Streak</p>
+            <p className="micro mt-2">Streak</p>
           </div>
-          <dl className="space-y-3 text-white">
+          <dl className="space-y-3">
             <div>
-              <dt className="micro text-white/40">This week</dt>
+              <dt className="micro">This week</dt>
               <dd className="text-xl font-bold tabular-nums">
                 {weeklyMinutes}
-                <span className="ml-1 text-xs font-medium text-white/60">min</span>
+                <span className="ml-1 text-xs font-medium text-ink-3">min</span>
               </dd>
             </div>
             <div>
-              <dt className="micro text-white/40">Sessions</dt>
+              <dt className="micro">Sessions</dt>
               <dd className="text-xl font-bold tabular-nums">
                 {sessions}
-                <span className="text-white/60"> / {goal}</span>
+                <span className="text-ink-3"> / {goal}</span>
               </dd>
             </div>
           </dl>

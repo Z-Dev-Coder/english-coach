@@ -31,7 +31,7 @@ const NAV = [
 function Brand() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-ink">
+      <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-black">
         EC
       </span>
       <span className="text-[14px] font-semibold tracking-tight">English Coach</span>
@@ -45,7 +45,7 @@ function ThemeToggle({ dark, onToggle }) {
       onClick={onToggle}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
-      className="grid h-9 w-9 place-items-center rounded-xl text-ink-2 transition hover:bg-sunken dark:text-ink-3 dark:hover:bg-white/[0.06]"
+      className="grid h-9 w-9 place-items-center rounded-xl text-ink-2 transition hover:bg-sunken"
     >
       <Icon name={dark ? "sun" : "moon"} size={16} />
     </button>
@@ -63,7 +63,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
     cx(
       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition duration-150",
       isActive
-        ? "bg-ink text-white dark:bg-white dark:text-ink"
+        ? "bg-ink text-white dark:bg-white dark:text-black"
         : "text-ink-2 hover:bg-sunken dark:text-white/60 dark:hover:bg-white/[0.06]",
     );
 
@@ -99,7 +99,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
 
         <button
           onClick={onSignOut}
-          className="mt-auto rounded-xl px-3 py-2.5 text-left text-sm text-ink-3 transition hover:bg-sunken hover:text-ink-2 dark:hover:bg-white/[0.06] dark:hover:text-ink-3"
+          className="mt-auto rounded-xl px-3 py-2.5 text-left text-sm text-ink-3 transition hover:bg-sunken hover:text-ink-2 dark:hover:bg-white/[0.06] dark:hover:text-black-3"
         >
           Sign out
         </button>
@@ -112,7 +112,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
           <ThemeToggle dark={dark} onToggle={onToggleTheme} />
           <button
             onClick={onSignOut}
-            className="rounded-xl px-3 py-2 text-sm text-ink-3 transition hover:text-ink-2 dark:hover:text-ink-3"
+            className="rounded-xl px-3 py-2 text-sm text-ink-3 transition hover:text-ink-2 dark:hover:text-black-3"
           >
             Sign out
           </button>

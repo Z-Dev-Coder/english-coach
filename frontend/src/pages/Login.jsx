@@ -63,7 +63,7 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
 
           <h1 className="display text-[46px]">
             Real English, turned into your{" "}
-            <em className="italic text-[color:var(--color-highlight)]">daily plan</em>.
+            <span className="text-[color:var(--color-accent)]">daily plan</span>.
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-white/55">
             Not flashcards. A coach that measures what you struggle with and decides what you
@@ -89,7 +89,7 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-8 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-2.5">
-              <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-ink">
+              <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-black">
                 EC
               </span>
               <span className="font-semibold tracking-tight">English Coach</span>

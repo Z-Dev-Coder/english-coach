@@ -47,7 +47,7 @@ export function SectionHeading({ title, action, id }) {
 // leaves the accent colour free to actually mean something.
 const BUTTON_VARIANTS = {
   primary:
-    "bg-ink text-white hover:opacity-90 disabled:opacity-25 dark:bg-white dark:text-ink",
+    "bg-ink text-white hover:opacity-90 disabled:opacity-25 dark:bg-white dark:text-black",
   secondary:
     "bg-surface text-ink ring-1 ring-[color:var(--color-line)] hover:bg-sunken dark:bg-white/[0.06] dark:text-white/90 dark:ring-white/10",
   ghost: "text-ink-2 hover:bg-sunken dark:text-white/70 dark:hover:bg-white/[0.06]",
@@ -132,7 +132,7 @@ export function Chip({ active, children, ...props }) {
       className={cx(
         "rounded-full px-3.5 py-1.5 text-sm font-medium transition duration-150 active:scale-95",
         active
-          ? "bg-ink text-white dark:bg-white dark:text-ink"
+          ? "bg-ink text-white dark:bg-white dark:text-black"
           : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.06] dark:text-white/60",
       )}
       {...props}
