@@ -100,6 +100,10 @@ class OpenAICompatibleProvider(AIProvider):
                 ) from exc
             raise AIUnavailable(f"{self.name} request failed ({status}): {detail}") from exc
 
+    def extra_payload(self) -> dict:
+        """Provider-specific request keys. Empty for the generic case."""
+        return {}
+
     def _complete(self, messages: list[dict], *, tier: str, temperature: float,
                   json_mode: bool = False, max_tokens: int | None = None) -> AIResult:
         model = self.model_for(tier)
@@ -108,6 +112,7 @@ class OpenAICompatibleProvider(AIProvider):
             "messages": messages,
             "temperature": temperature,
             "stream": False,
+            **self.extra_payload(),
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
@@ -193,11 +198,35 @@ class DeepSeekProvider(OpenAICompatibleProvider):
     name = "deepseek"
     base_url = "https://api.deepseek.com"
     api_key_setting = "DEEPSEEK_API_KEY"
+
+    # Flash on every tier, from measurement rather than assumption. Asked to
+    # correct the same flawed paragraph, Flash and Pro returned the identical
+    # five issues with the same corrections; Flash took 21s against Pro's 43s
+    # and costs a third as much per token. Pro is a better model, but not at
+    # anything this app asks for. Point the large tier at deepseek-v4-pro in
+    # .env if that stops being true.
     default_models = {
         "small": "deepseek-v4-flash",
         "medium": "deepseek-v4-flash",
-        "large": "deepseek-v4-pro",
+        "large": "deepseek-v4-flash",
     }
+
+    def extra_payload(self) -> dict:
+        """Turn off chain-of-thought unless it is explicitly wanted.
+
+        Reasoning tokens are billed as output, and for this app's work they are
+        pure waste: the same writing correction came back with 3,441 output
+        tokens with thinking on and 446 with it off -- identical five issues,
+        six times the price, and seven times slower.
+
+        Every AI task here is structured extraction or correction against a
+        schema, which is not the kind of problem chain-of-thought helps with.
+        Set DEEPSEEK_THINKING=enabled in .env to turn it back on.
+        """
+        from django.conf import settings
+
+        mode = settings.AI.get("DEEPSEEK_THINKING", "disabled")
+        return {"thinking": {"type": "enabled" if mode == "enabled" else "disabled"}}
 
 
 class OpenAIProvider(OpenAICompatibleProvider):

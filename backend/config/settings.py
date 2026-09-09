@@ -151,6 +151,9 @@ AI = {
     # app runs exactly as before on local models.
     "REMOTE_TIMEOUT": int(os.getenv("AI_REMOTE_TIMEOUT", "90")),
     "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY", ""),
+    # Chain-of-thought is billed as output and measurably does not help this
+    # app's structured tasks. "enabled" turns it back on.
+    "DEEPSEEK_THINKING": os.getenv("DEEPSEEK_THINKING", "disabled"),
     "DEEPSEEK_MODELS": {
         "small": os.getenv("DEEPSEEK_MODEL_SMALL", ""),
         "medium": os.getenv("DEEPSEEK_MODEL_MEDIUM", ""),

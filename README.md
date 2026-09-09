@@ -98,40 +98,37 @@ AI_PROVIDER=deepseek
 Restart. Nothing else changes: no business logic knows which provider is in use.
 `openai` is registered the same way, and switching back is one line.
 
-**Cost.** Measured from this app's real prompt sizes, not estimated. A heavy
-day — a lesson, 3 articles, 2 writing submissions, a 10-turn conversation with
-review, plus vocabulary lookups — is about 9k input / 7k output tokens.
+**Cost.** Measured, not estimated. One realistic study day — a lesson, 2
+articles prepared, 2 writing submissions, a conversation with review, and a
+dialogue studied — is 9 API calls, about 2.6k input and 2.2k output tokens:
 
-| Strategy | Off-peak | Peak |
+| | Off-peak | Peak |
 |---|---|---|
-| everything on `v4-flash` | $0.20 / mo | $0.40 / mo |
-| **mixed (default): flash, `v4-pro` for feedback** | **$0.29 / mo** | $0.58 / mo |
-| everything on `v4-pro` | $0.60 / mo | $1.20 / mo |
+| per day | $0.0020 | $0.0040 |
+| per month | $0.06 | $0.12 |
+| **per year** | **$0.75** | $1.49 |
 
-The default is the mixed strategy. Writing feedback and conversation review run
-on the large tier because the mistake bank keys on the exact wrong/right pair,
-so vagueness there produces unusable entries. Everything else runs on Flash,
-where it makes no perceptible difference.
+Two things make it this cheap, both from measurement rather than assumption:
+
+- **Chain-of-thought is off.** Reasoning tokens are billed as output and do not
+  help here. The same writing correction returned 3,441 output tokens with
+  thinking on and 446 with it off — identical five issues, six times the price,
+  seven times slower. Set `DEEPSEEK_THINKING=enabled` to restore it.
+- **`deepseek-v4-flash` on every tier.** Asked to correct the same flawed
+  paragraph, Flash and Pro returned the identical five issues; Flash took 21s
+  against Pro's 43s at a third of the price. Point the large tier at
+  `deepseek-v4-pro` in `.env` if that changes.
 
 Peak hours are 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday; everything
-else is charged at half rate. Rates from
+else is half rate. Rates from
 <https://api-docs.deepseek.com/quick_start/pricing/> (September 2026).
 
-**Don't trust that table — measure it.** Every provider call logs its real token
-counts, including local ones, so you can know your own rate before paying
-anything:
+**Check your own numbers rather than trusting these.** Every provider call logs
+its real token counts, local ones included:
 
 ```bash
 cd backend && ../.venv/Scripts/python manage.py ai_costs --days 7
 ```
-
-It prices what actually happened and shows what the same work would have cost on
-each hosted model. Use the app normally for a week first; a couple of calls
-extrapolate to nonsense.
-
-Model defaults, verified September 2026: `deepseek-v4-flash` for small and
-medium, `deepseek-v4-pro` for large. The older `deepseek-chat` /
-`deepseek-reasoner` aliases were retired on 2026-07-24 and no longer route.
 
 ### Optional: PostgreSQL
 
