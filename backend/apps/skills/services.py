@@ -221,7 +221,7 @@ def evaluate_writing(user, *, text: str, task: str = "", level: str = "", durati
     except AIError as exc:
         detail["ai_unavailable"] = str(exc)
 
-    return record(
+    attempt = record(
         user,
         activity=ActivityType.WRITING,
         prompt=task,
@@ -230,6 +230,19 @@ def evaluate_writing(user, *, text: str, task: str = "", level: str = "", durati
         detail=detail,
         duration_ms=duration_ms,
     )
+
+    # Every correction the system produces goes through the mistake bank, so
+    # one-off notes accumulate into a picture of what this learner keeps
+    # getting wrong. Imported here to keep skills independent of mistakes.
+    from apps.mistakes.services import record_from_feedback
+
+    record_from_feedback(
+        user,
+        detail.get("issues", []),
+        origin="writing",
+        context=text[:500],
+    )
+    return attempt
 
 
 # --- Reading ---------------------------------------------------------------

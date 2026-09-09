@@ -76,23 +76,37 @@ tests pass.
 - Speaking and fluency credited by how much was actually said
 - **346 backend tests, all green**
 
-## Phase 5 — Real-world English
+## Phase 5 — Real-world English ✅ COMPLETE
 
-- `ContentSource`, `Article`, idempotent RSS ingestion (metadata + adapted
-  material + link to source, never full copyrighted text)
-- "Today in English": several current topics, each with reading, vocabulary,
-  listening, questions, speaking and writing
-- Movie/TV module for legally available and user-provided material
-- **Done when:** re-ingesting the same feed creates zero duplicates
+**Goal:** current, real English, legally.
 
-## Phase 6 — Adaptive engine
+- `ContentSource` and `Article`, with stdlib RSS/Atom parsing (no new dependency)
+- **Ingestion is idempotent by database constraint**, not by checking first:
+  unique on (source, guid) and on url, so re-running creates zero duplicates
+  and syndicated stories cannot appear twice
+- **Copyright is the design constraint**: only metadata, the publisher's own
+  syndication summary, and material *we* write are stored. The full article is
+  never fetched, and every card links to the original
+- "Today in English" biases toward the learner's interests without walling off
+  everything else
+- Movies & TV: the learner pastes short excerpts they are watching, and gets the
+  spoken English explained — no scraping or redistributing subtitles
+- External text is fenced as untrusted before it reaches any model
 
-- `Mistake` / `MistakeOccurrence` bank across all skills
-- Repeated mistakes automatically resurface in lessons and reviews
-- Natural-English engine: detect understandable-but-unnatural learner English
-- Grammar weakness detection from writing and speaking
-- Personalisation scoring documented and tested
-- **Done when:** a mistake made twice provably changes tomorrow's lesson
+## Phase 6 — Adaptive engine ✅ COMPLETE
+
+**Goal:** the same mistake stops slipping past.
+
+- `Mistake` / `MistakeOccurrence`, keyed on the corrected pair so the same error
+  counts as one however it was surfaced
+- Fed automatically by writing feedback and conversation review through a single
+  entry point
+- Noise filtering: punctuation-only and case-only "corrections" are discarded,
+  and reported categories are normalised so the bank does not fragment
+- Repeats reach the lesson generator verbatim, and turn into practice tasks
+- Status ages from active → improving → resolved, and any repeat reactivates it
+- Progress screen leads with what changed rather than hours spent
+- **410 backend tests, all green**
 
 ## Later, if wanted
 

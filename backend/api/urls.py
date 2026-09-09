@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import lesson_views, review_views, skills_views, views
+from . import content_views, lesson_views, review_views, skills_views, views
 
 router = DefaultRouter()
 router.register("sessions", views.StudySessionViewSet, basename="session")
@@ -12,6 +12,8 @@ router.register("vocabulary", review_views.VocabularyViewSet, basename="vocabula
 router.register("skills/passages", skills_views.PassageViewSet, basename="passage")
 router.register("lessons", lesson_views.LessonViewSet, basename="lesson")
 router.register("conversations", lesson_views.ConversationViewSet, basename="conversation")
+router.register("articles", content_views.ArticleViewSet, basename="article")
+router.register("mistakes", content_views.MistakeViewSet, basename="mistake")
 
 urlpatterns = [
     path("auth/register/", views.RegisterView.as_view(), name="register"),
@@ -36,6 +38,8 @@ urlpatterns = [
     path("skills/drill/", skills_views.DrillView.as_view(), name="drill"),
     path("skills/attempts/", skills_views.AttemptListView.as_view(), name="attempts"),
     path("skills/summary/", skills_views.SkillSummaryView.as_view(), name="skill-summary"),
+    path("content/ingest/", content_views.IngestView.as_view(), name="ingest"),
+    path("content/dialogue/", content_views.DialogueStudyView.as_view(), name="dialogue"),
     path("ai/status/", views.ai_status, name="ai-status"),
     path("meta/", views.meta, name="meta"),
     path("", include(router.urls)),

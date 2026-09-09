@@ -81,18 +81,42 @@ class LearnerContextTests(TestCase):
             record_practice(self.user, "listening", -40)
         self.assertIn("listening", services.learner_context(self.user)["weak_skills"])
 
-    def test_recent_writing_mistakes_are_surfaced(self):
-        from apps.skills.models import SkillAttempt
+    def test_recent_mistake_categories_come_from_the_bank(self):
+        """The context reads the mistake bank, which counts repeats across every
+        activity, rather than scraping the last few attempts."""
+        from apps.mistakes.services import record
 
-        SkillAttempt.objects.create(
-            user=self.user,
-            activity="writing",
-            skill="writing",
-            detail={"issues": [{"category": "preposition"}, {"category": "article"}]},
+        record(
+            self.user,
+            incorrect="I discussed about the problem",
+            correct="I discussed the problem",
+            category="preposition",
+        )
+        record(
+            self.user,
+            incorrect="I went to the shop on Monday",
+            correct="I went to a shop on Monday",
+            category="article",
         )
         context = services.learner_context(self.user)
         self.assertIn("preposition", context["recent_mistakes"])
         self.assertIn("article", context["recent_mistakes"])
+
+    def test_repeated_mistakes_are_passed_through_verbatim(self):
+        """The generator gets the actual wrong/right pair, not just a category,
+        so a lesson can target the specific habit."""
+        from apps.mistakes.services import record
+
+        for _ in range(2):
+            record(
+                self.user,
+                incorrect="I very like this",
+                correct="I really like this",
+                category="word_choice",
+            )
+        repeated = services.learner_context(self.user)["repeated_mistakes"]
+        self.assertEqual(repeated[0]["incorrect"], "I very like this")
+        self.assertEqual(repeated[0]["times"], 2)
 
 
 class TemplateLessonTests(TestCase):

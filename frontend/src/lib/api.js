@@ -133,6 +133,35 @@ export const api = {
     request(`/conversations/${id}/say/`, { method: "POST", body }),
   endConversation: (id) => request(`/conversations/${id}/end/`, { method: "POST" }),
   conversations: () => request("/conversations/"),
+
+  // --- Real-world content ---
+  todayArticles: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/articles/today/${query ? `?${query}` : ""}`);
+  },
+  articles: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/articles/${query ? `?${query}` : ""}`);
+  },
+  prepareArticle: (id, body = {}) =>
+    request(`/articles/${id}/prepare/`, { method: "POST", body }),
+  ingestContent: (body = {}) => request("/content/ingest/", { method: "POST", body }),
+  studyDialogue: (body) => request("/content/dialogue/", { method: "POST", body }),
+
+  // --- Mistake bank ---
+  mistakes: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/mistakes/${query ? `?${query}` : ""}`);
+  },
+  mistakeSummary: () => request("/mistakes/summary/"),
+  mistakePractice: () => request("/mistakes/practice/"),
+  mistakeAvoided: (id) => request(`/mistakes/${id}/avoided/`, { method: "POST" }),
   scripts: () => request("/practice/speaking-scripts/"),
   generateScript: (data) =>
     request("/practice/speaking-scripts/generate/", { method: "POST", body: data }),

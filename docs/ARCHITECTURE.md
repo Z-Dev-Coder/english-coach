@@ -240,7 +240,52 @@ conversation can start with no model running; and the learner's turn is saved
 *before* the model is called, so their words are never lost because a reply
 failed.
 
-## 16. Frontend
+## 16. Content: copyright is the design constraint
+
+We never fetch or store the body of a copyrighted article. What is kept is
+metadata, the publisher's own RSS syndication summary (capped), and learning
+material written by our own model *about* the story. Every card links to the
+original. That is the difference between a study aid and a scraper.
+
+`prepare()` refuses to generate material from a summary under 120 characters:
+with nothing to retell, the model would have to invent the story, and inventing
+facts about current events is worse than showing nothing.
+
+**Idempotency comes from database constraints**, not from checking first — a
+get-or-create check can still be raced, and the constraint is the only thing
+that genuinely cannot be. `url` is unique across the whole table as well as
+(source, guid), so a story syndicated to two feeds appears once.
+
+RSS parsing uses `xml.etree` rather than feedparser: the fields we need are few,
+and it keeps the dependency list short. `parse_feed()` is the single seam to
+swap behind if real feeds prove too messy.
+
+## 17. The mistake bank
+
+Mistakes are keyed on the **corrected pair**, normalised — "discussed about" →
+"discussed" is one mistake however many times it appears and whichever activity
+found it. Keying on a description instead would make counting meaningless, and
+counting is the entire point: it is what separates a habit from a slip.
+
+Two filters keep the bank usable:
+
+- **Noise.** Corrections that differ only in punctuation or case are discarded.
+  Small local models generate a great deal of comma advice, and recording it
+  would bury the genuine repeated errors.
+- **Category drift.** Models report "verb_tense", "tense", "agreement" for the
+  same thing. `normalize_category()` folds these together, or the bank
+  fragments into buckets that never accumulate enough evidence to act on.
+
+Status ages from active → improving → resolved on silence, but only ever
+downwards: silence is weak evidence of improvement, and a single repeat makes a
+mistake active again immediately.
+
+Everything that produces a correction — writing feedback, conversation review —
+funnels through `record()`. That single entry point is what turns scattered
+one-off notes into a picture of what this learner actually keeps getting wrong,
+and it feeds straight back into `learner_context()`.
+
+## 18. Frontend
 
 Vite + React 19 + Tailwind 4, with a dev proxy so the frontend is
 origin-relative (no CORS surprises, and the same build works behind one domain

@@ -115,10 +115,23 @@ class DashboardView(APIView):
     """
 
     def get(self, request):
+        from apps.mistakes.services import persistent, refresh_statuses
         from apps.review.services import stats as review_stats
 
         payload = dashboard_payload(request.user)
         payload["review"] = review_stats(request.user)
+
+        refresh_statuses(request.user)
+        payload["mistakes"] = [
+            {
+                "id": mistake.id,
+                "category": mistake.category,
+                "incorrect": mistake.incorrect,
+                "correct": mistake.correct,
+                "occurrences": mistake.occurrences,
+            }
+            for mistake in persistent(request.user, limit=3)
+        ]
         return Response(payload)
 
 

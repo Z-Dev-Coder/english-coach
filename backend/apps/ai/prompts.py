@@ -323,3 +323,118 @@ Return JSON:
 - useful_expressions: up to 4 expressions that would have fitted this conversation
 - focus_next_time: one specific thing to work on
 """
+
+
+# --- Real-world content ----------------------------------------------------
+ARTICLE_MATERIAL_SCHEMA = {
+    "type": "object",
+    "required": ["adapted_text", "vocabulary", "questions"],
+    "properties": {
+        "adapted_text": {"type": "string"},
+        "level": {"type": "string"},
+        "vocabulary": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["expression", "meaning"],
+                "properties": {
+                    "expression": {"type": "string"},
+                    "meaning": {"type": "string"},
+                    "example": {"type": "string"},
+                    "kind": {"type": "string"},
+                },
+            },
+        },
+        "phrases": {"type": "array", "items": {"type": "string"}},
+        "questions": {"type": "array", "items": {"type": "string"}},
+        "speaking_prompt": {"type": "string"},
+        "writing_prompt": {"type": "string"},
+    },
+}
+
+
+def article_material(title: str, summary: str, *, level: str = "B1") -> str:
+    """Turn a news summary into learning material.
+
+    The adapted text must be *written*, not copied: we are producing a study aid
+    about a story, not redistributing someone's article. The prompt says so
+    explicitly, and the source summary is fenced as untrusted content.
+    """
+    return f"""Create English learning material about this news story for a CEFR {level} learner.
+
+HEADLINE: {title}
+
+{wrap_untrusted(summary)}
+
+Write your OWN short retelling of the story in your own words. Do not copy
+sentences from the source. If the summary is too thin to retell, write about the
+topic generally rather than inventing specific facts, figures or quotations.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- adapted_text: your retelling, 4-6 sentences at {level} level
+- level: the CEFR level you actually wrote at
+- vocabulary: 4-6 useful expressions from this topic, each with expression,
+  meaning, example (your own sentence) and kind (word, phrase, idiom,
+  phrasal_verb, collocation)
+- phrases: 2-3 natural phrases someone would use when discussing this topic
+- questions: 3 comprehension questions about your retelling
+- speaking_prompt: one question inviting the learner's own opinion
+- writing_prompt: one short writing task connected to the topic
+"""
+
+
+# --- Dialogue study (movies, TV, real conversations) -----------------------
+DIALOGUE_SCHEMA = {
+    "type": "object",
+    "required": ["expressions"],
+    "properties": {
+        "summary": {"type": "string"},
+        "register": {"type": "string"},
+        "expressions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["expression", "meaning"],
+                "properties": {
+                    "expression": {"type": "string"},
+                    "meaning": {"type": "string"},
+                    "register": {"type": "string"},
+                    "literal_trap": {"type": "string"},
+                    "example": {"type": "string"},
+                    "alternatives": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+        },
+        "roleplay_prompt": {"type": "string"},
+    },
+}
+
+
+def dialogue_study(text: str, *, level: str = "B1") -> str:
+    """Mine a short dialogue excerpt for natural spoken English.
+
+    Aimed at exactly what makes film and TV dialogue hard: expressions whose
+    meaning is nothing like the sum of their words.
+    """
+    return f"""A CEFR {level} learner is studying this short piece of English dialogue,
+from a film, show or real conversation they came across.
+
+{wrap_untrusted(text)}
+
+Focus on the spoken English that a learner would not produce themselves:
+idioms, phrasal verbs, fixed expressions, and anything whose meaning is not
+obvious from the individual words.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- summary: one sentence on what is happening and the tone
+- register: the overall register (casual, slang, professional, neutral, formal)
+- expressions: 3-6 items, each with expression, meaning, register,
+  literal_trap (what a learner might wrongly think it means, or an empty
+  string), example (your own sentence) and alternatives (up to 2 other ways to
+  say it)
+- roleplay_prompt: a short scenario where the learner could use these naturally
+"""

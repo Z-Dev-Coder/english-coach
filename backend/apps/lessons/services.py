@@ -76,8 +76,8 @@ def learner_context(user, minutes: int | None = None) -> dict:
     interests, time available — and it is built from facts in the database
     rather than anything the model is asked to remember.
     """
+    from apps.mistakes.services import persistent, weak_categories
     from apps.review.services import due_count
-    from apps.skills.models import SkillAttempt
 
     profile = LearnerProfile.objects.get(user=user)
     plan = build_daily_plan(user, minutes=minutes)
@@ -85,14 +85,13 @@ def learner_context(user, minutes: int | None = None) -> dict:
     skills = list(user.skill_progress.all())
     weak = [sp.skill for sp in sorted(skills, key=lambda sp: sp.score) if sp.is_weak][:3]
 
-    # Recent mistake categories, taken from AI writing feedback that has already
-    # been stored. Phase 6 replaces this with the dedicated mistake bank.
-    recent_mistakes: list[str] = []
-    for attempt in SkillAttempt.objects.filter(user=user, activity="writing")[:5]:
-        for issue in (attempt.detail or {}).get("issues", []):
-            category = issue.get("category")
-            if category and category not in recent_mistakes:
-                recent_mistakes.append(category)
+    # Mistake categories come from the bank, which counts repeats across every
+    # activity rather than looking at the last few attempts.
+    recent_mistakes = weak_categories(user)
+    repeated = [
+        {"incorrect": m.incorrect, "correct": m.correct, "times": m.occurrences}
+        for m in persistent(user, limit=3)
+    ]
 
     return {
         "overall_level": profile.overall_level,
@@ -100,6 +99,7 @@ def learner_context(user, minutes: int | None = None) -> dict:
         "interests": list(profile.interests or []),
         "weak_skills": weak,
         "recent_mistakes": recent_mistakes[:5],
+        "repeated_mistakes": repeated,
         "due_count": due_count(user),
         "total_minutes": sum(block.minutes for block in plan),
         "plan": [{"skill": block.skill, "minutes": block.minutes} for block in plan],

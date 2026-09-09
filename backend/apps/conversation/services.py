@@ -150,6 +150,15 @@ def generate_feedback(session: ConversationSession) -> dict:
 
     session.feedback = feedback
     session.save(update_fields=["feedback"])
+
+    from apps.mistakes.services import record_from_feedback
+
+    record_from_feedback(
+        session.user,
+        feedback.get("corrections", []),
+        origin="conversation",
+        context=" ".join(turns)[:500],
+    )
     return feedback
 
 

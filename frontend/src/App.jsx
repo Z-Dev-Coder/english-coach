@@ -9,25 +9,21 @@ import Login from "./pages/Login";
 import Conversation from "./pages/Conversation";
 import Practice from "./pages/Practice";
 import Profile from "./pages/Profile";
+import Progress from "./pages/Progress";
+import RealWorld from "./pages/RealWorld";
 import Review from "./pages/Review";
 import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
 
-// Real World and Progress stay as disabled entries so the information
-// architecture is visible from the start and later phases slot in without a
-// navigation redesign.
 const NAV = [
   { to: "/", label: "Home", icon: "🏠" },
   { to: "/review", label: "Review", icon: "🔁" },
   { to: "/practice", label: "Practice", icon: "🎧" },
+  { to: "/real-world", label: "Real World", icon: "🌍" },
   { to: "/conversation", label: "Talk", icon: "💬" },
   { to: "/speaking", label: "Speaking", icon: "🗣️" },
+  { to: "/progress", label: "Progress", icon: "📈" },
   { to: "/profile", label: "Profile", icon: "👤" },
-];
-
-const COMING_SOON = [
-  { label: "Real World", icon: "🌍" },
-  { label: "Progress", icon: "📈" },
 ];
 
 function Brand() {
@@ -93,21 +89,6 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
             </NavLink>
           ))}
 
-          <p className="mt-6 mb-1 pl-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Coming soon
-          </p>
-          {COMING_SOON.map((item) => (
-            <span
-              key={item.label}
-              title="Arrives in a later phase"
-              className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 dark:text-slate-700"
-            >
-              <span aria-hidden="true" className="text-base">
-                {item.icon}
-              </span>
-              {item.label}
-            </span>
-          ))}
         </nav>
 
         <button
@@ -139,14 +120,18 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-slate-200/70 bg-white/90 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden dark:border-white/10 dark:bg-slate-900/90"
       >
-        {NAV.map((item) => (
-          <NavLink key={item.to} to={item.to} className={tabLink} end={item.to === "/"}>
-            <span aria-hidden="true" className="text-lg">
-              {item.icon}
-            </span>
-            {item.label}
-          </NavLink>
-        ))}
+        {/* Five tabs is the practical maximum on a phone; the rest stay
+            reachable from the desktop rail and by URL. */}
+        {NAV.filter((item) => item.to !== "/speaking" && item.to !== "/profile")
+          .slice(0, 5)
+          .map((item) => (
+            <NavLink key={item.to} to={item.to} className={tabLink} end={item.to === "/"}>
+              <span aria-hidden="true" className="text-lg">
+                {item.icon}
+              </span>
+              {item.label}
+            </NavLink>
+          ))}
       </nav>
     </div>
   );
@@ -232,6 +217,8 @@ export default function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/drill" element={<Drill />} />
+          <Route path="/real-world" element={<RealWorld />} />
+          <Route path="/progress" element={<Progress />} />
           <Route path="/conversation" element={<Conversation />} />
           <Route path="/speaking" element={<SpeakingStudio />} />
           <Route path="/profile" element={<Profile />} />
