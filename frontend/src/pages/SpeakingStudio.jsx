@@ -1,13 +1,25 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
-import { Button, Card, EmptyState, ErrorNote, Pill } from "../lib/ui";
+import { cx } from "../lib/cx";
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorNote,
+  Field,
+  Input,
+  Pill,
+  SectionHeading,
+  Select,
+  Switch,
+} from "../lib/ui";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
-/** Where the learner can take the generated prompt. Deep links pre-open the
- *  assistant; the prompt itself still has to be pasted, because none of these
- *  accept prefilled text reliably via URL. */
+/** Where the learner can take the generated prompt. These open the assistant;
+ *  the prompt still has to be pasted, since none of them accept prefilled text
+ *  reliably through a URL. */
 const ASSISTANTS = [
   { name: "ChatGPT", url: "https://chat.openai.com/" },
   { name: "Gemini", url: "https://gemini.google.com/app" },
@@ -21,7 +33,7 @@ function CopyButton({ text }) {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // Clipboard API needs a secure context; fall back to a manual selection.
+      // The clipboard API needs a secure context; fall back to a hidden field.
       const area = document.createElement("textarea");
       area.value = text;
       document.body.appendChild(area);
@@ -34,42 +46,44 @@ function CopyButton({ text }) {
   };
 
   return (
-    <Button onClick={copy} aria-live="polite">
-      {copied ? "✓ Copied" : "Copy prompt"}
+    <Button onClick={copy} variant={copied ? "secondary" : "primary"}>
+      <span aria-hidden="true">{copied ? "✓" : "📋"}</span>
+      <span aria-live="polite">{copied ? "Copied" : "Copy prompt"}</span>
     </Button>
   );
 }
 
 function ScriptView({ script, onPracticed }) {
   return (
-    <div className="space-y-5">
+    <div className="animate-rise space-y-5">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-xl font-bold">{script.title}</h2>
+          <h2 className="text-xl font-bold tracking-tight">{script.title}</h2>
           <Pill tone="brand">{script.level}</Pill>
           <Pill>{script.scenario.replace(/_/g, " ")}</Pill>
           {script.source === "ai" && <Pill tone="good">AI generated</Pill>}
         </div>
-        <p className="mt-2 text-slate-600">{script.setting}</p>
+        <p className="mt-2 text-slate-600 dark:text-slate-300">{script.setting}</p>
         {script.goal && (
-          <p className="mt-1 text-sm text-slate-500">
-            <span className="font-medium text-slate-600">Your goal:</span> {script.goal}
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <span className="font-medium text-slate-600 dark:text-slate-300">Your goal:</span>{" "}
+            {script.goal}
           </p>
         )}
       </div>
 
       {script.target_expressions?.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
             Try to use these
           </h3>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {script.target_expressions.map((expression) => (
-              <li key={expression} className="flex items-start gap-2 text-slate-700">
-                <span aria-hidden="true" className="mt-0.5 text-indigo-400">
-                  ▸
+              <li key={expression} className="flex items-start gap-2.5">
+                <span aria-hidden="true" className="mt-1 text-xs text-brand-400">
+                  ●
                 </span>
-                <span>{expression}</span>
+                <span className="text-slate-700 dark:text-slate-200">{expression}</span>
               </li>
             ))}
           </ul>
@@ -78,20 +92,23 @@ function ScriptView({ script, onPracticed }) {
 
       {script.lines?.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
             How it starts
           </h3>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {script.lines.map((line, index) => (
               <div
                 key={index}
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                className={cx(
+                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                   line.speaker === "You"
-                    ? "ml-auto bg-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-700"
-                }`}
+                    ? "ml-auto rounded-br-md bg-brand-600 text-white"
+                    : "rounded-bl-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                )}
               >
-                <span className="mb-0.5 block text-xs opacity-70">{line.speaker}</span>
+                <span className="mb-0.5 block text-[11px] font-medium opacity-60">
+                  {line.speaker}
+                </span>
                 {line.text}
               </div>
             ))}
@@ -99,29 +116,35 @@ function ScriptView({ script, onPracticed }) {
         </Card>
       )}
 
-      <Card className="bg-slate-900 text-slate-100 ring-slate-900">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
+      <Card className="border-0 bg-slate-900 text-slate-100 ring-1 ring-slate-800 dark:bg-slate-900">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             <h3 className="font-semibold">Practise with any AI</h3>
-            <p className="mt-0.5 text-sm text-slate-400">
-              Copy this and paste it into ChatGPT, Gemini or Claude. It runs the whole roleplay
-              and gives you feedback when you type <code className="text-indigo-300">FEEDBACK</code>.
+            <p className="mt-1 text-sm leading-relaxed text-slate-400">
+              Paste this into ChatGPT, Gemini or Claude. It runs the whole roleplay, and gives you
+              feedback when you type{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-brand-300">
+                FEEDBACK
+              </code>
+              .
             </p>
           </div>
           <CopyButton text={script.portable_prompt} />
         </div>
-        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/40 p-4 text-xs leading-relaxed text-slate-200">
+
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/40 p-4 text-xs leading-relaxed text-slate-300 ring-1 ring-white/5">
           {script.portable_prompt}
         </pre>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400">Open:</span>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Open:</span>
           {ASSISTANTS.map((assistant) => (
             <a
               key={assistant.name}
               href={assistant.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20"
+              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
             >
               {assistant.name} ↗
             </a>
@@ -131,23 +154,28 @@ function ScriptView({ script, onPracticed }) {
 
       {script.follow_up_questions?.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Keep going
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Keep the conversation going
           </h3>
-          <ul className="list-disc space-y-1.5 pl-5 text-slate-600">
+          <ul className="space-y-2">
             {script.follow_up_questions.map((question) => (
-              <li key={question}>{question}</li>
+              <li key={question} className="flex items-start gap-2.5 text-slate-600 dark:text-slate-300">
+                <span aria-hidden="true" className="mt-0.5 text-brand-400">
+                  ?
+                </span>
+                {question}
+              </li>
             ))}
           </ul>
         </Card>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="secondary" onClick={() => onPracticed(script.id)}>
-          I practised this
+          <span aria-hidden="true">✓</span> I practised this
         </Button>
         {script.times_practiced > 0 && (
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-500 dark:text-slate-400">
             Practised {script.times_practiced}×
           </span>
         )}
@@ -196,80 +224,64 @@ export default function SpeakingStudio() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Speaking Script Studio</h1>
-        <p className="mt-1 text-slate-500">
-          Get a roleplay script pitched at your speaking level, then practise it here or with any
-          AI assistant.
+        <h1 className="text-3xl font-bold tracking-tight">
+          Speaking <span className="text-gradient">Script Studio</span>
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-slate-500 dark:text-slate-400">
+          A roleplay script pitched at your speaking level — practise it here, or take the prompt
+          to any AI assistant.
         </p>
       </header>
 
       <Card>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">Situation</span>
-            <select
-              value={scenario}
-              onChange={(event) => setScenario(event.target.value)}
-              className="w-full rounded-xl border-0 bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
-            >
+          <Field label="Situation">
+            <Select value={scenario} onChange={(event) => setScenario(event.target.value)}>
               <option value="">Surprise me</option>
               {meta?.scenarios.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.key.replace(/_/g, " ")}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
 
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">Level</span>
-            <select
-              value={level}
-              onChange={(event) => setLevel(event.target.value)}
-              className="w-full rounded-xl border-0 bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
-            >
+          <Field label="Level">
+            <Select value={level} onChange={(event) => setLevel(event.target.value)}>
               <option value="">My speaking level</option>
               {LEVELS.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
 
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Topic <span className="font-normal text-slate-400">(optional)</span>
-            </span>
-            <input
+          <Field label="Topic" hint="(optional)">
+            <Input
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
               placeholder="e.g. a delayed flight"
-              className="w-full rounded-xl border-0 bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
             />
-          </label>
+          </Field>
 
           <div className="flex items-end">
-            <Button onClick={generate} disabled={busy} className="w-full">
-              {busy ? "Writing…" : "Generate script"}
+            <Button onClick={generate} loading={busy} size="lg" className="w-full">
+              {busy ? "Writing" : "Generate script"}
             </Button>
           </div>
         </div>
 
-        <label className="mt-4 flex items-center gap-2.5 text-sm text-slate-600">
-          <input
-            type="checkbox"
+        <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/5">
+          <Switch
             checked={useAi}
-            onChange={(event) => setUseAi(event.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            onChange={setUseAi}
+            label="Use the local AI for a custom script"
+            description="Slower, and falls back to a built-in script if the model is offline."
           />
-          Use the local AI for a custom script
-          <span className="text-slate-400">
-            (slower; falls back to a built-in script if the model is offline)
-          </span>
-        </label>
+        </div>
       </Card>
 
       <ErrorNote error={error} />
@@ -278,27 +290,39 @@ export default function SpeakingStudio() {
         <ScriptView script={script} onPracticed={markPracticed} />
       ) : (
         <EmptyState
+          icon="🗣️"
           title="No script yet"
-          body="Pick a situation and generate one. Built-in scripts are instant and work with no AI at all."
+          body="Pick a situation and generate one. Built-in scripts are instant and need no AI at all."
+          action={
+            <Button onClick={generate} loading={busy}>
+              Generate my first script
+            </Button>
+          }
         />
       )}
 
       {history.length > 0 && (
         <section>
-          <h2 className="mb-3 text-lg font-semibold">Recent scripts</h2>
+          <SectionHeading title="Recent scripts" />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {history.slice(0, 6).map((item) => (
-              <button
+            {history.slice(0, 6).map((item, index) => (
+              <Card
                 key={item.id}
+                as="button"
+                interactive
                 onClick={() => setScript(item)}
-                className="rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-900/5 transition hover:shadow-md"
+                className="animate-rise text-left"
+                style={{ animationDelay: `${index * 40}ms` }}
               >
-                <p className="font-medium">{item.title}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {item.level} · {item.scenario.replace(/_/g, " ")}
-                  {item.times_practiced > 0 && ` · practised ${item.times_practiced}×`}
-                </p>
-              </button>
+                <p className="font-semibold">{item.title}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Pill tone="brand">{item.level}</Pill>
+                  <Pill>{item.scenario.replace(/_/g, " ")}</Pill>
+                  {item.times_practiced > 0 && (
+                    <Pill tone="good">practised {item.times_practiced}×</Pill>
+                  )}
+                </div>
+              </Card>
             ))}
           </div>
         </section>

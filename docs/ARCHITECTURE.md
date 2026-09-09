@@ -129,6 +129,45 @@ Navigation shows Review / Real World / Progress as disabled entries. The
 information architecture is visible from Phase 1, so later phases slot in
 without a navigation redesign.
 
+### The design system
+
+`lib/ui.jsx` holds every visual primitive: `Card`, `Button`, `Field`, `Input`,
+`Select`, `Chip`, `Switch`, `Pill`, `ProgressBar`, `ProgressRing`, `StatTile`,
+`Skeleton`, `EmptyState`, `ErrorNote`. Pages compose these and pass semantic
+props (`tone`, `size`, `variant`) rather than raw Tailwind strings.
+
+**Why:** consistency becomes structural instead of something each page has to
+remember, and a restyle is a one-file change. It also keeps page files readable
+— they describe layout and data, not colour values.
+
+Design tokens live in `index.css` under `@theme`: a single brand ramp
+(`brand-50` … `brand-900`), two shadow depths, and the Inter font stack. Every
+accent in the app draws from that one hue family, which is what makes the
+interface read as one product.
+
+### Dark mode
+
+Driven by a class on `<html>`, declared in Tailwind v4 with
+`@custom-variant dark (&:where(.dark, .dark *))`. It defaults to the OS setting
+and remembers an explicit choice in `localStorage`.
+
+An inline script in `index.html` applies the saved theme **before first paint**.
+Without it the app renders light for one frame and then flashes to dark — the
+single most noticeable polish bug in a themed app.
+
+### Motion and loading
+
+Content enters with a short staggered `rise` animation, and loading states are
+skeletons rather than a spinner, so the page keeps its shape and nothing jumps
+when data lands. All of it collapses to near-zero duration under
+`prefers-reduced-motion`, which is honoured globally rather than per component.
+
+### Mobile
+
+A fixed bottom tab bar, not a shrunken sidebar — that is where thumbs are. The
+bar respects `env(safe-area-inset-bottom)` so it clears the iPhone home
+indicator, and the Profile page's save bar sits above it rather than under it.
+
 ## What is deliberately *not* here yet
 
 FSRS scheduling, the mistake bank, RSS ingestion, embeddings and Celery. Each

@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
-import { skillLabel } from "../lib/skills";
-import { Button, Card, ErrorNote, Pill, Spinner } from "../lib/ui";
+import { skillIcon, skillLabel } from "../lib/skills";
+import {
+  Button,
+  Card,
+  CardSkeleton,
+  Chip,
+  ErrorNote,
+  Field,
+  Input,
+  Pill,
+  SectionHeading,
+  Select,
+} from "../lib/ui";
 
 const SCHEDULABLE = ["listening", "speaking", "reading", "writing", "vocabulary"];
 const TOPICS = [
@@ -23,6 +34,7 @@ function toggle(list, item) {
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -32,6 +44,7 @@ export default function Profile() {
   const patch = (changes) => setProfile((previous) => ({ ...previous, ...changes }));
 
   const save = async () => {
+    setSaving(true);
     setError(null);
     try {
       const updated = await api.updateProfile({
@@ -47,146 +60,154 @@ export default function Profile() {
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
       setError(err);
+    } finally {
+      setSaving(false);
     }
   };
 
   if (error && !profile) return <ErrorNote error={error} />;
-  if (!profile) return <Spinner label="Loading your profile" />;
-
-  const chip = (active) =>
-    `rounded-full px-3 py-1.5 text-sm transition ${
-      active
-        ? "bg-indigo-600 text-white"
-        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-    }`;
+  if (!profile) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <CardSkeleton key={index} lines={3} />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6 pb-24">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Your learning profile</h1>
-        <p className="mt-1 text-slate-500">
+        <p className="mt-1.5 text-slate-500 dark:text-slate-400">
           This is what the daily planner uses to decide what you study.
         </p>
       </header>
 
       <Card>
-        <h2 className="mb-4 text-lg font-semibold">Goals</h2>
+        <SectionHeading title="Goals" />
         <div className="grid gap-4 sm:grid-cols-3">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">Target level</span>
-            <select
+          <Field label="Target level">
+            <Select
               value={profile.target_level}
               onChange={(event) => patch({ target_level: event.target.value })}
-              className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200"
             >
               {LEVELS.map((level) => (
                 <option key={level}>{level}</option>
               ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Minutes per day
-            </span>
-            <input
+            </Select>
+          </Field>
+          <Field label="Minutes per day">
+            <Input
               type="number"
               min="5"
               max="240"
               value={profile.daily_minutes}
               onChange={(event) => patch({ daily_minutes: event.target.value })}
-              className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200"
             />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Sessions per week
-            </span>
-            <input
+          </Field>
+          <Field label="Sessions per week">
+            <Input
               type="number"
               min="1"
               max="7"
               value={profile.weekly_goal_sessions}
               onChange={(event) => patch({ weekly_goal_sessions: event.target.value })}
-              className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200"
             />
-          </label>
+          </Field>
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-semibold">Priority skills</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-500">
+        <SectionHeading title="Priority skills" />
+        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
           The planner already favours your weakest skills. Use this to push it further.
         </p>
         <div className="flex flex-wrap gap-2">
           {SCHEDULABLE.map((skill) => (
-            <button
+            <Chip
               key={skill}
+              active={profile.priority_skills.includes(skill)}
               onClick={() => patch({ priority_skills: toggle(profile.priority_skills, skill) })}
-              className={chip(profile.priority_skills.includes(skill))}
             >
+              <span aria-hidden="true" className="mr-1">
+                {skillIcon(skill)}
+              </span>
               {skillLabel(skill)}
-            </button>
+            </Chip>
           ))}
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-semibold">Interests</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-500">
+        <SectionHeading title="Interests" />
+        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
           Real-world content and practice topics are picked from these.
         </p>
         <div className="flex flex-wrap gap-2">
           {TOPICS.map((topic) => (
-            <button
+            <Chip
               key={topic}
+              active={profile.interests.includes(topic)}
               onClick={() => patch({ interests: toggle(profile.interests, topic) })}
-              className={chip(profile.interests.includes(topic))}
             >
               {topic}
-            </button>
+            </Chip>
           ))}
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-semibold">Immersion</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-500">
-          How much English-only content you get. Raise it as you get more comfortable.
+        <SectionHeading title="Immersion" />
+        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+          How much English-only content you get. Raise it as you grow more comfortable.
         </p>
         <div className="flex flex-wrap gap-2">
           {IMMERSION.map((option) => (
-            <button
+            <Chip
               key={option.value}
+              active={Number(profile.immersion_level) === option.value}
               onClick={() => patch({ immersion_level: option.value })}
-              className={chip(Number(profile.immersion_level) === option.value)}
             >
               {option.label}
-            </button>
+            </Chip>
           ))}
         </div>
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-lg font-semibold">Measured levels</h2>
+        <SectionHeading title="Measured levels" />
         <div className="flex flex-wrap gap-2">
           {profile.skills.map((skill) => (
             <Pill key={skill.skill} tone={skill.is_weak ? "warn" : "default"}>
-              {skillLabel(skill.skill)} · {skill.level}
+              <span aria-hidden="true" className="mr-1">
+                {skillIcon(skill.skill)}
+              </span>
+              {skillLabel(skill.skill)} · {skill.confidence > 0 ? skill.level : "—"}
             </Pill>
           ))}
         </div>
-        <p className="mt-3 text-xs text-slate-400">
-          These are estimated from your activity, not set by hand — that is why the app targets
-          your weak skills rather than one overall level.
+        <p className="mt-4 text-xs leading-relaxed text-slate-400">
+          These are estimated from your activity rather than set by hand. It is why the app targets
+          your weak skills instead of one overall level.
         </p>
       </Card>
 
       <ErrorNote error={error} />
 
-      <div className="flex items-center gap-3">
-        <Button onClick={save}>Save changes</Button>
-        {saved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+      {/* Sticky save bar: on a long form the button should never be off-screen. */}
+      <div className="fixed inset-x-0 bottom-16 z-10 border-t border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur-md md:bottom-0 md:px-6 dark:border-white/10 dark:bg-slate-900/90">
+        <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 md:pl-56">
+          {saved && (
+            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              ✓ Saved
+            </span>
+          )}
+          <Button onClick={save} loading={saving}>
+            Save changes
+          </Button>
+        </div>
       </div>
     </div>
   );
