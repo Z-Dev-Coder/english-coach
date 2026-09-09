@@ -9,7 +9,7 @@ has finished.
 from __future__ import annotations
 
 from apps.ai import prompts
-from apps.ai.providers.base import TIER_MEDIUM, AIError, AIUnavailable
+from apps.ai.providers.base import TIER_LARGE, TIER_MEDIUM, AIError, AIUnavailable
 from apps.ai.registry import get_ai_provider
 from apps.profiles.constants import Skill
 from apps.profiles.models import SkillProgress
@@ -131,7 +131,10 @@ def generate_feedback(session: ConversationSession) -> dict:
         feedback = get_ai_provider().generate_json(
             prompts.conversation_feedback(turns, scenario=session.scenario, level=session.level),
             schema=prompts.CONVERSATION_FEEDBACK_SCHEMA,
-            tier=TIER_MEDIUM,
+            # Large tier: the review feeds the mistake bank, so vagueness here
+            # is expensive. The conversation turns themselves stay on medium —
+            # they are the high-volume part and precision matters far less.
+            tier=TIER_LARGE,
             temperature=0.4,
         )
         feedback["available"] = True

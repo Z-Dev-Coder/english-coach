@@ -315,3 +315,52 @@ class HostedProviderTests(TestCase):
         configured = set(DeepSeekProvider.default_models.values())
         self.assertNotIn("deepseek-chat", configured)
         self.assertNotIn("deepseek-reasoner", configured)
+
+
+class TierRoutingTests(TestCase):
+    """Which tier each task asks for is a cost and quality decision, so it is
+    pinned rather than left to drift."""
+
+    class RecordingProvider(AIProvider):
+        name = "recording"
+
+        def __init__(self):
+            self.tiers = []
+
+        def generate(self, prompt, **kwargs):
+            self.tiers.append(kwargs.get("tier"))
+            return AIResult(
+                text='{"issues": [], "natural_version": "", "strengths": []}',
+                model="m", tier=kwargs.get("tier", ""), duration_ms=1,
+            )
+
+        def chat(self, messages, **kwargs):
+            self.tiers.append(kwargs.get("tier"))
+            return AIResult(text="ok", model="m", tier=kwargs.get("tier", ""), duration_ms=1)
+
+        def health(self):
+            return {"reachable": True}
+
+    def test_writing_feedback_uses_the_large_tier(self):
+        """The mistake bank keys on the exact wrong/right pair, so imprecision
+        here produces unusable entries."""
+        provider = self.RecordingProvider()
+        provider.evaluate_writing("Some text I wrote.")
+        self.assertEqual(provider.tiers, ["large"])
+
+    def test_cheap_extraction_stays_on_the_small_tier(self):
+        provider = self.RecordingProvider()
+        provider.generate.__func__  # keep the reference explicit for clarity
+        provider.tiers.clear()
+        try:
+            provider.extract_vocabulary("Some text.")
+        except Exception:  # noqa: BLE001 - stub returns the wrong schema
+            pass
+        self.assertEqual(provider.tiers[0], "small")
+
+    def test_ollama_falls_back_when_no_large_model_is_configured(self):
+        """Routing to large must not break the local setup, where it is unset."""
+        provider = OllamaProvider(
+            models={"small": "s", "medium": "m", "large": None}
+        )
+        self.assertEqual(provider.model_for("large"), "m")

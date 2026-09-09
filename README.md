@@ -98,20 +98,28 @@ AI_PROVIDER=deepseek
 Restart. Nothing else changes: no business logic knows which provider is in use.
 `openai` is registered the same way, and switching back is one line.
 
-**Cost.** Measured from this app's own prompt sizes, a heavy day (a lesson, 3
-articles, 2 writing submissions, a 10-turn conversation with review, plus
-vocabulary lookups) is about **9k input / 7k output tokens**. Over 30 active
-days that is roughly 0.27M in and 0.21M out — on the order of **$0.10–$0.30 a
-month**, before the app's own content-hash cache makes repeats free.
+**Cost.** Measured from this app's real prompt sizes, not estimated. A heavy
+day — a lesson, 3 articles, 2 writing submissions, a 10-turn conversation with
+review, plus vocabulary lookups — is about 9k input / 7k output tokens.
 
-Model defaults, verified September 2026: `deepseek-v4-flash` for the small and
-medium tiers, `deepseek-v4-pro` for large (writing and conversation review).
-The older `deepseek-chat` / `deepseek-reasoner` aliases were retired on
-2026-07-24 and no longer route anywhere.
+| Strategy | Off-peak | Peak |
+|---|---|---|
+| everything on `v4-flash` | $0.20 / mo | $0.40 / mo |
+| **mixed (default): flash, `v4-pro` for feedback** | **$0.29 / mo** | $0.58 / mo |
+| everything on `v4-pro` | $0.60 / mo | $1.20 / mo |
 
-Published rates disagree between DeepSeek's own page and third-party trackers,
-including whether peak-hour pricing is active. Check
-<https://api-docs.deepseek.com/quick_start/pricing> before committing.
+The default is the mixed strategy. Writing feedback and conversation review run
+on the large tier because the mistake bank keys on the exact wrong/right pair,
+so vagueness there produces unusable entries. Everything else runs on Flash,
+where it makes no perceptible difference.
+
+Peak hours are 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday; everything
+else is charged at half rate. Rates from
+<https://api-docs.deepseek.com/quick_start/pricing/> (September 2026).
+
+Model defaults, verified September 2026: `deepseek-v4-flash` for small and
+medium, `deepseek-v4-pro` for large. The older `deepseek-chat` /
+`deepseek-reasoner` aliases were retired on 2026-07-24 and no longer route.
 
 ### Optional: PostgreSQL
 

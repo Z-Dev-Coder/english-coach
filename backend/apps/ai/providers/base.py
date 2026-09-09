@@ -188,12 +188,20 @@ class AIProvider(abc.ABC):
         )
 
     def evaluate_writing(self, text: str, *, level: str = "B1", task: str = "") -> Any:
+        """Detailed correction. Deliberately the large tier.
+
+        This is where precision actually pays: the mistake bank keys on the
+        exact wrong/right pair, so a model that says "your grammar was off"
+        instead of "discussed about -> discussed" produces an unusable entry.
+        On providers with no large model configured the tier falls back, so
+        this costs nothing locally.
+        """
         from .. import prompts
 
         return self.generate_json(
             prompts.evaluate_writing(text, level=level, task=task),
             schema=prompts.WRITING_FEEDBACK_SCHEMA,
-            tier=TIER_MEDIUM,
+            tier=TIER_LARGE,
         )
 
     def summarize(self, text: str, *, level: str = "B1", sentences: int = 3) -> str:
