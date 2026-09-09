@@ -194,6 +194,57 @@ def add_to_learning(user, expression: Expression, *, now: dt.datetime | None = N
     return progress
 
 
+def add_extracted(user, items, *, source: str = "content", source_url: str = "") -> list[VocabularyProgress]:
+    """Take vocabulary extracted from content into the learner's review queue.
+
+    This is the step that closes the product's central loop: content produces
+    vocabulary, and vocabulary has to become scheduled review or it is just
+    something the learner read once and forgot.
+
+    Expressions are shared, so an item already in the library is reused rather
+    than duplicated, and adding the same thing twice is a no-op.
+    """
+    from apps.vocabulary.models import ExampleSentence, Expression, Kind, normalize
+
+    valid_kinds = dict(Kind.choices)
+    added: list[VocabularyProgress] = []
+
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        text = str(item.get("expression", "")).strip()
+        meaning = str(item.get("meaning", "")).strip()
+        if not text or not meaning:
+            continue
+
+        kind = str(item.get("kind", "")).strip().lower()
+        if kind not in valid_kinds:
+            # Guess from shape rather than dropping it: a multi-word item is a
+            # phrase far more often than it is anything else.
+            kind = Kind.PHRASE if " " in text else Kind.WORD
+
+        expression, created = Expression.objects.get_or_create(
+            normalized=normalize(text),
+            kind=kind,
+            defaults={
+                "text": text[:200],
+                "meaning": meaning,
+                "cefr_level": str(item.get("cefr_level", "") or "B1")[:2].upper() or "B1",
+                "register": str(item.get("register", "") or "neutral")[:20],
+                "source": source,
+                "source_url": source_url[:200] if source_url else "",
+            },
+        )
+        if created and item.get("example"):
+            ExampleSentence.objects.create(
+                expression=expression, text=str(item["example"])[:1000]
+            )
+
+        added.append(add_to_learning(user, expression))
+
+    return added
+
+
 def stats(user, now: dt.datetime | None = None) -> dict:
     """Counts for the dashboard and the review screen."""
     now = now or timezone.now()

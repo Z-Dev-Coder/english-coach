@@ -21,6 +21,52 @@ import {
  * model — never a copy of someone's article.
  */
 
+/** Sends extracted vocabulary into the review queue.
+ *
+ *  Without this the loop stops at "read once": vocabulary a learner met in real
+ *  content has to become scheduled review, or it is not learning, it is
+ *  browsing. */
+function AddToReview({ items, sourceUrl, label = "Add all to review" }) {
+  const [state, setState] = useState("idle");
+  const [added, setAdded] = useState(0);
+
+  if (!items?.length) return null;
+
+  const add = async () => {
+    setState("saving");
+    try {
+      const result = await api.addExtractedVocabulary({
+        items,
+        source: "content",
+        source_url: sourceUrl || "",
+      });
+      setAdded(result.added);
+      setState("done");
+    } catch {
+      setState("error");
+    }
+  };
+
+  if (state === "done") {
+    return (
+      <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+        ✓ {added} added to your review queue
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <Button variant="secondary" size="sm" onClick={add} loading={state === "saving"}>
+        <span aria-hidden="true">＋</span> {label} ({items.length})
+      </Button>
+      {state === "error" && (
+        <p className="mt-1 text-xs text-rose-600">Could not add those. Try again.</p>
+      )}
+    </div>
+  );
+}
+
 function ArticleCard({ article, onPrepare, preparing, voice }) {
   const [open, setOpen] = useState(false);
   const material = article.has_material;
@@ -101,9 +147,12 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
 
           {article.vocabulary?.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Vocabulary
-              </p>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Vocabulary
+                </p>
+                <AddToReview items={article.vocabulary} sourceUrl={article.url} />
+              </div>
               <ul className="space-y-2">
                 {article.vocabulary.map((item, index) => (
                   <li key={index} className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
@@ -253,6 +302,13 @@ function DialogueStudio() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-5">
+            <AddToReview
+              items={result.expressions}
+              label="Add these expressions to review"
+            />
+          </div>
 
           {result.roleplay_prompt && (
             <div className="mt-5 rounded-xl bg-brand-50 p-4 dark:bg-brand-500/10">

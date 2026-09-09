@@ -219,3 +219,51 @@ class DashboardIntegrationTests(APITestCase):
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.data["review"]["due_now"], 0)
         self.assertIsNone(response.data["review"]["success_rate"])
+
+
+class AddExtractedAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="ext", password=PASSWORD)
+        self.client.force_authenticate(self.user)
+
+    def test_a_batch_from_an_article_lands_in_the_queue(self):
+        response = self.client.post(
+            "/api/vocabulary/add-extracted/",
+            {
+                "items": [
+                    {"expression": "run into", "meaning": "meet by chance", "kind": "phrasal_verb"},
+                    {"expression": "keep you posted", "meaning": "keep you updated"},
+                ],
+                "source": "content",
+                "source_url": "https://example.com/story",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["added"], 2)
+        self.assertEqual(len(self.client.get(reverse("review-queue")).data["items"]), 2)
+
+    def test_an_empty_batch_is_rejected(self):
+        response = self.client.post(
+            "/api/vocabulary/add-extracted/", {"items": []}, format="json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_authentication_is_required(self):
+        self.client.force_authenticate(None)
+        response = self.client.post(
+            "/api/vocabulary/add-extracted/",
+            {"items": [{"expression": "x", "meaning": "y"}]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_items_are_added_to_the_calling_user_only(self):
+        other = User.objects.create_user(username="ext2", password=PASSWORD)
+        self.client.post(
+            "/api/vocabulary/add-extracted/",
+            {"items": [{"expression": "look into", "meaning": "investigate"}]},
+            format="json",
+        )
+        self.assertEqual(other.vocabulary.count(), 0)
+        self.assertEqual(self.user.vocabulary.count(), 1)

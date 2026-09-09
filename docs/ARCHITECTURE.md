@@ -260,7 +260,19 @@ RSS parsing uses `xml.etree` rather than feedparser: the fields we need are few,
 and it keeps the dependency list short. `parse_feed()` is the single seam to
 swap behind if real feeds prove too messy.
 
-## 17. The mistake bank
+## 17. Content becomes review, or it is just browsing
+
+`add_extracted()` takes vocabulary the model pulled out of an article or a
+dialogue and puts it into the learner's FSRS queue. Without that step the
+central loop stops at "read once": content produces vocabulary, and vocabulary
+has to become *scheduled* review or nothing has been learned.
+
+Expressions are shared, so an item already in the library is reused rather than
+duplicated, and re-adding a batch is a no-op. Items missing an expression or a
+meaning are skipped rather than stored empty, and a missing `kind` is guessed
+from shape — a multi-word item is a phrase far more often than anything else.
+
+## 18. The mistake bank
 
 Mistakes are keyed on the **corrected pair**, normalised — "discussed about" →
 "discussed" is one mistake however many times it appears and whichever activity
@@ -285,7 +297,7 @@ funnels through `record()`. That single entry point is what turns scattered
 one-off notes into a picture of what this learner actually keeps getting wrong,
 and it feeds straight back into `learner_context()`.
 
-## 18. Frontend
+## 19. Frontend
 
 Vite + React 19 + Tailwind 4, with a dev proxy so the frontend is
 origin-relative (no CORS surprises, and the same build works behind one domain

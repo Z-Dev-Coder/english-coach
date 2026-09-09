@@ -150,3 +150,13 @@ class AddExpressionSerializer(serializers.Serializer):
     cefr_level = serializers.CharField(max_length=2, required=False, allow_blank=True)
     register = serializers.CharField(max_length=20, required=False, allow_blank=True)
     example = serializers.CharField(required=False, allow_blank=True)
+
+
+class AddExtractedSerializer(serializers.Serializer):
+    """A batch of expressions pulled out of content the learner just studied."""
+
+    items = serializers.ListField(child=serializers.DictField(), min_length=1, max_length=20)
+    source = serializers.ChoiceField(
+        choices=["content", "ai", "learner"], required=False, default="content"
+    )
+    source_url = serializers.CharField(required=False, allow_blank=True, default="", max_length=800)

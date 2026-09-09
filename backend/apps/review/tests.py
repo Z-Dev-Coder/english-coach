@@ -346,3 +346,92 @@ class SeedCommandTests(TestCase):
             self.assertGreater(
                 expression.examples.count(), 0, f"{expression.text} has no example sentence"
             )
+
+
+class AddExtractedTests(TestCase):
+    """Closing the loop: content produces vocabulary, vocabulary becomes review."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="extract", password=PASSWORD)
+
+    def test_extracted_items_enter_the_review_queue(self):
+        added = services.add_extracted(
+            self.user,
+            [
+                {
+                    "expression": "run into",
+                    "meaning": "to meet by chance",
+                    "example": "I ran into an old colleague.",
+                    "kind": "phrasal_verb",
+                },
+                {"expression": "a bit of a nightmare", "meaning": "difficult or annoying"},
+            ],
+        )
+        self.assertEqual(len(added), 2)
+        self.assertEqual(VocabularyProgress.objects.filter(user=self.user).count(), 2)
+        queue = services.build_queue(self.user)
+        self.assertEqual(len(queue), 2)
+
+    def test_an_example_sentence_is_kept_for_gap_fill(self):
+        services.add_extracted(
+            self.user,
+            [{"expression": "run into", "meaning": "meet by chance",
+              "example": "I ran into an old colleague."}],
+        )
+        expression = Expression.objects.get(normalized="run into")
+        self.assertEqual(expression.examples.count(), 1)
+
+    def test_a_missing_kind_is_guessed_from_shape(self):
+        services.add_extracted(
+            self.user,
+            [
+                {"expression": "figure out", "meaning": "understand"},
+                {"expression": "resilient", "meaning": "tough"},
+            ],
+        )
+        self.assertEqual(Expression.objects.get(normalized="figure out").kind, Kind.PHRASE)
+        self.assertEqual(Expression.objects.get(normalized="resilient").kind, Kind.WORD)
+
+    def test_adding_the_same_item_twice_is_a_no_op(self):
+        items = [{"expression": "deal with", "meaning": "handle"}]
+        services.add_extracted(self.user, items)
+        services.add_extracted(self.user, items)
+        self.assertEqual(VocabularyProgress.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(Expression.objects.filter(normalized="deal with").count(), 1)
+
+    def test_an_expression_already_in_the_library_is_reused(self):
+        existing = make_expression("deal with", kind=Kind.PHRASAL_VERB, meaning="handle")
+        services.add_extracted(
+            self.user, [{"expression": "Deal With", "meaning": "cope", "kind": "phrasal_verb"}]
+        )
+        self.assertEqual(Expression.objects.filter(normalized="deal with").count(), 1)
+        self.assertEqual(
+            VocabularyProgress.objects.get(user=self.user).expression_id, existing.id
+        )
+
+    def test_incomplete_items_are_skipped_rather_than_stored_empty(self):
+        added = services.add_extracted(
+            self.user,
+            [
+                {"expression": "", "meaning": "nothing"},
+                {"expression": "orphan", "meaning": ""},
+                "not a dict",
+                {"expression": "keeps this", "meaning": "a real meaning"},
+            ],
+        )
+        self.assertEqual(len(added), 1)
+
+    def test_the_source_is_recorded_so_provenance_survives(self):
+        services.add_extracted(
+            self.user,
+            [{"expression": "look into", "meaning": "investigate"}],
+            source="content",
+            source_url="https://example.com/story",
+        )
+        expression = Expression.objects.get(normalized="look into")
+        self.assertEqual(expression.source, "content")
+        self.assertIn("example.com", expression.source_url)
+
+    def test_an_empty_batch_is_safe(self):
+        self.assertEqual(services.add_extracted(self.user, []), [])
+        self.assertEqual(services.add_extracted(self.user, None), [])

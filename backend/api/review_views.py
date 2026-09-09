@@ -14,6 +14,7 @@ from apps.vocabulary.models import ExampleSentence, Expression, MasteryState, Vo
 
 from .review_serializers import (
     AddExpressionSerializer,
+    AddExtractedSerializer,
     AnswerSerializer,
     QueueItemSerializer,
     ReviewLogSerializer,
@@ -71,6 +72,33 @@ class VocabularyViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             VocabularyProgressSerializer(progress).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+    @action(detail=False, methods=["post"], url_path="add-extracted")
+    def add_extracted(self, request):
+        """Add vocabulary lifted from an article or a dialogue to the queue.
+
+        This is what turns reading into remembering: without it, extracted
+        vocabulary is something the learner looked at once.
+        """
+        payload = AddExtractedSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        data = payload.validated_data
+
+        progress = services.add_extracted(
+            request.user,
+            data["items"],
+            source=data["source"],
+            source_url=data["source_url"],
+        )
+        return Response(
+            {
+                "added": len(progress),
+                "items": VocabularyProgressSerializer(progress, many=True).data,
+                "due_now": services.due_count(request.user),
+            },
+            status=status.HTTP_201_CREATED,
         )
 
 

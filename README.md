@@ -109,7 +109,7 @@ and re-run `migrate`. No code changes; every model is Postgres-compatible.
 ## Tests
 
 ```bash
-cd backend && ../.venv/Scripts/python manage.py test     # 421 tests, ~4s
+cd backend && ../.venv/Scripts/python manage.py test     # 433 tests, ~4s
 cd frontend && npx oxlint src && npm run build
 ```
 

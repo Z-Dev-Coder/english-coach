@@ -95,6 +95,8 @@ export const api = {
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
   addVocabulary: (body) => request("/vocabulary/add/", { method: "POST", body }),
+  addExtractedVocabulary: (body) =>
+    request("/vocabulary/add-extracted/", { method: "POST", body }),
 
   // --- Skill activities ---
   passages: (params = {}) => {
