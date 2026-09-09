@@ -147,6 +147,21 @@ AI = {
         "medium": os.getenv("AI_MODEL_MEDIUM", "qwen2.5:7b-instruct-q4_K_M"),
         "large": os.getenv("AI_MODEL_LARGE", "") or None,
     },
+    # Optional hosted providers. Nothing depends on these: with no key set, the
+    # app runs exactly as before on local models.
+    "REMOTE_TIMEOUT": int(os.getenv("AI_REMOTE_TIMEOUT", "90")),
+    "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY", ""),
+    "DEEPSEEK_MODELS": {
+        "small": os.getenv("DEEPSEEK_MODEL_SMALL", ""),
+        "medium": os.getenv("DEEPSEEK_MODEL_MEDIUM", ""),
+        "large": os.getenv("DEEPSEEK_MODEL_LARGE", ""),
+    },
+    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+    "OPENAI_MODELS": {
+        "small": os.getenv("OPENAI_MODEL_SMALL", ""),
+        "medium": os.getenv("OPENAI_MODEL_MEDIUM", ""),
+        "large": os.getenv("OPENAI_MODEL_LARGE", ""),
+    },
 }
 
 LOGGING = {

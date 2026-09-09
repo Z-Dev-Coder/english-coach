@@ -204,3 +204,104 @@ class CacheTests(TestCase):
             cache_key("summary", "m", {"level": "B1"}),
             cache_key("summary", "m", {"level": "B2"}),
         )
+
+
+class HostedProviderTests(TestCase):
+    """DeepSeek and OpenAI share one implementation; test it once."""
+
+    def setUp(self):
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        self.provider = DeepSeekProvider(api_key="test-key")
+
+    def test_the_registry_offers_hosted_providers(self):
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        self.assertIsInstance(get_ai_provider("deepseek"), DeepSeekProvider)
+
+    def test_switching_provider_requires_no_business_logic_change(self):
+        """The whole point of the abstraction: same interface, same methods."""
+        from apps.ai.providers.base import AIProvider
+
+        for name in ("ollama", "deepseek", "openai"):
+            with self.subTest(provider=name):
+                provider = get_ai_provider(name)
+                self.assertIsInstance(provider, AIProvider)
+                for method in ("generate", "chat", "health", "generate_json",
+                               "explain", "evaluate_writing", "extract_vocabulary"):
+                    self.assertTrue(callable(getattr(provider, method)))
+
+    def test_a_missing_key_is_an_actionable_error_not_a_crash(self):
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="")
+        with self.assertRaisesMessage(AIUnavailable, "DEEPSEEK_API_KEY"):
+            provider.generate("hello")
+
+    def test_health_without_a_key_explains_the_setup(self):
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        health = DeepSeekProvider(api_key="").health()
+        self.assertFalse(health["reachable"])
+        self.assertIn("AI_PROVIDER=deepseek", health["setup_hint"])
+
+    @mock.patch("apps.ai.providers.openai_compatible.requests.post")
+    def test_a_successful_completion_is_parsed(self, post):
+        post.return_value = mock.Mock(
+            status_code=200,
+            raise_for_status=lambda: None,
+            json=lambda: {
+                "choices": [{"message": {"content": "Hello there."}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 3},
+            },
+        )
+        result = self.provider.generate("hi")
+        self.assertEqual(result.text, "Hello there.")
+        self.assertEqual(result.prompt_tokens, 10)
+        self.assertEqual(result.model, "deepseek-chat")
+
+    @mock.patch("apps.ai.providers.openai_compatible.requests.post")
+    def test_json_mode_asks_for_a_json_object(self, post):
+        post.return_value = mock.Mock(
+            status_code=200,
+            raise_for_status=lambda: None,
+            json=lambda: {"choices": [{"message": {"content": "{}"}}], "usage": {}},
+        )
+        self.provider.generate("give me data", json_mode=True)
+        payload = post.call_args.kwargs["json"]
+        self.assertEqual(payload["response_format"], {"type": "json_object"})
+        # These APIs reject JSON mode unless the word appears in the prompt.
+        self.assertIn("json", payload["messages"][-1]["content"].lower())
+
+    @mock.patch("apps.ai.providers.openai_compatible.requests.post")
+    def test_a_bad_key_is_reported_clearly(self, post):
+        response = mock.Mock(status_code=401, json=lambda: {"error": {"message": "bad key"}})
+        response.raise_for_status.side_effect = requests.HTTPError(response=response)
+        post.return_value = response
+        with self.assertRaisesMessage(AIUnavailable, "rejected the API key"):
+            self.provider.generate("hi")
+
+    @mock.patch("apps.ai.providers.openai_compatible.requests.post")
+    def test_rate_limiting_is_distinguished_from_other_failures(self, post):
+        response = mock.Mock(status_code=429, json=lambda: {"error": {"message": "slow down"}})
+        response.raise_for_status.side_effect = requests.HTTPError(response=response)
+        post.return_value = response
+        with self.assertRaisesMessage(AIUnavailable, "rate limiting"):
+            self.provider.generate("hi")
+
+    @mock.patch("apps.ai.providers.openai_compatible.requests.post", side_effect=requests.Timeout())
+    def test_a_timeout_becomes_ai_unavailable(self, _post):
+        with self.assertRaises(AIUnavailable):
+            self.provider.generate("hi")
+
+    def test_tiers_fall_back_when_a_model_is_unset(self):
+        from apps.ai.providers.openai_compatible import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="k", models={"medium": "only-one"})
+        self.assertEqual(provider.model_for("medium"), "only-one")
+        self.assertTrue(provider.model_for("large"))
+
+    def test_the_reasoning_model_is_reserved_for_the_large_tier(self):
+        """It is slower and dearer; wasteful for vocabulary extraction."""
+        self.assertEqual(self.provider.model_for("small"), "deepseek-chat")
+        self.assertEqual(self.provider.model_for("large"), "deepseek-reasoner")

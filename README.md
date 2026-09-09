@@ -81,6 +81,26 @@ ollama pull qwen2.5:7b-instruct-q4_K_M    # quality tier: lessons, feedback, cha
 `ollama pull` command for anything missing. The dashboard surfaces the same
 thing if the model is offline.
 
+### Optional: a hosted model instead of local
+
+Everything works on local Ollama at zero cost. A hosted model is worth
+considering for one thing: **feedback quality**. Small local models reliably
+notice that something is wrong but are vague about which exact words, and tend
+to label every error "grammar" — which matters, because the mistake bank keys on
+the corrected pair.
+
+For one learner the volume is a few thousand tokens a day, so the cost is small.
+Check current pricing before committing.
+
+```bash
+# in .env
+DEEPSEEK_API_KEY=sk-...
+AI_PROVIDER=deepseek
+```
+
+Then restart. Nothing else changes: no business logic knows which provider is in
+use. `openai` is registered the same way, and switching back is one line.
+
 ### Optional: PostgreSQL
 
 Set `DATABASE_URL=postgres://user:pass@localhost:5432/english_coach` in `.env`
@@ -89,7 +109,7 @@ and re-run `migrate`. No code changes; every model is Postgres-compatible.
 ## Tests
 
 ```bash
-cd backend && ../.venv/Scripts/python manage.py test     # 93 tests, ~0.7s
+cd backend && ../.venv/Scripts/python manage.py test     # 419 tests, ~4s
 cd frontend && npx oxlint src && npm run build
 ```
 

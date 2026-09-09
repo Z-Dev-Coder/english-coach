@@ -7,10 +7,13 @@ from django.conf import settings
 
 from .providers.base import AIProvider
 from .providers.ollama import OllamaProvider
+from .providers.openai_compatible import DeepSeekProvider, OpenAIProvider
 
 # Future providers register here. Nothing else in the codebase needs to change.
 PROVIDERS: dict[str, type[AIProvider]] = {
     "ollama": OllamaProvider,
+    "deepseek": DeepSeekProvider,
+    "openai": OpenAIProvider,
 }
 
 
