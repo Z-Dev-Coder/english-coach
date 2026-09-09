@@ -301,11 +301,29 @@ class HostedProviderTests(TestCase):
         self.assertEqual(provider.model_for("medium"), "only-one")
         self.assertTrue(provider.model_for("large"))
 
-    def test_the_expensive_model_is_reserved_for_the_large_tier(self):
-        """Pro costs about three times Flash; wasteful for vocabulary extraction."""
-        self.assertEqual(self.provider.model_for("small"), "deepseek-v4-flash")
-        self.assertEqual(self.provider.model_for("medium"), "deepseek-v4-flash")
-        self.assertEqual(self.provider.model_for("large"), "deepseek-v4-pro")
+    def test_flash_is_used_on_every_tier_by_default(self):
+        """Measured, not assumed: asked to correct the same flawed paragraph,
+        Flash and Pro returned identical issues, with Flash twice as fast at a
+        third of the price. Pro remains available via .env."""
+        for tier in ("small", "medium", "large"):
+            with self.subTest(tier=tier):
+                self.assertEqual(self.provider.model_for(tier), "deepseek-v4-flash")
+
+    def test_chain_of_thought_is_disabled_by_default(self):
+        """Reasoning tokens are billed as output and measurably do not help
+        this app's structured tasks."""
+        self.assertEqual(
+            self.provider.extra_payload()["thinking"], {"type": "disabled"}
+        )
+
+    def test_thinking_can_be_switched_back_on(self):
+        from django.conf import settings
+        from django.test import override_settings
+
+        with override_settings(AI={**settings.AI, "DEEPSEEK_THINKING": "enabled"}):
+            self.assertEqual(
+                self.provider.extra_payload()["thinking"], {"type": "enabled"}
+            )
 
     def test_retired_model_aliases_are_not_used(self):
         """deepseek-chat and deepseek-reasoner stopped being routed on

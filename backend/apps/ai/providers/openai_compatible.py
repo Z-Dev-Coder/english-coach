@@ -43,7 +43,10 @@ class OpenAICompatibleProvider(AIProvider):
         from django.conf import settings
 
         conf = settings.AI
-        self.api_key = api_key or conf.get(self.api_key_setting, "")
+        # None means "take it from configuration"; an empty string means
+        # "explicitly no key". `or` conflated the two, so a caller could not
+        # express keylessness and tests silently picked up a real key from .env.
+        self.api_key = conf.get(self.api_key_setting, "") if api_key is None else api_key
         self.base_url = (base_url or conf.get(f"{self.name.upper()}_BASE_URL") or self.base_url).rstrip("/")
         self.timeout = timeout or conf.get("REMOTE_TIMEOUT", 90)
         configured = models or conf.get(f"{self.name.upper()}_MODELS") or {}
