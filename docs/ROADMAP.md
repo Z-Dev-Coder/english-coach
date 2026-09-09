@@ -36,16 +36,26 @@ tests pass.
 - Dashboard's review block now shows the real due count
 - **208 backend tests, all green**
 
-## Phase 3 — The four skills
+## Phase 3 — The four skills ✅ COMPLETE
 
-- `ListeningAttempt`, `ReadingAttempt`, `WritingAttempt`, `SpeakingAttempt`
-- Listening: audio, hidden transcript, dictation, shadowing
-- Reading: unknown-word highlighting, inline explanation, comprehension
-- Writing: prompt → submission → structured feedback
-- Speaking: browser speech recognition, record and compare
-- Listen → Speak → Write single-sentence drill
-- Browser-native TTS/STT (free); pronunciation scores labelled as estimates
-- **Done when:** each skill has one end-to-end activity that updates its score
+**Goal:** each skill has an end-to-end activity that feeds the planner.
+
+- `Passage` (shared or learner-owned) and `SkillAttempt`, with cached word
+  count and Flesch readability
+- `similarity.py`: word-level diff, two-pass contraction handling and
+  readability estimation, as pure functions (30 tests)
+- **Listening** — dictation against synthesised speech, scored word by word
+- **Pronunciation** — shadowing via browser speech recognition, labelled
+  explicitly as an estimate rather than a phonetic score
+- **Reading** — passages plus paste-your-own text, with automatic level
+  estimation; speed alone does not move the score
+- **Writing** — AI feedback through the existing provider, falling back to
+  structural checks when the model is offline
+- **Listen → Speak → Write drill** — one sentence worked five ways, crediting
+  listening, speaking and writing together
+- Browser-native TTS and STT: zero cost, no dependencies, graceful degradation
+  where a browser lacks support
+- **302 backend tests, all green**
 
 ## Phase 4 — AI lessons and conversation
 

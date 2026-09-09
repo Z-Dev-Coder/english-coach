@@ -6,8 +6,10 @@ import { applyTheme, isDark, setTheme } from "./lib/theme";
 import { cx } from "./lib/cx";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import Practice from "./pages/Practice";
 import Profile from "./pages/Profile";
 import Review from "./pages/Review";
+import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
 
 // Real World and Progress stay as disabled entries so the information
@@ -16,6 +18,7 @@ import SpeakingStudio from "./pages/SpeakingStudio";
 const NAV = [
   { to: "/", label: "Home", icon: "🏠" },
   { to: "/review", label: "Review", icon: "🔁" },
+  { to: "/practice", label: "Practice", icon: "🎧" },
   { to: "/speaking", label: "Speaking", icon: "🗣️" },
   { to: "/profile", label: "Profile", icon: "👤" },
 ];
@@ -225,6 +228,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/review" element={<Review />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/drill" element={<Drill />} />
           <Route path="/speaking" element={<SpeakingStudio />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

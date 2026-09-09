@@ -95,6 +95,28 @@ export const api = {
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
   addVocabulary: (body) => request("/vocabulary/add/", { method: "POST", body }),
+
+  // --- Skill activities ---
+  passages: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/skills/passages/${query ? `?${query}` : ""}`);
+  },
+  addPassage: (body) => request("/skills/passages/add/", { method: "POST", body }),
+  submitDictation: (body) => request("/skills/dictation/", { method: "POST", body }),
+  submitShadowing: (body) => request("/skills/shadowing/", { method: "POST", body }),
+  submitWriting: (body) => request("/skills/writing/", { method: "POST", body }),
+  submitReading: (body) => request("/skills/reading/", { method: "POST", body }),
+  drill: () => request("/skills/drill/"),
+  submitDrill: (body) => request("/skills/drill/", { method: "POST", body }),
+  attempts: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/skills/attempts/${query ? `?${query}` : ""}`);
+  },
+  skillSummary: () => request("/skills/summary/"),
   scripts: () => request("/practice/speaking-scripts/"),
   generateScript: (data) =>
     request("/practice/speaking-scripts/generate/", { method: "POST", body: data }),

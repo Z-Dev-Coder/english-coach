@@ -168,7 +168,42 @@ Two invariants are enforced beyond the raw formulas, because the maths alone can
 violate them at the edges: forgetting never lengthens an interval, and repeating
 an item the same day cannot inflate its schedule.
 
-## 12. Frontend
+## 12. One attempt table, not four
+
+`SkillAttempt` holds every activity rather than having separate
+ListeningAttempt / ReadingAttempt / WritingAttempt / SpeakingAttempt models.
+
+They share every column that matters — who, what, how well, how long — and
+differ only in a payload that is genuinely activity-specific (word diffs,
+feedback issues, transcripts), which lives in `detail`. Four near-identical
+tables would turn the cross-skill queries analytics actually needs ("accuracy by
+skill", "attempts this week") into four-way unions for no benefit.
+
+`detail` stays disciplined because exactly one service function writes each
+shape, rather than it being a junk drawer any view can add to.
+
+## 13. Honesty about what can be measured
+
+Three places where the easy implementation would overstate what the software
+knows, and the code deliberately does not:
+
+- **Pronunciation.** Shadowing compares the expected sentence with what the
+  browser's speech recogniser heard. That is a proxy for intelligibility, not a
+  phonetic analysis, and accents affect it. The stored payload carries an
+  explicit `measurement` and `caveat` field and the UI repeats them.
+- **Reading.** Recording that a passage was read quickly does not move the
+  reading score. Speed is not comprehension, and counting it as progress would
+  be exactly the activity-versus-improvement confusion the product exists to
+  avoid. Only an actual comprehension score moves it.
+- **Writing without AI.** Rule-based checks catch structure — length, runaway
+  sentences, missing capitals — but cannot judge whether writing is *good*. When
+  only they have run, accuracy is left null and the writing score is untouched
+  rather than invented.
+
+Scoring is also asymmetric: `MAX_LOSS` exceeds `MAX_GAIN`, and the neutral pivot
+sits at 70% rather than 50%, so a mediocre attempt is not recorded as progress.
+
+## 14. Frontend
 
 Vite + React 19 + Tailwind 4, with a dev proxy so the frontend is
 origin-relative (no CORS surprises, and the same build works behind one domain

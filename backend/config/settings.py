@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.ai",
     "apps.vocabulary",
     "apps.review",
+    "apps.skills",
     "apps.practice",
 ]
 
