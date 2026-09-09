@@ -33,8 +33,8 @@ function Bubble({ message, onSpeak }) {
         className={cx(
           "group max-w-[80%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm",
           isLearner
-            ? "rounded-br-md bg-brand-600 text-white"
-            : "rounded-bl-md bg-white text-slate-700 ring-1 ring-slate-900/5 dark:bg-slate-800 dark:text-slate-200 dark:ring-white/10",
+            ? "rounded-br-md bg-ink text-white"
+            : "rounded-bl-md bg-surface text-ink ring-1 ring-[color:var(--color-line)] dark:bg-white/[0.06] dark:text-white/85 dark:ring-white/10",
         )}
       >
         {message.content}
@@ -75,16 +75,16 @@ function Feedback({ feedback }) {
           feedback.estimated_level ? <Pill tone="brand">{feedback.estimated_level}</Pill> : null
         }
       />
-      <p className="text-slate-600 dark:text-slate-300">{feedback.summary}</p>
+      <p className="text-ink-2 dark:text-white/70">{feedback.summary}</p>
 
       {feedback.did_well?.length > 0 && (
         <div className="mt-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
             What worked
           </p>
           <ul className="space-y-1.5">
             {feedback.did_well.map((item, index) => (
-              <li key={index} className="flex gap-2 text-slate-700 dark:text-slate-200">
+              <li key={index} className="flex gap-2 text-ink dark:text-white/85">
                 <span aria-hidden="true" className="text-emerald-500">
                   ✓
                 </span>
@@ -97,12 +97,12 @@ function Feedback({ feedback }) {
 
       {feedback.corrections?.length > 0 && (
         <div className="mt-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
             More natural versions
           </p>
           <ul className="space-y-3">
             {feedback.corrections.map((item, index) => (
-              <li key={index} className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
+              <li key={index} className="rounded-xl bg-sunken p-3 text-sm dark:bg-white/[0.04]">
                 <p>
                   <span className="rounded bg-rose-100 px-1 line-through dark:bg-rose-500/20">
                     {item.original}
@@ -112,9 +112,9 @@ function Feedback({ feedback }) {
                     {item.natural}
                   </span>
                 </p>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">{item.explanation}</p>
+                <p className="mt-1 text-ink-2 dark:text-white/70">{item.explanation}</p>
                 {item.category && (
-                  <span className="mt-1 inline-block text-xs text-slate-400">
+                  <span className="mt-1 inline-block text-xs text-ink-3">
                     {item.category.replace(/_/g, " ")}
                   </span>
                 )}
@@ -126,7 +126,7 @@ function Feedback({ feedback }) {
 
       {feedback.useful_expressions?.length > 0 && (
         <div className="mt-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
             Expressions that would have fitted
           </p>
           <div className="flex flex-wrap gap-2">
@@ -140,11 +140,11 @@ function Feedback({ feedback }) {
       )}
 
       {feedback.focus_next_time && (
-        <div className="mt-5 rounded-xl bg-brand-50 p-4 dark:bg-brand-500/10">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+        <div className="mt-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
             Next time
           </p>
-          <p className="mt-1 text-slate-700 dark:text-slate-200">{feedback.focus_next_time}</p>
+          <p className="mt-1 text-ink dark:text-white/85">{feedback.focus_next_time}</p>
         </div>
       )}
     </Card>
@@ -252,7 +252,7 @@ export default function Conversation() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Conversation</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Talk freely. Nothing corrects you while you speak — the review comes at the end.
         </p>
       </header>
@@ -290,7 +290,7 @@ export default function Conversation() {
               Start talking
             </Button>
           </div>
-          <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/5">
+          <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
             <Switch
               checked={autoSpeak}
               onChange={setAutoSpeak}
@@ -308,12 +308,12 @@ export default function Conversation() {
             {ended && <Pill tone="good">finished</Pill>}
           </div>
 
-          <div className="space-y-3 rounded-2xl bg-slate-100/60 p-4 dark:bg-slate-900/60">
+          <div className="space-y-3 rounded-2xl bg-sunken/60 p-4 dark:bg-white/[0.03]/60">
             {session.messages.map((message) => (
               <Bubble key={message.id} message={message} onSpeak={say} />
             ))}
             {sending && (
-              <p className="text-sm text-slate-400" aria-live="polite">
+              <p className="text-sm text-ink-3" aria-live="polite">
                 thinking…
               </p>
             )}
@@ -333,7 +333,7 @@ export default function Conversation() {
                 }}
                 rows={2}
                 placeholder="Say something… (Enter to send, Shift+Enter for a new line)"
-                className="w-full rounded-xl border-0 bg-slate-50 p-3.5 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+                className="w-full rounded-xl border-0 bg-sunken p-3.5 ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button onClick={send} loading={sending} disabled={!text.trim()}>

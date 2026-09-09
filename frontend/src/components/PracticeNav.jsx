@@ -42,8 +42,8 @@ export default function PracticeNav() {
           className={cx(
             "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition",
             isActive(item)
-              ? "bg-brand-600 text-white shadow-sm"
-              : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800",
+              ? "bg-ink text-white dark:bg-white dark:text-ink"
+              : "text-ink-2 hover:bg-sunken dark:text-ink-3 dark:hover:bg-white/[0.06]",
           )}
         >
           {item.label}

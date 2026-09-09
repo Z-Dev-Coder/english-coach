@@ -65,10 +65,10 @@ function ScriptView({ script, onPracticed }) {
           <Pill>{script.scenario.replace(/_/g, " ")}</Pill>
           {script.source === "ai" && <Pill tone="good">AI generated</Pill>}
         </div>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">{script.setting}</p>
+        <p className="mt-2 text-ink-2 dark:text-white/70">{script.setting}</p>
         {script.goal && (
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-            <span className="font-medium text-slate-600 dark:text-slate-300">Your goal:</span>{" "}
+          <p className="mt-1.5 text-sm text-ink-2 dark:text-white/55">
+            <span className="font-medium text-ink-2 dark:text-white/70">Your goal:</span>{" "}
             {script.goal}
           </p>
         )}
@@ -76,16 +76,16 @@ function ScriptView({ script, onPracticed }) {
 
       {script.target_expressions?.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-3">
             Try to use these
           </h3>
           <ul className="space-y-2.5">
             {script.target_expressions.map((expression) => (
               <li key={expression} className="flex items-start gap-2.5">
-                <span aria-hidden="true" className="mt-1 text-xs text-brand-400">
+                <span aria-hidden="true" className="mt-1 text-xs text-ink-3">
                   ●
                 </span>
-                <span className="text-slate-700 dark:text-slate-200">{expression}</span>
+                <span className="text-ink dark:text-white/85">{expression}</span>
               </li>
             ))}
           </ul>
@@ -94,7 +94,7 @@ function ScriptView({ script, onPracticed }) {
 
       {script.lines?.length > 0 && (
         <Card>
-          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-ink-3">
             How it starts
           </h3>
           <div className="space-y-3">
@@ -104,8 +104,8 @@ function ScriptView({ script, onPracticed }) {
                 className={cx(
                   "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                   line.speaker === "You"
-                    ? "ml-auto rounded-br-md bg-brand-600 text-white"
-                    : "rounded-bl-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                    ? "ml-auto rounded-br-md bg-ink text-white"
+                    : "rounded-bl-md bg-sunken text-ink-2 dark:bg-white/[0.05] dark:text-white/85",
                 )}
               >
                 <span className="mb-0.5 block text-[11px] font-medium opacity-60">
@@ -118,11 +118,11 @@ function ScriptView({ script, onPracticed }) {
         </Card>
       )}
 
-      <Card className="border-0 bg-slate-900 text-slate-100 ring-1 ring-slate-800 dark:bg-slate-900">
+      <Card className="border-0 bg-ink text-white/90 ring-1 ring-ink">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-semibold">Practise with any AI</h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-400">
+            <p className="mt-1 text-sm leading-relaxed text-ink-3">
               Paste this into ChatGPT, Gemini or Claude. It runs the whole roleplay, and gives you
               feedback when you type{" "}
               <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-brand-300">
@@ -134,12 +134,12 @@ function ScriptView({ script, onPracticed }) {
           <CopyButton text={script.portable_prompt} />
         </div>
 
-        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/40 p-4 text-xs leading-relaxed text-slate-300 ring-1 ring-white/5">
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/40 p-4 text-xs leading-relaxed text-ink-3 ring-1 ring-white/5">
           {script.portable_prompt}
         </pre>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">Open:</span>
+          <span className="text-xs text-ink-2">Open:</span>
           {ASSISTANTS.map((assistant) => (
             <a
               key={assistant.name}
@@ -156,13 +156,13 @@ function ScriptView({ script, onPracticed }) {
 
       {script.follow_up_questions?.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-3">
             Keep the conversation going
           </h3>
           <ul className="space-y-2">
             {script.follow_up_questions.map((question) => (
-              <li key={question} className="flex items-start gap-2.5 text-slate-600 dark:text-slate-300">
-                <span aria-hidden="true" className="mt-0.5 text-brand-400">
+              <li key={question} className="flex items-start gap-2.5 text-ink-2 dark:text-white/70">
+                <span aria-hidden="true" className="mt-0.5 text-ink-3">
                   ?
                 </span>
                 {question}
@@ -177,7 +177,7 @@ function ScriptView({ script, onPracticed }) {
           <span aria-hidden="true">✓</span> I practised this
         </Button>
         {script.times_practiced > 0 && (
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <span className="text-sm text-ink-2 dark:text-white/55">
             Practised {script.times_practiced}×
           </span>
         )}
@@ -231,7 +231,7 @@ export default function SpeakingStudio() {
         <h1 className="text-2xl font-bold tracking-tight">
           Speaking <span className="text-gradient">Script Studio</span>
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           A roleplay script pitched at your speaking level — practise it here, or take the prompt
           to any AI assistant.
         </p>
@@ -288,7 +288,7 @@ export default function SpeakingStudio() {
           </div>
         </div>
 
-        <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/5">
+        <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
           <Switch
             checked={useAi}
             onChange={setUseAi}

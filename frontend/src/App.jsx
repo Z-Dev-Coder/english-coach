@@ -4,6 +4,7 @@ import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "re
 import { api, getToken, setToken } from "./lib/api";
 import { applyTheme, isDark, setTheme } from "./lib/theme";
 import { cx } from "./lib/cx";
+import Icon from "./lib/icons";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Conversation from "./pages/Conversation";
@@ -19,21 +20,21 @@ import SpeakingStudio from "./pages/SpeakingStudio";
 // items called "Speaking" and "Talk" — two names for the same idea. They now
 // sit under Practice, which is where the rest of the skill work already lives.
 const NAV = [
-  { to: "/", label: "Home", icon: "🏠" },
-  { to: "/review", label: "Review", icon: "🔁" },
-  { to: "/practice", label: "Practice", icon: "🎧", family: ["/speaking", "/conversation", "/drill"] },
-  { to: "/real-world", label: "Real World", icon: "🌍" },
-  { to: "/progress", label: "Progress", icon: "📈" },
-  { to: "/profile", label: "Profile", icon: "👤" },
+  { to: "/", label: "Home", icon: "home" },
+  { to: "/review", label: "Review", icon: "review" },
+  { to: "/practice", label: "Practice", icon: "practice", family: ["/speaking", "/conversation", "/drill"] },
+  { to: "/real-world", label: "Real World", icon: "world" },
+  { to: "/progress", label: "Progress", icon: "progress" },
+  { to: "/profile", label: "Profile", icon: "profile" },
 ];
 
 function Brand() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-500 text-lg shadow-sm">
-        <span aria-hidden="true">🎓</span>
+      <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-ink">
+        EC
       </span>
-      <span className="text-[15px] font-bold tracking-tight">English Coach</span>
+      <span className="text-[14px] font-semibold tracking-tight">English Coach</span>
     </div>
   );
 }
@@ -44,9 +45,9 @@ function ThemeToggle({ dark, onToggle }) {
       onClick={onToggle}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
-      className="grid h-9 w-9 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+      className="grid h-9 w-9 place-items-center rounded-xl text-ink-2 transition hover:bg-sunken dark:text-ink-3 dark:hover:bg-white/[0.06]"
     >
-      <span aria-hidden="true">{dark ? "☀️" : "🌙"}</span>
+      <Icon name={dark ? "sun" : "moon"} size={16} />
     </button>
   );
 }
@@ -62,16 +63,14 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
     cx(
       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition duration-150",
       isActive
-        ? "bg-brand-600 text-white shadow-sm"
-        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+        ? "bg-ink text-white dark:bg-white dark:text-ink"
+        : "text-ink-2 hover:bg-sunken dark:text-white/60 dark:hover:bg-white/[0.06]",
     );
 
   const tabLink = ({ isActive }) =>
     cx(
       "flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-medium transition",
-      isActive
-        ? "text-brand-600 dark:text-brand-300"
-        : "text-slate-400 dark:text-slate-500",
+      isActive ? "text-ink dark:text-white" : "text-ink-3 dark:text-white/40",
     );
 
   return (
@@ -91,9 +90,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
               end={item.to === "/"}
               className={({ isActive }) => railLink({ isActive: isActive || inFamily(item) })}
             >
-              <span aria-hidden="true" className="text-base">
-                {item.icon}
-              </span>
+              <Icon name={item.icon} size={17} />
               {item.label}
             </NavLink>
           ))}
@@ -102,20 +99,20 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
 
         <button
           onClick={onSignOut}
-          className="mt-auto rounded-xl px-3 py-2.5 text-left text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          className="mt-auto rounded-xl px-3 py-2.5 text-left text-sm text-ink-3 transition hover:bg-sunken hover:text-ink-2 dark:hover:bg-white/[0.06] dark:hover:text-ink-3"
         >
           Sign out
         </button>
       </aside>
 
       {/* Mobile top bar */}
-      <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-slate-50/85 px-4 py-3 backdrop-blur-md md:hidden dark:border-white/10 dark:bg-slate-950/85">
+      <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between border-b border-[color:var(--color-line)]/70 bg-sunken/85 px-4 py-3 backdrop-blur-md md:hidden dark:border-white/10 dark:bg-slate-950/85">
         <Brand />
         <div className="flex items-center gap-1">
           <ThemeToggle dark={dark} onToggle={onToggleTheme} />
           <button
             onClick={onSignOut}
-            className="rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+            className="rounded-xl px-3 py-2 text-sm text-ink-3 transition hover:text-ink-2 dark:hover:text-ink-3"
           >
             Sign out
           </button>
@@ -127,7 +124,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
       {/* Mobile bottom tabs */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-slate-200/70 bg-white/90 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden dark:border-white/10 dark:bg-slate-900/90"
+        className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-[color:var(--color-line)]/70 bg-white/90 px-3 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden dark:border-white/10 dark:bg-white/[0.03]/90"
       >
         {/* Five tabs is the practical maximum on a phone; the rest stay
             reachable from the desktop rail and by URL. */}
@@ -138,9 +135,7 @@ function Shell({ dark, onToggleTheme, onSignOut, children }) {
             end={item.to === "/"}
             className={({ isActive }) => tabLink({ isActive: isActive || inFamily(item) })}
           >
-            <span aria-hidden="true" className="text-lg">
-              {item.icon}
-            </span>
+            <Icon name={item.icon} size={18} />
             {item.label}
           </NavLink>
         ))}
@@ -193,7 +188,7 @@ export default function App() {
         <span
           aria-label="Signing you in"
           role="status"
-          className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--color-line)] border-t-brand-600"
         />
       </div>
     );

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
-import { skillIcon } from "../lib/skills";
+import Icon from "../lib/icons";
 import { Button, Callout, Card, ErrorNote, Pill, ProgressRing, SectionHeading } from "../lib/ui";
 
 /**
@@ -63,7 +63,7 @@ export default function TodayLesson({ lesson, onChange }) {
         <div className="min-w-0">
           <SectionHeading id="lesson-heading" title={lesson.title} />
           {lesson.theme && (
-            <p className="-mt-2 text-sm text-slate-500 dark:text-slate-400">{lesson.theme}</p>
+            <p className="-mt-2 text-sm text-ink-2 dark:text-white/55">{lesson.theme}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -87,10 +87,10 @@ export default function TodayLesson({ lesson, onChange }) {
       {next && (
         <Link
           to={activityHref(next)}
-          className="flex items-center justify-between gap-3 rounded-xl bg-brand-600 px-4 py-3.5 text-white shadow-sm transition hover:bg-brand-700"
+          className="flex items-center justify-between gap-3 rounded-xl bg-ink px-4 py-3.5 text-white transition hover:opacity-90 dark:bg-white dark:text-ink"
         >
           <span className="min-w-0">
-            <span className="block text-xs font-medium text-white/70">Do this next</span>
+            <span className="micro block text-white/50 dark:text-ink/50">Do this next</span>
             <span className="block truncate font-semibold">{next.title}</span>
           </span>
           <span className="flex shrink-0 items-center gap-2 text-sm font-semibold">
@@ -120,13 +120,17 @@ export default function TodayLesson({ lesson, onChange }) {
                   <span
                     aria-hidden="true"
                     className={cx(
-                      "grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg",
+                      "grid h-8 w-8 shrink-0 place-items-center rounded-lg ring-1",
                       activity.is_complete
-                        ? "bg-emerald-50 dark:bg-emerald-500/15"
-                        : "bg-brand-50 dark:bg-brand-500/15",
+                        ? "ring-[color:var(--color-good-ink)]/25"
+                        : "ring-[color:var(--color-line)] dark:ring-white/12",
                     )}
                   >
-                    {activity.is_complete ? "✓" : skillIcon(activity.kind)}
+                    {activity.is_complete ? (
+                      <span className="text-[color:var(--color-good-ink)]">✓</span>
+                    ) : (
+                      <Icon name={activity.kind} size={16} className="text-ink-2" />
+                    )}
                   </span>
                   <div className="min-w-0">
                     <p
@@ -138,7 +142,7 @@ export default function TodayLesson({ lesson, onChange }) {
                       {activity.title}
                     </p>
                     {!activity.is_complete && (
-                      <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-sm leading-relaxed text-ink-2 dark:text-white/55">
                         {activity.instructions}
                       </p>
                     )}
@@ -148,14 +152,14 @@ export default function TodayLesson({ lesson, onChange }) {
               </div>
 
               {activity.prompt && !activity.is_complete && (
-                <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm italic text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                <p className="mt-3 rounded-xl bg-sunken p-3 text-sm italic text-ink-2 dark:bg-white/[0.04] dark:text-ink-3">
                   {activity.prompt}
                 </p>
               )}
 
               {activity.target_expressions?.length > 0 && !activity.is_complete && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="text-xs text-slate-400">Try to use:</span>
+                  <span className="text-xs text-ink-3">Try to use:</span>
                   {activity.target_expressions.map((expression) => (
                     <Pill key={expression}>{expression}</Pill>
                   ))}
@@ -166,14 +170,14 @@ export default function TodayLesson({ lesson, onChange }) {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Link
                     to={activityHref(activity)}
-                    className="rounded-lg bg-brand-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+                    className="rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 dark:bg-white dark:text-ink"
                   >
                     Start →
                   </Link>
                   <button
                     onClick={() => complete(activity.id)}
                     disabled={busy === activity.id}
-                    className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline dark:hover:text-slate-300"
+                    className="text-xs text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline dark:hover:text-ink-3"
                   >
                     mark done
                   </button>
@@ -185,9 +189,9 @@ export default function TodayLesson({ lesson, onChange }) {
       </ol>
 
       {lesson.status === "completed" && (
-        <Card className="bg-emerald-50 text-center ring-emerald-200 dark:bg-emerald-500/10 dark:ring-emerald-500/20">
-          <p className="text-2xl" aria-hidden="true">
-            🎉
+        <Card className="bg-[color:var(--color-good-bg)] text-center ring-[color:var(--color-good-ink)]/25">
+          <p className="micro" aria-hidden="true">
+            ( done )
           </p>
           <p className="mt-2 font-semibold text-emerald-900 dark:text-emerald-200">
             Today's lesson is done.

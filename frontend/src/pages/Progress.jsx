@@ -28,13 +28,13 @@ const STATUS_TONES = { active: "warn", improving: "brand", resolved: "good" };
 
 function MistakeRow({ mistake, onAvoided, busy }) {
   return (
-    <li className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
+    <li className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="min-w-0">
           <span className="rounded bg-rose-100 px-1 line-through dark:bg-rose-500/20">
             {mistake.incorrect}
           </span>
-          <span className="mx-1.5 text-slate-400">→</span>
+          <span className="mx-1.5 text-ink-3">→</span>
           <span className="rounded bg-emerald-100 px-1 font-medium dark:bg-emerald-500/20">
             {mistake.correct}
           </span>
@@ -46,11 +46,11 @@ function MistakeRow({ mistake, onAvoided, busy }) {
       </div>
 
       {mistake.explanation && (
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{mistake.explanation}</p>
+        <p className="mt-2 text-sm text-ink-2 dark:text-white/70">{mistake.explanation}</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <span className="text-xs text-slate-400">{mistake.category.replace(/_/g, " ")}</span>
+        <span className="text-xs text-ink-3">{mistake.category.replace(/_/g, " ")}</span>
         {mistake.status === "active" && (
           <Button
             variant="ghost"
@@ -137,7 +137,7 @@ export default function Progress() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           What has actually changed — not how long you sat here.
         </p>
       </header>
@@ -167,7 +167,7 @@ export default function Progress() {
             tone="brand"
           />
         </dl>
-        <p className="mt-4 text-xs leading-relaxed text-slate-400">
+        <p className="mt-4 text-xs leading-relaxed text-ink-3">
           Time studied is deliberately not the headline. Ten hours of activity is not ten hours of
           improvement, and treating it as progress is the easiest way to fool yourself.
         </p>
@@ -196,15 +196,15 @@ export default function Progress() {
           ))}
         </div>
         {skills && Object.keys(skills).length > 0 && (
-          <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/5">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
               Last 30 days
             </p>
             <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
               {Object.entries(skills).map(([skill, stats]) => (
-                <li key={skill} className="flex justify-between text-slate-600 dark:text-slate-300">
+                <li key={skill} className="flex justify-between text-ink-2 dark:text-white/70">
                   <span>{skillLabel(skill)}</span>
-                  <span className="tabular-nums text-slate-400">
+                  <span className="tabular-nums text-ink-3">
                     {stats.attempts} attempts
                     {stats.mean_accuracy != null &&
                       ` · ${Math.round(stats.mean_accuracy * 100)}%`}
@@ -219,7 +219,7 @@ export default function Progress() {
       {practice.length > 0 && (
         <Card className="ring-amber-200 dark:ring-amber-500/20">
           <SectionHeading title="Work on these today" />
-          <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+          <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
             You have made each of these at least twice. They are the ones worth fixing on purpose.
           </p>
           <ul className="space-y-3">
@@ -231,7 +231,7 @@ export default function Progress() {
                   <span className="font-semibold">{item.correct}</span>
                 </p>
                 {item.explanation && (
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="mt-1 text-sm text-ink-2 dark:text-white/70">
                     {item.explanation}
                   </p>
                 )}
@@ -249,7 +249,7 @@ export default function Progress() {
           title="Mistake bank"
           action={
             summary ? (
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-ink-3">
                 {summary.active} active · {summary.improving} improving · {summary.resolved} fixed
               </span>
             ) : null
@@ -264,8 +264,8 @@ export default function Progress() {
               className={cx(
                 "rounded-full px-3 py-1.5 text-sm transition",
                 filter === value
-                  ? "bg-brand-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300",
+                  ? "bg-ink text-white"
+                  : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3",
               )}
             >
               {value || "all"}
@@ -301,12 +301,12 @@ export default function Progress() {
               const peak = Math.max(1, ...reviewStats.forecast.map((d) => d.count));
               return (
                 <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
-                  <span className="text-xs tabular-nums text-slate-400">{day.count}</span>
+                  <span className="text-xs tabular-nums text-ink-3">{day.count}</span>
                   <div
                     className="w-full rounded-t-md bg-gradient-to-t from-brand-500 to-violet-400"
                     style={{ height: `${Math.max(4, (day.count / peak) * 56)}px` }}
                   />
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-ink-3">
                     {index === 0
                       ? "today"
                       : new Date(day.date).toLocaleDateString(undefined, { weekday: "narrow" })}

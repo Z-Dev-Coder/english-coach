@@ -1,21 +1,22 @@
 import { useState } from "react";
 
 import { api, setToken } from "../lib/api";
+import Icon from "../lib/icons";
 import { Button, ErrorNote, Field, Input } from "../lib/ui";
 
 const HIGHLIGHTS = [
   {
-    icon: "🎯",
+    n: "01",
     title: "Built around your weak spots",
     body: "Eight skills tracked separately. Read at B2 but speak at A2? You get A2 speaking practice, not B1 everything.",
   },
   {
-    icon: "🗣️",
+    n: "02",
     title: "Speaking scripts you can take anywhere",
     body: "Roleplay here, or copy the prompt into ChatGPT or Gemini and practise there.",
   },
   {
-    icon: "🔒",
+    n: "03",
     title: "Runs on your machine",
     body: "Local AI models. No subscription, no API bills, nothing leaves your computer.",
   },
@@ -50,44 +51,32 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
     <div className="grid min-h-full lg:grid-cols-2">
       {/* Marketing panel. Hidden on small screens, where it would just push the
           form below the fold. */}
-      <section className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 p-12 text-white lg:flex lg:flex-col lg:justify-center">
-        <div
-          aria-hidden="true"
-          className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl"
-        />
+      <section className="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col lg:justify-center">
 
         <div className="relative max-w-md">
           <div className="mb-8 flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 text-xl backdrop-blur">
-              <span aria-hidden="true">🎓</span>
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-white font-mono text-[11px] font-bold text-ink">
+              EC
             </span>
-            <span className="text-lg font-bold tracking-tight">English Coach</span>
+            <span className="text-[15px] font-semibold tracking-tight">English Coach</span>
           </div>
 
-          <h1 className="text-4xl font-bold leading-tight tracking-tight">
-            Real English, turned into your daily plan.
+          <h1 className="text-[40px] font-semibold leading-[1.08]">
+            Real English, turned into your{" "}
+            <span className="text-[color:var(--color-highlight)]">daily plan</span>.
           </h1>
-          <p className="mt-4 text-white/70">
+          <p className="mt-5 text-[15px] leading-relaxed text-white/55">
             Not flashcards. A coach that measures what you struggle with and decides what you
             practise next.
           </p>
 
-          <ul className="mt-10 space-y-6">
+          <ul className="mt-12 space-y-5">
             {HIGHLIGHTS.map((item) => (
-              <li key={item.title} className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-lg backdrop-blur"
-                >
-                  {item.icon}
-                </span>
+              <li key={item.title} className="flex gap-4 border-t border-white/12 pt-5">
+                <span className="micro shrink-0 pt-0.5 text-white/35">{item.n}</span>
                 <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-white/65">{item.body}</p>
+                  <p className="text-[15px] font-medium">{item.title}</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-white/50">{item.body}</p>
                 </div>
               </li>
             ))}
@@ -100,24 +89,24 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-8 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-500 text-lg">
-                <span aria-hidden="true">🎓</span>
+              <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white dark:bg-white dark:text-ink">
+                EC
               </span>
-              <span className="font-bold tracking-tight">English Coach</span>
+              <span className="font-semibold tracking-tight">English Coach</span>
             </div>
             <button
               onClick={onToggleTheme}
               aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-              className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="grid h-9 w-9 place-items-center rounded-xl text-ink-3 hover:bg-sunken dark:hover:bg-white/[0.06]"
             >
-              <span aria-hidden="true">{dark ? "☀️" : "🌙"}</span>
+              <Icon name={dark ? "sun" : "moon"} size={16} />
             </button>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-[22px] font-semibold">
             {mode === "login" ? "Welcome back" : "Create your account"}
           </h2>
-          <p className="mt-1.5 mb-8 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1.5 mb-8 text-sm text-ink-2 dark:text-white/55">
             {mode === "login"
               ? "Pick up where you left off."
               : "Takes a few seconds. Your profile builds itself as you practise."}
@@ -155,14 +144,14 @@ export default function Login({ dark, onToggleTheme, onAuthenticated }) {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-6 text-center text-sm text-ink-2 dark:text-white/55">
             {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
             <button
               onClick={() => {
                 setMode(mode === "login" ? "register" : "login");
                 setError(null);
               }}
-              className="font-semibold text-brand-600 hover:underline dark:text-brand-300"
+              className="font-medium text-ink underline underline-offset-4 dark:text-white"
             >
               {mode === "login" ? "Sign up" : "Sign in"}
             </button>

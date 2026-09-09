@@ -83,12 +83,12 @@ function ReviewCard({ item, onAnswer, submitting }) {
         {progress.lapses > 0 && <Pill tone="warn">forgotten {progress.lapses}×</Pill>}
       </div>
 
-      <p className="text-sm font-medium text-slate-400">{prompt.instruction}</p>
+      <p className="text-sm font-medium text-ink-3">{prompt.instruction}</p>
       <p className="mt-3 text-2xl font-bold leading-snug tracking-tight sm:text-3xl">
         {prompt.front}
       </p>
       {prompt.support && !revealed && (
-        <p className="mt-2 text-slate-500 dark:text-slate-400">{prompt.support}</p>
+        <p className="mt-2 text-ink-2 dark:text-white/55">{prompt.support}</p>
       )}
 
       {!revealed ? (
@@ -96,18 +96,18 @@ function ReviewCard({ item, onAnswer, submitting }) {
           <Button size="lg" onClick={() => setRevealed(true)} className="w-full sm:w-auto">
             Show answer
           </Button>
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-ink-3">
             Try to answer out loud first — pressing space works too.
           </p>
         </div>
       ) : (
         <div className="animate-rise">
-          <div className="mt-6 border-t border-slate-100 pt-5 dark:border-white/5">
+          <div className="mt-6 border-t border-[color:var(--color-line)] pt-5 dark:border-white/5">
             <p className="text-xl font-semibold">{expression.text}</p>
-            <p className="mt-1 text-slate-600 dark:text-slate-300">{expression.meaning}</p>
+            <p className="mt-1 text-ink-2 dark:text-white/70">{expression.meaning}</p>
 
             {example && (
-              <p className="mt-4 border-l-2 border-brand-300 pl-3 text-slate-600 italic dark:text-slate-300">
+              <p className="mt-4 border-l-2 border-ink/25 pl-3 text-ink-2 italic dark:text-ink-3">
                 {example.text}
               </p>
             )}
@@ -120,14 +120,14 @@ function ReviewCard({ item, onAnswer, submitting }) {
             )}
 
             {expression.register && expression.register !== "neutral" && (
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-ink-3">
                 Register: <span className="font-medium">{expression.register}</span>
               </p>
             )}
           </div>
 
           <div className="mt-6">
-            <p className="mb-2 text-sm font-medium text-slate-500">How did that go?</p>
+            <p className="mb-2 text-sm font-medium text-ink-2">How did that go?</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {RATINGS.map((rating) => (
                 <button
@@ -151,7 +151,7 @@ function ReviewCard({ item, onAnswer, submitting }) {
         </div>
       )}
 
-      <p className="mt-5 text-xs text-slate-400">
+      <p className="mt-5 text-xs text-ink-3">
         Exercise: {exercise.replace(/_/g, " ")}
         {progress.reps > 0 && ` · seen ${progress.reps}×`}
       </p>
@@ -167,7 +167,7 @@ function SessionComplete({ answered, stats, onReload }) {
           🎉
         </div>
         <h2 className="mt-3 text-xl font-bold">Review done</h2>
-        <p className="mt-1 text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-ink-2 dark:text-white/55">
           {answered} {answered === 1 ? "card" : "cards"} reviewed. Everything due today is
           cleared.
         </p>
@@ -191,13 +191,13 @@ function ForecastCard({ stats }) {
       <div className="flex items-end gap-2" role="list">
         {stats.forecast.map((day, index) => (
           <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5" role="listitem">
-            <span className="text-xs tabular-nums text-slate-400">{day.count}</span>
+            <span className="text-xs tabular-nums text-ink-3">{day.count}</span>
             <div
               className="w-full rounded-t-md bg-gradient-to-t from-brand-500 to-violet-400 transition-all duration-700"
               style={{ height: `${Math.max(4, (day.count / peak) * 64)}px` }}
               title={`${day.count} due`}
             />
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-ink-3">
               {index === 0
                 ? "today"
                 : new Date(day.date).toLocaleDateString(undefined, { weekday: "narrow" })}
@@ -205,7 +205,7 @@ function ForecastCard({ stats }) {
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-slate-400">
+      <p className="mt-4 text-xs text-ink-3">
         Your schedule for the next week. Spikes are normal — the scheduler spreads them out as you
         keep answering.
       </p>
@@ -277,7 +277,7 @@ export default function Review() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Review</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
             Spaced repetition. Each answer decides when you next see the card.
           </p>
         </div>
@@ -301,7 +301,7 @@ export default function Review() {
       />
 
       {lastResult && index > 0 && index <= total && (
-        <p className="text-sm text-slate-400" aria-live="polite">
+        <p className="text-sm text-ink-3" aria-live="polite">
           Last card scheduled {formatInterval(lastResult.days)}.
         </p>
       )}

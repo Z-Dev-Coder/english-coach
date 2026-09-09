@@ -46,9 +46,9 @@ function StepRail({ current, furthest, onJump }) {
               disabled={index > furthest}
               className={cx(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                active && "bg-brand-600 text-white shadow-sm",
+                active && "bg-ink text-white dark:bg-white dark:text-ink",
                 !active && done && "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-                !active && !done && "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
+                !active && !done && "bg-sunken text-ink-3 dark:bg-white/[0.05] dark:text-ink-2",
                 index > furthest && "cursor-not-allowed",
               )}
             >
@@ -190,7 +190,7 @@ export default function Drill() {
         <h1 className="text-2xl font-bold tracking-tight">
           Listen <span className="text-gradient">Speak</span> Write
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           One sentence, five ways. Listening, pronunciation, spelling and production from a single
           piece of material.
         </p>
@@ -227,7 +227,7 @@ export default function Drill() {
           {drill.expression && <Pill>from “{drill.expression}”</Pill>}
         </div>
 
-        <p className="text-sm text-slate-500 dark:text-slate-400">{current.hint}</p>
+        <p className="text-sm text-ink-2 dark:text-white/55">{current.hint}</p>
 
         {/* Step 1: listen. The sentence stays hidden — showing it would turn a
             listening exercise into a reading one. */}
@@ -237,7 +237,7 @@ export default function Drill() {
               <PlayButton text={drill.sentence} rate={1} label="Play" voice={voice} />
               <PlayButton text={drill.sentence} rate={0.65} label="Slowly" voice={voice} />
             </div>
-            <p className="rounded-xl bg-slate-50 p-4 text-center text-slate-400 dark:bg-slate-800/50">
+            <p className="rounded-xl bg-sunken p-4 text-center text-ink-3 dark:bg-white/[0.04]">
               The sentence is hidden on purpose. Listen until you can hold it in your head.
             </p>
             <Button onClick={advance}>I've got it</Button>
@@ -258,16 +258,16 @@ export default function Drill() {
             </div>
 
             {spoken && (
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              <div className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-3">
                   What was recognised
                 </p>
-                <p className="mt-1 text-slate-700 dark:text-slate-200">{spoken}</p>
+                <p className="mt-1 text-ink dark:text-white/85">{spoken}</p>
               </div>
             )}
 
             {!canListen && (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-ink-3">
                 This browser can't record speech, so this step isn't scored. Say the sentence out
                 loud anyway — that's the part that matters.
               </p>
@@ -287,7 +287,7 @@ export default function Drill() {
               rows={3}
               autoFocus
               placeholder="Type exactly what you heard…"
-              className="w-full rounded-xl border-0 bg-slate-50 p-4 text-lg ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+              className="w-full rounded-xl border-0 bg-sunken p-4 text-lg ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
             />
             <Button onClick={advance} disabled={!written.trim()}>
               Next
@@ -299,13 +299,13 @@ export default function Drill() {
             because these steps are about manipulating it, not recalling it. */}
         {step >= 3 && (
           <div className="mt-5 space-y-4">
-            <div className="rounded-xl bg-brand-50 p-4 dark:bg-brand-500/10">
-              <p className="text-xs font-medium uppercase tracking-wide text-brand-700 dark:text-brand-300">
+            <div className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink dark:text-white">
                 The sentence
               </p>
               <p className="mt-1 text-lg font-medium">{drill.sentence}</p>
               {drill.meaning && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{drill.meaning}</p>
+                <p className="mt-1 text-sm text-ink-2 dark:text-white/55">{drill.meaning}</p>
               )}
             </div>
 
@@ -317,7 +317,7 @@ export default function Drill() {
                   rows={2}
                   autoFocus
                   placeholder="Change one word or phrase, keeping it natural…"
-                  className="w-full rounded-xl border-0 bg-slate-50 p-4 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+                  className="w-full rounded-xl border-0 bg-sunken p-4 ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
                 />
                 <Button onClick={advance} disabled={!variation.trim()}>
                   Next
@@ -331,7 +331,7 @@ export default function Drill() {
                   rows={2}
                   autoFocus
                   placeholder="Now write it as something true about your life…"
-                  className="w-full rounded-xl border-0 bg-slate-50 p-4 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+                  className="w-full rounded-xl border-0 bg-sunken p-4 ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
                 />
                 <Button onClick={finish} loading={saving} disabled={!personal.trim()}>
                   Finish drill
@@ -350,7 +350,7 @@ export default function Drill() {
 
           {result.detail.written && (
             <div className="mb-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 What you wrote
               </p>
               <WordDiff result={result.detail.written} />
@@ -359,7 +359,7 @@ export default function Drill() {
 
           {result.detail.spoken && (
             <div className="mb-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 What you said
               </p>
               <WordDiff result={result.detail.spoken} caveat={result.detail.caveat} />
@@ -368,10 +368,10 @@ export default function Drill() {
 
           {result.detail.variation && (
             <div className="mb-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Your own versions
               </p>
-              <p className="text-slate-700 dark:text-slate-200">{result.detail.variation}</p>
+              <p className="text-ink dark:text-white/85">{result.detail.variation}</p>
             </div>
           )}
 
@@ -380,7 +380,7 @@ export default function Drill() {
       )}
 
       {isLast && !result && (
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-sm text-ink-3">
           Finishing scores your listening, speaking and writing together.
         </p>
       )}

@@ -80,7 +80,7 @@ export default function Profile() {
     <div className="space-y-5 pb-24">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Your learning profile</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           This is what the daily planner uses to decide what you study.
         </p>
       </header>
@@ -121,7 +121,7 @@ export default function Profile() {
 
       <Card>
         <SectionHeading title="Priority skills" />
-        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+        <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
           The planner already favours your weakest skills. Use this to push it further.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -142,7 +142,7 @@ export default function Profile() {
 
       <Card>
         <SectionHeading title="Interests" />
-        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+        <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
           Real-world content and practice topics are picked from these.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -160,7 +160,7 @@ export default function Profile() {
 
       <Card>
         <SectionHeading title="Immersion" />
-        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+        <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
           How much English-only content you get. Raise it as you grow more comfortable.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -188,7 +188,7 @@ export default function Profile() {
             </Pill>
           ))}
         </div>
-        <p className="mt-4 text-xs leading-relaxed text-slate-400">
+        <p className="mt-4 text-xs leading-relaxed text-ink-3">
           These are estimated from your activity rather than set by hand. It is why the app targets
           your weak skills instead of one overall level.
         </p>
@@ -197,7 +197,7 @@ export default function Profile() {
       <ErrorNote error={error} />
 
       {/* Sticky save bar: on a long form the button should never be off-screen. */}
-      <div className="fixed inset-x-0 bottom-16 z-10 border-t border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur-md md:bottom-0 md:px-6 dark:border-white/10 dark:bg-slate-900/90">
+      <div className="fixed inset-x-0 bottom-16 z-10 border-t border-[color:var(--color-line)]/70 bg-white/90 px-4 py-3 backdrop-blur-md md:bottom-0 md:px-6 dark:border-white/10 dark:bg-white/[0.03]/90">
         <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 md:pl-56">
           {saved && (
             <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">

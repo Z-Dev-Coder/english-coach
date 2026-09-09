@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
 import TodayLesson from "../components/TodayLesson";
-import { skillIcon, skillLabel } from "../lib/skills";
+import Icon from "../lib/icons";
+import { skillLabel } from "../lib/skills";
 import {
   Card,
   CardSkeleton,
@@ -42,25 +43,26 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
   const goalPct = goal > 0 ? Math.min(100, (sessions / goal) * 100) : 0;
 
   return (
-    <section className="animate-rise overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-violet-600 p-6 text-white shadow-lift sm:p-8">
+    <section className="animate-rise overflow-hidden rounded-2xl bg-ink p-6 text-white sm:p-7 dark:bg-white/[0.05]">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-white/70">
-            {greeting()}, {learner.username} 👋
+          <p className="micro text-white/50">
+            {greeting()}, {learner.username}
           </p>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="mt-2 text-[26px] font-semibold leading-[1.15] sm:text-[32px]">
             {focus ? (
               <>
-                Today's focus is <span className="whitespace-nowrap">{focus}</span>
+                Today's focus is{" "}
+                <span className="whitespace-nowrap text-[color:var(--color-highlight)]">{focus}</span>
               </>
             ) : (
               "Let's find your starting point"
             )}
           </h1>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Pill className="bg-white/15 text-white">Now: {learner.overall_level}</Pill>
-            <Pill className="bg-white/15 text-white">Goal: {learner.target_level}</Pill>
-            <Pill className="bg-white/15 text-white">{learner.daily_minutes} min a day</Pill>
+            <Pill className="text-white/70 ring-white/25">Now {learner.overall_level}</Pill>
+            <Pill className="text-white/70 ring-white/25">Goal {learner.target_level}</Pill>
+            <Pill className="text-white/70 ring-white/25">{learner.daily_minutes} min a day</Pill>
           </div>
         </div>
 
@@ -68,22 +70,20 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
           <div className="text-center">
             <ProgressRing value={goalPct} size={78} tone="brand">
               <span className="text-xl font-bold tabular-nums">{streak}</span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-white/70">
-                day{streak === 1 ? "" : "s"}
-              </span>
+              <span className="micro text-white/40">day{streak === 1 ? "" : "s"}</span>
             </ProgressRing>
-            <p className="mt-1.5 text-xs text-white/70">Streak</p>
+            <p className="micro mt-2 text-white/40">Streak</p>
           </div>
           <dl className="space-y-3 text-white">
             <div>
-              <dt className="text-[11px] uppercase tracking-wide text-white/60">This week</dt>
+              <dt className="micro text-white/40">This week</dt>
               <dd className="text-xl font-bold tabular-nums">
                 {weeklyMinutes}
                 <span className="ml-1 text-xs font-medium text-white/60">min</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-wide text-white/60">Sessions</dt>
+              <dt className="micro text-white/40">Sessions</dt>
               <dd className="text-xl font-bold tabular-nums">
                 {sessions}
                 <span className="text-white/60"> / {goal}</span>
@@ -152,7 +152,7 @@ export default function Dashboard() {
             id="plan-heading"
             title="Today's plan"
             action={
-              <span className="text-sm tabular-nums text-slate-400">{totalMinutes} min total</span>
+              <span className="text-sm tabular-nums text-ink-3">{totalMinutes} min total</span>
             }
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,7 +175,7 @@ export default function Dashboard() {
                   </div>
                   <Pill tone="brand">{block.minutes} min</Pill>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                <p className="mt-3 text-sm leading-relaxed text-ink-2 dark:text-white/55">
                   {block.reason}
                 </p>
                 {block.skill === "review" && data.review && (
@@ -204,8 +204,8 @@ export default function Dashboard() {
                 key={skill.skill}
                 value={skill.score}
                 label={
-                  <span className="inline-flex items-center gap-1.5">
-                    <span aria-hidden="true">{skillIcon(skill.skill)}</span>
+                  <span className="inline-flex items-center gap-2">
+                    <Icon name={skill.skill} size={15} className="text-ink-3" />
                     {skillLabel(skill.skill)}
                   </span>
                 }
@@ -214,7 +214,7 @@ export default function Dashboard() {
               />
             ))}
           </div>
-          <p className="mt-5 text-xs leading-relaxed text-slate-400">
+          <p className="mt-5 text-xs leading-relaxed text-ink-3">
             Scores are estimates that get more reliable the more you practise. Amber marks the
             areas today's plan is prioritising.
           </p>
@@ -236,8 +236,8 @@ export default function Dashboard() {
             <ul className="space-y-2.5 text-sm">
               {weak.map((item) => (
                 <li key={item.skill} className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                    <span aria-hidden="true">{skillIcon(item.skill)}</span>
+                  <span className="flex items-center gap-2 text-ink-2 dark:text-white/70">
+                    <Icon name={item.skill} size={15} className="text-ink-3" />
                     {skillLabel(item.skill)}
                   </span>
                   <span className="tabular-nums text-amber-600 dark:text-amber-400">

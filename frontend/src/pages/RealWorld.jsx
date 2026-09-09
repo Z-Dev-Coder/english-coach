@@ -86,7 +86,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
       </div>
 
       {article.summary && (
-        <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-sm leading-relaxed text-ink-2 dark:text-white/55">
           {article.summary.slice(0, 260)}
           {article.summary.length > 260 && "…"}
         </p>
@@ -123,11 +123,11 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
       )}
 
       {open && material && (
-        <div className="mt-5 space-y-5 border-t border-slate-100 pt-5 dark:border-white/5">
+        <div className="mt-5 space-y-5 border-t border-[color:var(--color-line)] pt-5 dark:border-white/5">
           {article.adapted_text && (
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                   In simpler English
                 </p>
                 {canSpeak && (
@@ -140,7 +140,7 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
                 )}
               </div>
               <p className="leading-relaxed">{article.adapted_text}</p>
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-ink-3">
                 Written for you at your level — not a copy of the article.
               </p>
             </div>
@@ -149,23 +149,23 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
           {article.vocabulary?.length > 0 && (
             <div>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                   Vocabulary
                 </p>
                 <AddToReview items={article.vocabulary} sourceUrl={article.url} />
               </div>
               <ul className="space-y-2">
                 {article.vocabulary.map((item, index) => (
-                  <li key={index} className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
+                  <li key={index} className="rounded-xl bg-sunken p-3 text-sm dark:bg-white/[0.04]">
                     <span className="font-semibold">{item.expression}</span>
                     {item.kind && (
-                      <span className="ml-2 text-xs text-slate-400">
+                      <span className="ml-2 text-xs text-ink-3">
                         {item.kind.replace(/_/g, " ")}
                       </span>
                     )}
-                    <p className="mt-0.5 text-slate-600 dark:text-slate-300">{item.meaning}</p>
+                    <p className="mt-0.5 text-ink-2 dark:text-white/70">{item.meaning}</p>
                     {item.example && (
-                      <p className="mt-1 italic text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 italic text-ink-2 dark:text-white/55">
                         “{item.example}”
                       </p>
                     )}
@@ -177,10 +177,10 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
 
           {article.questions?.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Check you understood
               </p>
-              <ol className="list-decimal space-y-1 pl-5 text-slate-600 dark:text-slate-300">
+              <ol className="list-decimal space-y-1 pl-5 text-ink-2 dark:text-white/70">
                 {article.questions.map((question, index) => (
                   <li key={index}>{question}</li>
                 ))}
@@ -190,16 +190,16 @@ function ArticleCard({ article, onPrepare, preparing, voice }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             {article.speaking_prompt && (
-              <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-500/10">
-                <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+              <div className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
                   Say it
                 </p>
                 <p className="mt-1 text-sm">{article.speaking_prompt}</p>
               </div>
             )}
             {article.writing_prompt && (
-              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <div className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                   Write it
                 </p>
                 <p className="mt-1 text-sm">{article.writing_prompt}</p>
@@ -234,7 +234,7 @@ function DialogueStudio() {
     <div className="space-y-5">
       <Card>
         <SectionHeading title="Bring in dialogue from anything you watch" />
-        <p className="-mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
+        <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
           Paste a few lines from a film, a show, or a real conversation. You'll get the spoken
           English explained — the expressions whose meaning is nothing like the words.
         </p>
@@ -243,13 +243,13 @@ function DialogueStudio() {
           onChange={(event) => setText(event.target.value)}
           rows={6}
           placeholder={"A: What are you getting at?\nB: Nothing, forget it.\nA: No, go on."}
-          className="w-full rounded-xl border-0 bg-slate-50 p-4 font-mono text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+          className="w-full rounded-xl border-0 bg-sunken p-4 font-mono text-sm ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
         />
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <Button onClick={study} loading={busy} disabled={text.trim().length < 20}>
             Explain this
           </Button>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-3">
             Your own short excerpts only — nothing is scraped or shared.
           </span>
         </div>
@@ -273,17 +273,17 @@ function DialogueStudio() {
             action={result.register ? <Pill tone="brand">{result.register}</Pill> : null}
           />
           {result.summary && (
-            <p className="text-slate-600 dark:text-slate-300">{result.summary}</p>
+            <p className="text-ink-2 dark:text-white/70">{result.summary}</p>
           )}
 
           <ul className="mt-5 space-y-3">
             {result.expressions.map((item, index) => (
-              <li key={index} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
+              <li key={index} className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{item.expression}</span>
                   {item.register && <Pill>{item.register}</Pill>}
                 </div>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">{item.meaning}</p>
+                <p className="mt-1 text-ink-2 dark:text-white/70">{item.meaning}</p>
                 {item.literal_trap && (
                   <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
                     <span className="font-medium">Careful: </span>
@@ -291,12 +291,12 @@ function DialogueStudio() {
                   </p>
                 )}
                 {item.example && (
-                  <p className="mt-2 italic text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 italic text-ink-2 dark:text-white/55">
                     “{item.example}”
                   </p>
                 )}
                 {item.alternatives?.length > 0 && (
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-sm text-ink-2 dark:text-white/55">
                     Also: {item.alternatives.join(" · ")}
                   </p>
                 )}
@@ -312,8 +312,8 @@ function DialogueStudio() {
           </div>
 
           {result.roleplay_prompt && (
-            <div className="mt-5 rounded-xl bg-brand-50 p-4 dark:bg-brand-500/10">
-              <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+            <div className="mt-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-white">
                 Try using them
               </p>
               <p className="mt-1">{result.roleplay_prompt}</p>
@@ -387,7 +387,7 @@ export default function RealWorld() {
         <h1 className="text-2xl font-bold tracking-tight">
           Real <span className="text-gradient">World</span> English
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Current stories and real dialogue, turned into things you can actually study.
         </p>
       </header>
@@ -403,8 +403,8 @@ export default function RealWorld() {
             className={cx(
               "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition",
               tab === item.key
-                ? "bg-brand-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+                ? "bg-ink text-white dark:bg-white dark:text-ink"
+                : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3 dark:hover:bg-white/10",
             )}
           >
             <span aria-hidden="true">{item.icon}</span>
@@ -453,8 +453,8 @@ export default function RealWorld() {
               className={cx(
                 "rounded-full px-3 py-1.5 text-sm transition",
                 !topic
-                  ? "bg-brand-600 text-white"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+                  ? "bg-ink text-white"
+                  : "bg-sunken text-ink-2 dark:bg-white/[0.05] dark:text-ink-3",
               )}
             >
               All
@@ -466,8 +466,8 @@ export default function RealWorld() {
                 className={cx(
                   "rounded-full px-3 py-1.5 text-sm transition",
                   topic === item
-                    ? "bg-brand-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300",
+                    ? "bg-ink text-white"
+                    : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05] dark:text-ink-3",
                 )}
               >
                 {item}

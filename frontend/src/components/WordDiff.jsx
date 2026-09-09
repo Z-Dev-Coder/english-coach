@@ -9,13 +9,12 @@ import { Pill } from "../lib/ui";
  */
 
 const OP_STYLES = {
-  correct: "text-slate-700 dark:text-slate-200",
+  correct: "text-ink dark:text-white/85",
   wrong:
-    "rounded bg-amber-100 px-1 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200",
+    "rounded bg-[color:var(--color-highlight)]/45 px-1 text-ink dark:text-ink",
   missing:
-    "rounded bg-rose-100 px-1 text-rose-900 line-through dark:bg-rose-500/20 dark:text-rose-200",
-  extra:
-    "rounded bg-slate-200 px-1 text-slate-500 line-through dark:bg-slate-700 dark:text-slate-400",
+    "rounded bg-[color:var(--color-bad-bg)] px-1 text-[color:var(--color-accent)] line-through",
+  extra: "rounded bg-sunken px-1 text-ink-3 line-through dark:bg-white/[0.06]",
 };
 
 export default function WordDiff({ result, caveat }) {
@@ -28,7 +27,7 @@ export default function WordDiff({ result, caveat }) {
         <Pill tone={isPerfect ? "good" : percentage >= 70 ? "brand" : "warn"}>
           {percentage}%
         </Pill>
-        <span className="text-sm text-slate-500 dark:text-slate-400">{summary}</span>
+        <span className="text-sm text-ink-2 dark:text-white/55">{summary}</span>
       </div>
 
       <p className="flex flex-wrap gap-x-1.5 gap-y-1 text-lg leading-relaxed">
@@ -43,7 +42,7 @@ export default function WordDiff({ result, caveat }) {
       </p>
 
       {!isPerfect && (
-        <ul className="space-y-1 text-sm text-slate-500 dark:text-slate-400">
+        <ul className="space-y-1 text-sm text-ink-2 dark:text-white/55">
           {tokens
             .filter((token) => token.op !== "correct")
             .slice(0, 6)
@@ -69,7 +68,7 @@ export default function WordDiff({ result, caveat }) {
         </ul>
       )}
 
-      {caveat && <p className="text-xs leading-relaxed text-slate-400">{caveat}</p>}
+      {caveat && <p className="text-xs leading-relaxed text-ink-3">{caveat}</p>}
     </div>
   );
 }

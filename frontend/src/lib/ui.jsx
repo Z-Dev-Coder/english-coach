@@ -17,8 +17,8 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
   return (
     <Tag
       className={cx(
-        "rounded-xl bg-white p-4 shadow-soft ring-1 ring-slate-900/5",
-        "dark:bg-slate-900 dark:ring-white/10",
+        "rounded-2xl bg-surface p-4 ring-1 ring-[color:var(--color-line)]",
+        "dark:bg-white/[0.03] dark:ring-white/10",
         interactive &&
           "transition duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:-translate-y-0.5",
         className,
@@ -32,8 +32,8 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
 
 export function SectionHeading({ title, action, id }) {
   return (
-    <div className="mb-2.5 flex items-baseline justify-between gap-4">
-      <h2 id={id} className="text-base font-semibold tracking-tight">
+    <div className="mb-3 flex items-baseline justify-between gap-4">
+      <h2 id={id} className="text-[15px] font-semibold">
         {title}
       </h2>
       {action}
@@ -43,20 +43,21 @@ export function SectionHeading({ title, action, id }) {
 
 /* ---------------------------------------------------------------- Controls */
 
+// Black pills. The primary action reads as primary through contrast, which
+// leaves the accent colour free to actually mean something.
 const BUTTON_VARIANTS = {
   primary:
-    "bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-300 dark:disabled:bg-brand-900",
+    "bg-ink text-white hover:opacity-90 disabled:opacity-25 dark:bg-white dark:text-ink",
   secondary:
-    "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 active:bg-slate-100 dark:bg-slate-800 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-slate-700",
-  ghost:
-    "text-brand-700 hover:bg-brand-50 active:bg-brand-100 dark:text-brand-300 dark:hover:bg-white/5",
-  danger: "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800",
+    "bg-surface text-ink ring-1 ring-[color:var(--color-line)] hover:bg-sunken dark:bg-white/[0.06] dark:text-white/90 dark:ring-white/10",
+  ghost: "text-ink-2 hover:bg-sunken dark:text-white/70 dark:hover:bg-white/[0.06]",
+  danger: "bg-[color:var(--color-accent)] text-white hover:opacity-90",
 };
 
 const BUTTON_SIZES = {
   sm: "px-3 py-1.5 text-xs",
-  md: "px-4 py-2.5 text-sm",
-  lg: "px-5 py-3 text-base",
+  md: "px-4 py-2 text-[13px]",
+  lg: "px-5 py-2.5 text-sm",
 };
 
 export function Button({
@@ -73,7 +74,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold",
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium",
         "transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100",
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
@@ -93,17 +94,17 @@ export function Button({
 }
 
 const FIELD_CLASS =
-  "w-full rounded-xl border-0 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 " +
-  "ring-1 ring-slate-200 transition placeholder:text-slate-400 " +
-  "focus:bg-white focus:ring-2 focus:ring-brand-500 " +
-  "dark:bg-slate-800 dark:text-slate-100 dark:ring-white/10 dark:focus:bg-slate-800";
+  "w-full rounded-xl border-0 bg-sunken px-3.5 py-2.5 text-sm text-ink " +
+  "ring-1 ring-[color:var(--color-line)] transition placeholder:text-ink-3 " +
+  "focus:bg-surface focus:ring-2 focus:ring-ink " +
+  "dark:bg-white/[0.04] dark:text-white/90 dark:ring-white/10 dark:focus:ring-white";
 
 export function Field({ label, hint, children }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+      <span className="micro mb-1.5 block">
         {label}
-        {hint && <span className="ml-1 font-normal text-slate-400">{hint}</span>}
+        {hint && <span className="ml-1 normal-case tracking-normal">{hint}</span>}
       </span>
       {children}
     </label>
@@ -131,8 +132,8 @@ export function Chip({ active, children, ...props }) {
       className={cx(
         "rounded-full px-3.5 py-1.5 text-sm font-medium transition duration-150 active:scale-95",
         active
-          ? "bg-brand-600 text-white shadow-sm"
-          : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+          ? "bg-ink text-white dark:bg-white dark:text-ink"
+          : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.06] dark:text-white/60",
       )}
       {...props}
     >
@@ -151,7 +152,7 @@ export function Switch({ checked, onChange, label, description }) {
         onClick={() => onChange(!checked)}
         className={cx(
           "mt-0.5 h-5 w-9 shrink-0 rounded-full p-0.5 transition",
-          checked ? "bg-brand-600" : "bg-slate-300 dark:bg-slate-700",
+          checked ? "bg-ink dark:bg-white" : "bg-[color:var(--color-line)] dark:bg-white/20",
         )}
       >
         <span
@@ -162,9 +163,9 @@ export function Switch({ checked, onChange, label, description }) {
         />
       </button>
       <span className="text-sm">
-        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
+        <span className="font-medium text-ink-2 dark:text-white/70">{label}</span>
         {description && (
-          <span className="block text-slate-400 dark:text-slate-500">{description}</span>
+          <span className="block text-ink-3 dark:text-white/40">{description}</span>
         )}
       </span>
     </label>
@@ -174,17 +175,18 @@ export function Switch({ checked, onChange, label, description }) {
 /* ------------------------------------------------------------------ Status */
 
 const PILL_TONES = {
-  default: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-  brand: "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300",
-  warn: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  good: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+  default: "text-ink-3 ring-[color:var(--color-line)] dark:text-white/50 dark:ring-white/15",
+  brand: "text-ink ring-ink/25 dark:text-white/90 dark:ring-white/25",
+  warn: "text-[color:var(--color-warn-ink)] ring-[color:var(--color-warn-ink)]/30",
+  good: "text-[color:var(--color-good-ink)] ring-[color:var(--color-good-ink)]/30",
 };
 
 export function Pill({ children, tone = "default", className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center rounded-full px-2 py-0.5 ring-1",
+        "font-mono text-[10px] font-medium uppercase tracking-[0.1em]",
         PILL_TONES[tone],
         className,
       )}
@@ -198,19 +200,19 @@ export function ProgressBar({ value, label, sublabel, weak }) {
   const pct = Math.max(0, Math.min(100, value ?? 0));
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
-        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
+      <div className="mb-1.5 flex items-baseline justify-between gap-2 text-[13px]">
+        <span className="font-medium text-ink-2 dark:text-white/70">{label}</span>
         <span
           className={cx(
-            "tabular-nums",
-            weak ? "text-amber-600 dark:text-amber-400" : "text-slate-400",
+            "font-mono text-[11px] tabular-nums",
+            weak ? "text-[color:var(--color-accent)]" : "text-ink-3",
           )}
         >
           {Math.round(pct)}%{sublabel ? ` · ${sublabel}` : ""}
         </span>
       </div>
       <div
-        className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        className="h-1 overflow-hidden rounded-full bg-[color:var(--color-line)] dark:bg-white/10"
         role="progressbar"
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}
@@ -220,9 +222,7 @@ export function ProgressBar({ value, label, sublabel, weak }) {
         <div
           className={cx(
             "h-full rounded-full transition-all duration-700 ease-out",
-            weak
-              ? "bg-gradient-to-r from-amber-400 to-amber-500"
-              : "bg-gradient-to-r from-brand-500 to-violet-500",
+            weak ? "bg-[color:var(--color-accent)]" : "bg-ink dark:bg-white",
           )}
           style={{ width: `${pct}%` }}
         />
@@ -238,9 +238,9 @@ export function ProgressRing({ value, size = 72, stroke = 7, children, tone = "b
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const tones = {
-    brand: "stroke-brand-500",
-    warn: "stroke-amber-500",
-    good: "stroke-emerald-500",
+    brand: "stroke-ink dark:stroke-white",
+    warn: "stroke-[color:var(--color-accent)]",
+    good: "stroke-[color:var(--color-good-ink)]",
   };
 
   return (
@@ -252,7 +252,7 @@ export function ProgressRing({ value, size = 72, stroke = 7, children, tone = "b
           r={radius}
           fill="none"
           strokeWidth={stroke}
-          className="stroke-slate-100 dark:stroke-slate-800"
+          className="stroke-[color:var(--color-line)] dark:stroke-white/10"
         />
         <circle
           cx={size / 2}
@@ -273,16 +273,16 @@ export function ProgressRing({ value, size = 72, stroke = 7, children, tone = "b
 
 export function StatTile({ label, value, unit, tone = "default" }) {
   const tones = {
-    default: "text-slate-900 dark:text-white",
-    brand: "text-brand-600 dark:text-brand-300",
-    warn: "text-amber-600 dark:text-amber-400",
+    default: "text-ink dark:text-white",
+    brand: "text-ink dark:text-white",
+    warn: "text-[color:var(--color-accent)]",
   };
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className={cx("mt-1 text-2xl font-bold tabular-nums", tones[tone])}>
+      <dt className="micro">{label}</dt>
+      <dd className={cx("mt-1.5 text-[26px] font-semibold leading-none tabular-nums", tones[tone])}>
         {value}
-        {unit && <span className="ml-1 text-sm font-medium text-slate-400">{unit}</span>}
+        {unit && <span className="ml-1 font-mono text-[11px] font-normal text-ink-3">{unit}</span>}
       </dd>
     </div>
   );
@@ -296,7 +296,7 @@ export function Skeleton({ className = "" }) {
   return (
     <div
       className={cx(
-        "animate-shimmer rounded-xl bg-slate-200/70 dark:bg-slate-800",
+        "animate-shimmer rounded-xl bg-sunken dark:bg-white/[0.06]",
         "bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)] bg-[length:200%_100%]",
         className,
       )}
@@ -320,7 +320,7 @@ export function CardSkeleton({ lines = 2 }) {
 export function Spinner({ label = "Loading" }) {
   return (
     <div className="flex items-center gap-3 p-8 text-slate-500" role="status">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600" />
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[color:var(--color-line)] border-t-ink dark:border-t-white" />
       <span className="text-sm">{label}…</span>
     </div>
   );
@@ -331,7 +331,7 @@ export function ErrorNote({ error, onRetry }) {
   return (
     <div
       role="alert"
-      className="animate-rise rounded-xl bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-500/20"
+      className="animate-rise rounded-l-sm rounded-r-xl border-l-2 border-[color:var(--color-accent)] bg-[color:var(--color-bad-bg)] px-4 py-3 text-[13px] text-[color:var(--color-accent)] dark:bg-rose-400/[0.07] dark:text-rose-200"
     >
       <p className="font-medium">{error.message}</p>
       {onRetry && (
@@ -348,26 +348,24 @@ export function ErrorNote({ error, onRetry }) {
 
 /* --------------------------------------------------------------- Guidance */
 
+// A thin rule on the left over a near-white wash. A filled mint or indigo
+// block is what made the old interface read as a default framework alert.
 const CALLOUT_TONES = {
   tip: {
-    box: "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/25",
-    label: "text-amber-700 dark:text-amber-300",
-    icon: "💡",
+    box: "bg-[color:var(--color-warn-bg)] border-[color:var(--color-warn-ink)]/45 dark:bg-amber-400/[0.06] dark:border-amber-300/40",
+    label: "text-[color:var(--color-warn-ink)] dark:text-amber-200",
   },
   info: {
-    box: "bg-brand-50 text-brand-900 ring-brand-200 dark:bg-brand-500/10 dark:text-brand-50 dark:ring-brand-500/25",
-    label: "text-brand-700 dark:text-brand-300",
-    icon: "ℹ️",
+    box: "bg-sunken border-ink/25 dark:bg-white/[0.04] dark:border-white/25",
+    label: "text-ink dark:text-white/80",
   },
   good: {
-    box: "bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/25",
-    label: "text-emerald-700 dark:text-emerald-300",
-    icon: "✓",
+    box: "bg-[color:var(--color-good-bg)] border-[color:var(--color-good-ink)]/45 dark:bg-emerald-400/[0.06] dark:border-emerald-300/40",
+    label: "text-[color:var(--color-good-ink)] dark:text-emerald-200",
   },
   warn: {
-    box: "bg-rose-50 text-rose-900 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-100 dark:ring-rose-500/25",
-    label: "text-rose-700 dark:text-rose-300",
-    icon: "⚠",
+    box: "bg-[color:var(--color-bad-bg)] border-[color:var(--color-accent)]/45 dark:bg-rose-400/[0.06] dark:border-rose-300/40",
+    label: "text-[color:var(--color-accent)] dark:text-rose-200",
   },
 };
 
@@ -375,16 +373,16 @@ const CALLOUT_TONES = {
 export function Callout({ tone = "info", title, children, className = "" }) {
   const style = CALLOUT_TONES[tone] ?? CALLOUT_TONES.info;
   return (
-    <div className={cx("rounded-xl px-3.5 py-3 text-sm ring-1", style.box, className)}>
-      <div className="flex gap-2.5">
-        <span aria-hidden="true" className="mt-px shrink-0">
-          {style.icon}
-        </span>
-        <div className="min-w-0">
-          {title && <p className={cx("mb-0.5 font-semibold", style.label)}>{title}</p>}
-          <div className="leading-relaxed">{children}</div>
-        </div>
-      </div>
+    <div
+      className={cx(
+        "rounded-l-sm rounded-r-xl border-l-2 px-4 py-3 text-[13px] leading-relaxed",
+        "text-ink/85 dark:text-white/75",
+        style.box,
+        className,
+      )}
+    >
+      {title && <p className={cx("micro mb-1.5", style.label)}>{title}</p>}
+      <div>{children}</div>
     </div>
   );
 }
@@ -419,7 +417,7 @@ export function HowTo({ id, title = "How this works", steps = [], children }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-brand-600 hover:underline dark:hover:text-brand-300"
+        className="micro underline-offset-4 hover:text-ink hover:underline dark:hover:text-white"
       >
         {title}?
       </button>
@@ -432,7 +430,7 @@ export function HowTo({ id, title = "How this works", steps = [], children }) {
         <ol className="mt-1 space-y-1.5">
           {steps.map((step, index) => (
             <li key={index} className="flex gap-2.5">
-              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-600 text-[10px] font-bold text-white">
+              <span className="mt-px grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full border border-current font-mono text-[10px] opacity-55">
                 {index + 1}
               </span>
               <span>{step}</span>
@@ -443,21 +441,21 @@ export function HowTo({ id, title = "How this works", steps = [], children }) {
       {children}
       <button
         onClick={dismiss}
-        className="mt-2.5 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
+        className="micro mt-3 opacity-60 hover:opacity-100"
       >
-        Got it, hide this
+        Got it
       </button>
     </Callout>
   );
 }
 
-export function EmptyState({ icon = "✨", title, body, action }) {
+export function EmptyState({ icon = "✦", title, body, action }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
-      <div aria-hidden="true" className="text-3xl">
+    <div className="rounded-2xl border border-dashed border-[color:var(--color-line)] p-10 text-center dark:border-white/10">
+      <div aria-hidden="true" className="text-2xl text-ink-3">
         {icon}
       </div>
-      <p className="mt-3 font-semibold text-slate-700 dark:text-slate-200">{title}</p>
+      <p className="mt-3 text-[15px] font-semibold text-ink dark:text-white/90">{title}</p>
       {body && (
         <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{body}</p>
       )}

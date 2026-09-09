@@ -99,7 +99,7 @@ function Listening({ passages, voice }) {
           </Select>
         </Field>
 
-        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-4 text-sm text-ink-2 dark:text-white/55">
           Sentence {index + 1} of {sentences.length}. Listen, then type what you hear — the text
           stays hidden until you check.
         </p>
@@ -131,7 +131,7 @@ function Listening({ passages, voice }) {
           onChange={(event) => setWritten(event.target.value)}
           rows={3}
           placeholder="Type what you hear…"
-          className="mt-4 w-full rounded-xl border-0 bg-slate-50 p-4 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+          className="mt-4 w-full rounded-xl border-0 bg-sunken p-4 ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
         />
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -227,7 +227,7 @@ function Reading({ passages, onAdded }) {
               <span aria-hidden="true">▶</span> Read it aloud
             </Button>
           </div>
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-ink-3">
             Reading time is recorded, but it doesn't move your reading score on its own — speed
             isn't comprehension.
           </p>
@@ -258,13 +258,13 @@ function Reading({ passages, onAdded }) {
                 onChange={(event) => setText(event.target.value)}
                 rows={6}
                 placeholder="An article, an email, subtitles, a message someone sent you…"
-                className="w-full rounded-xl border-0 bg-slate-50 p-4 text-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+                className="w-full rounded-xl border-0 bg-sunken p-4 text-sm ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
               />
             </Field>
             <Button onClick={add} loading={busy} disabled={text.trim().length < 20}>
               Save passage
             </Button>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-ink-3">
               Its level is estimated automatically, and it becomes available for listening and
               dictation too. Only you can see it.
             </p>
@@ -358,14 +358,14 @@ function Writing() {
           onChange={onType}
           rows={8}
           placeholder="Write as much as you can. Don't worry about mistakes — that's the point."
-          className="mt-4 w-full rounded-xl border-0 bg-slate-50 p-4 leading-relaxed ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:ring-white/10"
+          className="mt-4 w-full rounded-xl border-0 bg-sunken p-4 leading-relaxed ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <Button onClick={submit} loading={busy} disabled={!text.trim()}>
             Get feedback
           </Button>
-          <span className="text-sm tabular-nums text-slate-400">{words} words</span>
+          <span className="text-sm tabular-nums text-ink-3">{words} words</span>
         </div>
       </Card>
 
@@ -391,10 +391,10 @@ function Writing() {
 
           {detail.strengths?.length > 0 && (
             <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 What worked
               </p>
-              <ul className="space-y-1 text-slate-700 dark:text-slate-200">
+              <ul className="space-y-1 text-ink dark:text-white/85">
                 {detail.strengths.map((item, index) => (
                   <li key={index} className="flex gap-2">
                     <span aria-hidden="true" className="text-emerald-500">
@@ -409,14 +409,14 @@ function Writing() {
 
           {detail.issues?.length > 0 && (
             <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Things to fix
               </p>
               <ul className="space-y-3">
                 {detail.issues.map((issue, index) => (
                   <li
                     key={index}
-                    className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60"
+                    className="rounded-xl bg-sunken p-3 text-sm dark:bg-white/[0.04]"
                   >
                     {issue.original && (
                       <p>
@@ -433,11 +433,11 @@ function Writing() {
                         )}
                       </p>
                     )}
-                    <p className={cx("text-slate-600 dark:text-slate-300", issue.original && "mt-1")}>
+                    <p className={cx("text-ink-2 dark:text-white/70", issue.original && "mt-1")}>
                       {issue.explanation}
                     </p>
                     {issue.category && (
-                      <span className="mt-1.5 inline-block text-xs text-slate-400">
+                      <span className="mt-1.5 inline-block text-xs text-ink-3">
                         {issue.category.replace(/_/g, " ")}
                       </span>
                     )}
@@ -449,13 +449,13 @@ function Writing() {
 
           {detail.natural_version && (
             <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 A natural version
               </p>
               <p className="rounded-xl bg-brand-50 p-4 leading-relaxed dark:bg-brand-500/10">
                 {detail.natural_version}
               </p>
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-ink-3">
                 Compare it with yours — the differences are the lesson.
               </p>
             </div>
@@ -463,10 +463,10 @@ function Writing() {
 
           {detail.practice_prompt && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Practise this
               </p>
-              <p className="text-slate-700 dark:text-slate-200">{detail.practice_prompt}</p>
+              <p className="text-ink dark:text-white/85">{detail.practice_prompt}</p>
             </div>
           )}
         </Card>
@@ -507,7 +507,7 @@ export default function Practice() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Practice</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
           Each activity updates the skill it trains, which is what reshapes tomorrow's plan.
         </p>
       </header>
