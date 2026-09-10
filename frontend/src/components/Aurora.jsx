@@ -21,8 +21,8 @@
 /* Deterministic cells, so the "activity" reads as a status board rather than
    as random flicker. Each is [column, row, delay in seconds]. */
 const CELLS = [
-  [4, 0, 0], [6, 2, 1.4], [5, 4, 2.9], [8, 1, 0.7],
-  [7, 3, 2.1], [9, 4, 3.6], [10, 2, 4.3],
+  [4, 0, 0], [6, 2, 0.5], [5, 4, 1.1], [8, 1, 0.25],
+  [7, 3, 0.8], [9, 4, 1.4], [10, 2, 1.7],
 ];
 
 export default function Aurora() {
@@ -46,7 +46,7 @@ export default function Aurora() {
             top: `${row * 44 + 1}px`,
             width: 42,
             height: 42,
-            animation: `pulse-cell 6s ease-in-out ${delay}s infinite`,
+            animation: `pulse-cell 2.4s ease-in-out ${delay}s infinite`,
           }}
         />
       ))}
