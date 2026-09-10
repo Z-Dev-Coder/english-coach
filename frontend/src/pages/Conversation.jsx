@@ -248,7 +248,7 @@ export default function Conversation() {
   const ended = session?.status === "ended";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <h1 className="display text-[38px]">Conversation</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">

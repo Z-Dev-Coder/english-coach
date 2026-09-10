@@ -227,7 +227,7 @@ export default function SpeakingStudio() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <h1 className="display text-[38px]">
           Speaking <span className="text-[color:var(--color-accent)]">Script Studio</span>

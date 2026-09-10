@@ -232,7 +232,7 @@ function DialogueStudio() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Card>
         <SectionHeading title="Bring in dialogue from anything you watch" />
         <p className="-mt-1 mb-4 text-sm text-ink-2 dark:text-white/55">
@@ -383,7 +383,7 @@ export default function RealWorld() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <h1 className="display text-[38px]">
           Real <span className="text-[color:var(--color-accent)]">World</span> English

@@ -271,7 +271,7 @@ export default function Review() {
   const progressPct = total ? (index / total) * 100 : 100;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="display text-[38px]">Review</h1>

@@ -68,7 +68,7 @@ export default function Profile() {
   if (error && !profile) return <ErrorNote error={error} />;
   if (!profile) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         {Array.from({ length: 4 }).map((_, index) => (
           <CardSkeleton key={index} lines={3} />
         ))}
@@ -77,7 +77,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-6 pb-24">
       <header>
         <h1 className="display text-[38px]">Your learning profile</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">

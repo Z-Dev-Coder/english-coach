@@ -186,7 +186,7 @@ export default function Drill() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <h1 className="display text-[38px]">
           Listen <span className="text-[color:var(--color-accent)]">Speak</span> Write

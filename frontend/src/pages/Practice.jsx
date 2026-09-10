@@ -80,7 +80,7 @@ function Listening({ passages, voice }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Card>
         <Field label="Passage">
           <Select
@@ -205,7 +205,7 @@ function Reading({ passages, onAdded }) {
 
   if (reading) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <Button variant="secondary" onClick={() => setReading(null)}>
           Back to passages
         </Button>
@@ -239,7 +239,7 @@ function Reading({ passages, onAdded }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex justify-end">
         <Button variant={showAdd ? "secondary" : "primary"} onClick={() => setShowAdd(!showAdd)}>
           {showAdd ? "Cancel" : "+ Add your own text"}
@@ -337,7 +337,7 @@ function Writing() {
   const detail = result?.detail;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Card>
         <SectionHeading
           title="Writing prompt"
@@ -503,7 +503,7 @@ export default function Practice() {
   }, []);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <h1 className="display text-[38px]">Practice</h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">

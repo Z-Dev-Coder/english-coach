@@ -18,7 +18,7 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
   return (
     <Tag
       className={cx(
-        "rounded-2xl bg-surface p-4 ring-1 ring-[color:var(--color-line)]",
+        "rounded-2xl bg-surface p-5 ring-1 ring-[color:var(--color-line)]",
         "dark:bg-white/[0.03] dark:ring-white/10",
         interactive &&
           "transition duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:-translate-y-0.5",
@@ -33,7 +33,7 @@ export function Card({ children, className = "", interactive = false, as: Tag = 
 
 export function SectionHeading({ title, action, id }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4">
+    <div className="mb-3.5 flex items-baseline justify-between gap-4">
       <h2 id={id} className="text-[15px] font-semibold">
         {title}
       </h2>

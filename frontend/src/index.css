@@ -6,10 +6,12 @@
 
 @theme {
   /* Light mode: kept for daylight study, but secondary now. */
-  --color-paper: #ffffff;
+  /* Paper is the ground, surface is the card. They must differ, or cards
+     have nothing to sit on and the screen reads as one flat white sheet. */
+  --color-paper: #f6f5f3;
   --color-surface: #ffffff;
-  --color-sunken: #f4f4f4;
-  --color-line: #e4e4e4;
+  --color-sunken: #efedea;
+  --color-line: #e2dfda;
   --color-line-strong: #000000;
   --color-ink: #000000;
   --color-ink-2: #5c5c5c;
@@ -55,9 +57,9 @@
 @layer base {
   .dark {
     --color-paper: #000000;
-    --color-surface: #0c0c0c;
-    --color-sunken: #121212;
-    --color-line: #232323;
+    --color-surface: #0e0e0e;
+    --color-sunken: #151515;
+    --color-line: #262626;
     --color-line-strong: #333333;
     --color-ink: #ffffff;
     --color-ink-2: #999999;
@@ -107,10 +109,25 @@
   body {
     @apply bg-paper font-sans text-ink antialiased;
     letter-spacing: -0.011em;
+    /* Reading is the activity here, so the default leading is set for
+       paragraphs rather than inherited from the browser's ~1.2. */
+    line-height: 1.65;
+  }
+
+  p {
+    line-height: 1.65;
+  }
+
+  li {
+    line-height: 1.6;
   }
 
   /* Section headings stay in the text face. Only display sizes get the
      serif, applied deliberately with .display. */
+  h1, h2, h3 {
+    line-height: 1.2;
+  }
+
   h2, h3 {
     @apply font-semibold;
     letter-spacing: -0.02em;
