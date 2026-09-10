@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { toast } from "sonner";
+
 import { api } from "../lib/api";
 import { skillIcon, skillLabel } from "../lib/skills";
 import {
@@ -35,7 +37,6 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     api.profile().then(setProfile).catch(setError);
@@ -56,10 +57,12 @@ export default function Profile() {
         priority_skills: profile.priority_skills,
       });
       setProfile(updated);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      toast.success("Profile saved", {
+        description: "Tomorrow's plan will use these settings.",
+      });
     } catch (err) {
       setError(err);
+      toast.error("Could not save", { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -199,11 +202,6 @@ export default function Profile() {
       {/* Sticky save bar: on a long form the button should never be off-screen. */}
       <div className="fixed inset-x-0 bottom-16 z-10 border-t border-[color:var(--color-line)]/70 bg-white/90 px-4 py-3 backdrop-blur-md md:bottom-0 md:px-6 dark:border-white/10 dark:bg-white/[0.03]/90">
         <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 md:pl-56">
-          {saved && (
-            <span className="micro text-[color:var(--color-good-ink)]">
-              ✓ Saved
-            </span>
-          )}
           <Button onClick={save} loading={saving}>
             Save changes
           </Button>

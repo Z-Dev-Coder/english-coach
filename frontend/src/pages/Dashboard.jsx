@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
+import HeroField from "../components/HeroField";
 import LessonMap from "../components/LessonMap";
 import Icon from "../lib/icons";
 import { skillLabel } from "../lib/skills";
@@ -43,8 +44,15 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
   const goalPct = goal > 0 ? Math.min(100, (sessions / goal) * 100) : 0;
 
   return (
-    <section className="animate-rise overflow-hidden rounded-2xl bg-sunken p-6 ring-1 ring-[color:var(--color-line)] sm:p-7">
-      <div className="flex flex-wrap items-start justify-between gap-6">
+    <section className="animate-rise relative overflow-hidden rounded-2xl bg-sunken p-6 ring-1 ring-[color:var(--color-line)] sm:p-7">
+      <HeroField />
+      {/* Fades the field out under the headline so the text keeps a clean,
+          even ground to sit on -- the animation belongs to the edges. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sunken via-sunken/85 to-transparent"
+      />
+      <div className="relative flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
           <p className="micro">
             {greeting()}, {learner.username}

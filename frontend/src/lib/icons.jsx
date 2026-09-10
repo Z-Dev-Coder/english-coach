@@ -35,6 +35,9 @@ const paths = {
 
   // Actions and status
   check: "M4.5 10.5 8 14l7.5-8",
+  chevronDown: "m5.5 8 4.5 4.5L14.5 8",
+  chevronUp: "m5.5 12 4.5-4.5L14.5 12",
+  close: "M5.5 5.5l9 9m0-9-9 9",
   arrowRight: "M4 10h12m-4.5-4.5L16 10l-4.5 4.5",
   arrowLeft: "M16 10H4m4.5-4.5L4 10l4.5 4.5",
   external: "M8 5H5.5A1.5 1.5 0 0 0 4 6.5v8A1.5 1.5 0 0 0 5.5 16h8a1.5 1.5 0 0 0 1.5-1.5V12M11 4h5v5M9 11l7-7",

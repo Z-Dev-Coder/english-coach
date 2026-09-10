@@ -5,6 +5,8 @@ import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
 import { skillLabel } from "../lib/skills";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { Button, ErrorNote, Pill, SectionHeading } from "../lib/ui";
 
 /**
@@ -64,7 +66,8 @@ export default function LessonMap({ lesson, onChange }) {
         x: 40 + i * STEP_X,
         y: MID_Y + Math.sin(i * 0.9) * AMPLITUDE,
       })),
-    [activities],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lesson?.id, activities.length],
   );
 
   if (!lesson) return null;
@@ -162,9 +165,12 @@ export default function LessonMap({ lesson, onChange }) {
                   className="absolute"
                   style={{ left: point.x - NODE / 2, top: point.y - NODE / 2 }}
                 >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                   <button
                     onClick={() => setSelected(index)}
                     onMouseEnter={() => setSelected(index)}
+                    onFocus={() => setSelected(index)}
                     aria-current={isCurrent ? "step" : undefined}
                     aria-label={`Step ${index + 1}: ${activity.title}`}
                     className={cx(
@@ -179,6 +185,14 @@ export default function LessonMap({ lesson, onChange }) {
                   >
                     {isDone ? <Icon name="check" size={17} /> : <Icon name={activity.kind} size={18} />}
                   </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px]">
+                      <p className="font-medium">{activity.title}</p>
+                      <p className="opacity-70">
+                        {activity.minutes} min · {skillLabel(activity.kind)}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
 
                   {/* Step number under each node keeps the order explicit. */}
                   <span className="micro mt-1.5 block text-center">{index + 1}</span>

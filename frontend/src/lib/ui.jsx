@@ -7,7 +7,14 @@
  * classes out of page files and makes a restyle a one-file change.
  */
 
-import { useState } from "react";
+import { Children, isValidElement, useState } from "react";
+
+import {
+  Select as SelectRoot,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 
 import { cx } from "./cx";
 import Icon from "./icons";
@@ -116,11 +123,58 @@ export function Input({ className = "", ...props }) {
   return <input className={cx(FIELD_CLASS, className)} {...props} />;
 }
 
-export function Select({ className = "", children, ...props }) {
+export function Select({ className = "", children, value, onChange, ...props }) {
+  // Accept <option> children so pages read the same as before, and unwrap them
+  // here into the items Radix wants.
+  const options = Children.toArray(children)
+    .filter((child) => isValidElement(child))
+    .map((child) => ({
+      value: String(child.props.value),
+      label: child.props.children,
+      disabled: child.props.disabled,
+    }));
+
+  const current = options.find((option) => option.value === String(value));
+
   return (
-    <select className={cx(FIELD_CLASS, "pr-8", className)} {...props}>
-      {children}
-    </select>
+    <SelectRoot
+      value={value == null ? undefined : String(value)}
+      // Pages were written against a DOM change event, so keep that shape
+      // rather than making every call site learn a second convention.
+      onValueChange={(next) => onChange?.({ target: { value: next } })}
+      {...props}
+    >
+      <SelectTrigger
+        className={cx(
+          FIELD_CLASS,
+          "flex h-auto items-center justify-between gap-2 text-left",
+          className,
+        )}
+      >
+        <span className="truncate">{current ? current.label : "Choose…"}</span>
+      </SelectTrigger>
+      <SelectContent
+        // "item-aligned" (the copied default) tries to lay the list over the
+        // trigger with the chosen row under the cursor. It measured wrong here
+        // and pinned the list to the bottom of the viewport. Popper placement
+        // anchors it below the field, which is also what people expect from a
+        // field rather than from a menu.
+        position="popper"
+        sideOffset={6}
+        align="start"
+        className="max-h-[min(22rem,60vh)] w-[var(--radix-select-trigger-width)] rounded-xl border-0 bg-surface p-1 shadow-lg ring-1 ring-[color:var(--color-line)]">
+        {options.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+            className="rounded-lg py-2 pr-8 pl-3 text-sm text-ink focus:bg-sunken data-[state=checked]:font-medium"
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </SelectRoot>
   );
 }
 

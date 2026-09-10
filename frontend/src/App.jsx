@@ -3,6 +3,9 @@ import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "re
 
 import { api, getToken, setToken } from "./lib/api";
 import { applyTheme, isDark, setTheme } from "./lib/theme";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { cx } from "./lib/cx";
 import Icon from "./lib/icons";
 import Dashboard from "./pages/Dashboard";
@@ -218,6 +221,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <TooltipProvider delayDuration={150}>
       <Shell dark={dark} onToggleTheme={toggleTheme} onSignOut={signOut}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -232,6 +236,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Shell>
+      <Toaster position="bottom-right" />
+      </TooltipProvider>
     </BrowserRouter>
   );
 }
