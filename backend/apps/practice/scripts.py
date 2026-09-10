@@ -58,6 +58,10 @@ class ScriptTemplate:
     goal: str
     expressions: dict[str, list[str]]  # keyed by the lowest CEFR level it suits
     opener: str
+    # A worked opening, alternating Partner and You. Its job is to show the
+    # learner what their own turns can sound like -- the half a roleplay prompt
+    # never supplies -- so it always includes at least two "You" lines.
+    sample_exchange: list[tuple[str, str]] = field(default_factory=list)
     questions: list[str] = field(default_factory=list)
 
 
@@ -74,6 +78,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["It's been ages!", "I've been meaning to call you", "Let's grab a coffee sometime"],
         },
         opener="Hey! I haven't seen you in ages. What have you been up to?",
+        sample_exchange=[
+            ("Partner", "Hey! I haven't seen you in ages. What have you been up to?"),
+            ("You", "Not much, actually. Just work mostly. What about you?"),
+            ("Partner", "Same here, honestly. Still at the same place?"),
+            ("You", "Yeah, still there. It's been busy, but I can't complain."),
+        ],
         questions=[
             "What has changed in your life in the last six months?",
             "What are you looking forward to?",
@@ -90,6 +100,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["What drew me to this role is...", "I'd like to take on more responsibility", "That's a fair point"],
         },
         opener="Thanks for coming in. So, tell me a bit about yourself.",
+        sample_exchange=[
+            ("Partner", "Thanks for coming in. So, tell me a bit about yourself."),
+            ("You", "Thanks for having me. I've been working in this field for about three years."),
+            ("Partner", "And what made you apply for this role?"),
+            ("You", "I'm looking for something with more responsibility, and this role looked like a good fit."),
+        ],
         questions=[
             "What is a problem you solved at work recently?",
             "Where do you want to be in three years?",
@@ -106,6 +122,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["We ran into an issue with...", "I'll keep you posted", "Let me walk you through it"],
         },
         opener="Hey, I heard something came up with the deployment. What's the situation?",
+        sample_exchange=[
+            ("Partner", "Hey, I heard something came up with the deployment. What's the situation?"),
+            ("You", "Yeah, we ran into a problem this morning. The build keeps failing."),
+            ("Partner", "Do we know why?"),
+            ("You", "Not yet. I'm still looking into it, but I'll let you know as soon as I do."),
+        ],
         questions=["What would you do differently next time?", "Who else needs to know about this?"],
     ),
     ScriptTemplate(
@@ -119,6 +141,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["I don't want to make a fuss, but...", "Would it be possible to...?", "That's much better, thanks"],
         },
         opener="Hi there, are you ready to order, or do you need another minute?",
+        sample_exchange=[
+            ("Partner", "Hi there, are you ready to order, or do you need another minute?"),
+            ("You", "I think we're ready, thanks. Could I have the chicken, please?"),
+            ("Partner", "Of course. And anything to drink with that?"),
+            ("You", "Just some water, please. Sorry — is the chicken spicy at all?"),
+        ],
         questions=["How do you complain politely in your own language?", "What would you order here?"],
     ),
     ScriptTemplate(
@@ -132,6 +160,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["I've been charged twice", "Could you bear with me a second?", "Just so I'm clear..."],
         },
         opener="Thanks for calling, you're speaking with Sam. How can I help today?",
+        sample_exchange=[
+            ("Partner", "Thanks for calling, you're speaking with Sam. How can I help today?"),
+            ("You", "Hi Sam. I'm calling about my last bill — I think there's been a mistake."),
+            ("Partner", "I'm sorry to hear that. Can I take your account number?"),
+            ("You", "Sure, one second. Sorry, could you say that again? The line isn't great."),
+        ],
         questions=["What is hardest about English phone calls?", "How would you ask someone to slow down?"],
     ),
     ScriptTemplate(
@@ -145,6 +179,12 @@ TEMPLATES: list[ScriptTemplate] = [
             "B2": ["Busy week?", "I know what you mean", "Anyway, we should probably get started"],
         },
         opener="Morning! Looks like we're a bit early. Busy week for you?",
+        sample_exchange=[
+            ("Partner", "Morning! Looks like we're a bit early. Busy week for you?"),
+            ("You", "Morning! Yeah, it's been pretty full on. How about you?"),
+            ("Partner", "Same, honestly. Did you get anywhere nice at the weekend?"),
+            ("You", "Not really, I just stayed home. It was quite nice, actually."),
+        ],
         questions=["What small talk topics are safe at work?", "How do you end small talk politely?"],
     ),
 ]
@@ -164,7 +204,14 @@ def _expressions_for(template: ScriptTemplate, level: str) -> list[str]:
 
 
 def build_portable_prompt(
-    *, title: str, setting: str, goal: str, level: str, expressions: list[str], questions: list[str]
+    *,
+    title: str,
+    setting: str,
+    goal: str,
+    level: str,
+    expressions: list[str],
+    questions: list[str],
+    sample_exchange: list[tuple[str, str]] | None = None,
 ) -> str:
     """Render a self-contained roleplay prompt for ChatGPT, Gemini or similar.
 
@@ -174,6 +221,20 @@ def build_portable_prompt(
     guidance = LEVEL_GUIDANCE.get(level, LEVEL_GUIDANCE["B1"])
     expression_list = "\n".join(f"- {e}" for e in expressions) or "- (none specified)"
     question_list = "\n".join(f"- {q}" for q in questions) or "- (none specified)"
+
+    # The learner's own lines. Without these the prompt describes a situation
+    # and leaves the hardest part -- producing the first sentence -- entirely
+    # to someone who is practising precisely because that is hard.
+    if sample_exchange:
+        script_block = "\n".join(f"{who}: {text}" for who, text in sample_exchange)
+        script_section = f"""HOW IT MIGHT OPEN
+This is a model, not a script to recite. I may say something different.
+
+{script_block}
+
+"""
+    else:
+        script_section = ""
 
     return f"""You are my English speaking partner. We are going to do a roleplay.
 
@@ -186,7 +247,7 @@ THE SITUATION
 MY GOAL
 {goal}
 
-EXPRESSIONS I AM PRACTISING
+{script_section}EXPRESSIONS I AM PRACTISING
 Try to create natural openings for me to use these. Do not list them for me.
 {expression_list}
 
@@ -225,7 +286,12 @@ def generate_template_script(*, scenario: str | None, level: str, rng: random.Ra
         "setting": template.setting,
         "goal": template.goal,
         "target_expressions": expressions,
-        "lines": [{"speaker": "Partner", "text": template.opener}],
+        # Both sides, so the page shows the learner their own turns rather
+        # than only what will be said to them.
+        "lines": [
+            {"speaker": who, "text": text}
+            for who, text in (template.sample_exchange or [("Partner", template.opener)])
+        ],
         "follow_up_questions": template.questions,
         "portable_prompt": build_portable_prompt(
             title=template.title,
@@ -233,6 +299,7 @@ def generate_template_script(*, scenario: str | None, level: str, rng: random.Ra
             goal=template.goal,
             level=level,
             expressions=expressions,
+            sample_exchange=template.sample_exchange,
             questions=template.questions,
         ),
         "source": "template",

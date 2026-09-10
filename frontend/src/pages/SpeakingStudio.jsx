@@ -9,16 +9,12 @@ import {
   Card,
   EmptyState,
   ErrorNote,
-  Field,
   HowTo,
-  Input,
   Pill,
   SectionHeading,
   Select,
   Switch,
 } from "../lib/ui";
-
-const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 /** Where the learner can take the generated prompt. These open the assistant;
  *  the prompt still has to be pasted, since none of them accept prefilled text
@@ -119,14 +115,14 @@ function ScriptView({ script, onPracticed }) {
         </Card>
       )}
 
-      <Card className="border-0 bg-ink text-white/90 ring-1 ring-ink">
+      <Card>
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-semibold">Practise with any AI</h3>
-            <p className="mt-1 text-sm leading-relaxed text-ink-3">
+            <p className="mt-1 text-sm leading-relaxed text-ink-2 dark:text-white/60">
               Paste this into ChatGPT, Gemini or Claude. It runs the whole roleplay, and gives you
               feedback when you type{" "}
-              <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-brand-300">
+              <code className="rounded bg-sunken px-1.5 py-0.5 text-xs font-semibold text-[color:var(--color-accent)] dark:bg-white/10">
                 FEEDBACK
               </code>
               .
@@ -135,19 +131,19 @@ function ScriptView({ script, onPracticed }) {
           <CopyButton text={script.portable_prompt} />
         </div>
 
-        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/40 p-4 text-xs leading-relaxed text-ink-3 ring-1 ring-white/5">
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-sunken p-4 text-xs leading-relaxed text-ink-2 ring-1 ring-[color:var(--color-line)] dark:bg-black/40 dark:text-white/70 dark:ring-white/10">
           {script.portable_prompt}
         </pre>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-ink-2">Open:</span>
+          <span className="text-xs text-ink-3">Open:</span>
           {ASSISTANTS.map((assistant) => (
             <a
               key={assistant.name}
               href={assistant.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
+              className="rounded-lg bg-sunken px-3 py-1.5 text-xs font-medium text-ink ring-1 ring-[color:var(--color-line)] transition hover:bg-[color:var(--color-line)] dark:bg-white/10 dark:text-white dark:ring-white/10 dark:hover:bg-white/20"
             >
               {assistant.name}
             </a>
@@ -190,12 +186,11 @@ function ScriptView({ script, onPracticed }) {
 export default function SpeakingStudio() {
   const [meta, setMeta] = useState(null);
   const [scenario, setScenario] = useState("");
-  const [level, setLevel] = useState("");
-  const [topic, setTopic] = useState("");
   const [useAi, setUseAi] = useState(false);
   const [script, setScript] = useState(null);
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -210,7 +205,9 @@ export default function SpeakingStudio() {
     setBusy(true);
     setError(null);
     try {
-      const created = await api.generateScript({ scenario, level, topic, use_ai: useAi });
+      // No level or topic: the profile supplies the first and rotation the
+      // second. Omitting them is how the backend is told to decide.
+      const created = await api.generateScript({ scenario, use_ai: useAi });
       setScript(created);
       setHistory((previous) => [created, ...previous]);
     } catch (err) {
@@ -251,42 +248,39 @@ export default function SpeakingStudio() {
       />
 
       <Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Situation">
-            <Select value={scenario} onChange={(event) => setScenario(event.target.value)}>
-              <option value="">Surprise me</option>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <span className="micro">today&rsquo;s speaking practice</span>
+            <p className="mt-1.5 text-sm text-ink-2 dark:text-white/70">
+              Pitched at your speaking level, in a situation you haven&rsquo;t practised
+              recently. You don&rsquo;t need to choose anything.
+            </p>
+          </div>
+          <Button onClick={generate} loading={busy} size="lg">
+            {busy ? "Writing" : script ? "Next script" : "Start today's script"}
+          </Button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
+          {/* Not the default, but not a dead end either: being handed an
+              interview on a day you want small talk should be escapable. */}
+          <button onClick={() => setShowPicker((open) => !open)} className="micro hover:text-ink">
+            {showPicker ? "never mind" : "practise something else"}
+          </button>
+          {showPicker && (
+            <Select
+              className="max-w-56"
+              value={scenario}
+              onChange={(event) => setScenario(event.target.value)}
+            >
+              <option value="">Let the app choose</option>
               {meta?.scenarios.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.key.replace(/_/g, " ")}
                 </option>
               ))}
             </Select>
-          </Field>
-
-          <Field label="Level">
-            <Select value={level} onChange={(event) => setLevel(event.target.value)}>
-              <option value="">My speaking level</option>
-              {LEVELS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <Field label="Topic" hint="(optional)">
-            <Input
-              value={topic}
-              onChange={(event) => setTopic(event.target.value)}
-              placeholder="e.g. a delayed flight"
-            />
-          </Field>
-
-          <div className="flex items-end">
-            <Button onClick={generate} loading={busy} size="lg" className="w-full">
-              {busy ? "Writing" : "Generate script"}
-            </Button>
-          </div>
+          )}
         </div>
 
         <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
