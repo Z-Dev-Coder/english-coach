@@ -140,6 +140,10 @@ class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
             {
                 "scenarios": [{"key": key, "description": text} for key, text in SCENARIO_HINTS.items()],
                 "levels": [choice.value for choice in CEFR],
+                # What the app would choose for this learner. The page cannot
+                # work it out itself -- it depends on what they have already
+                # practised -- and it names the situation before starting one.
+                "suggested": conversation_services.next_scenario(request.user),
             }
         )
 

@@ -56,7 +56,11 @@ function ReviewCard({ item, onAnswer, submitting }) {
   const [revealed, setRevealed] = useState(false);
   const { progress, prompt, exercise } = item;
   const expression = progress.expression;
-  const example = expression.examples?.[0];
+  const examples = expression.examples ?? [];
+  // Which example is on screen. No reset needed: the parent keys this
+  // component by card id, so moving to the next card remounts it.
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const example = examples[Math.min(exampleIndex, Math.max(0, examples.length - 1))];
 
   useEffect(() => {
     const onKey = (event) => {
@@ -108,9 +112,17 @@ function ReviewCard({ item, onAnswer, submitting }) {
             <p className="mt-1 text-ink-2 dark:text-white/70">{expression.meaning}</p>
 
             {example && (
-              <p className="mt-4 border-l-2 border-ink/25 pl-3 text-ink-2 italic">
-                {example.text}
-              </p>
+              <div className="mt-4">
+                <p className="border-l-2 border-ink/25 pl-3 text-ink-2 italic">{example.text}</p>
+                {examples.length > 1 && (
+                  <button
+                    onClick={() => setExampleIndex((current) => (current + 1) % examples.length)}
+                    className="micro mt-1.5 hover:text-ink dark:hover:text-white"
+                  >
+                    another example ({(exampleIndex % examples.length) + 1}/{examples.length})
+                  </button>
+                )}
+              </div>
             )}
 
             {expression.common_mistake && (

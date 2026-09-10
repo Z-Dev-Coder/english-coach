@@ -46,19 +46,48 @@ def _speaking_level(user) -> str:
     return progress.level if progress else "B1"
 
 
-def start(user, *, scenario: str = "casual", level: str = "") -> ConversationSession:
+# Matches the speaking-script rotation.
+SCENARIO_WINDOW = 12
+
+
+def next_scenario(user) -> str:
+    """The situation this learner has gone longest without practising.
+
+    Replaces defaulting to "casual" every time, which meant the same
+    conversation for anyone who did not go looking through the dropdown.
+    """
+    from apps.ai.prompts import SCENARIO_HINTS
+
+    available = list(SCENARIO_HINTS)
+    if not available:
+        return "casual"
+
+    recent = list(
+        ConversationSession.objects.filter(user=user)
+        .order_by("-started_at")
+        .values_list("scenario", flat=True)[:SCENARIO_WINDOW]
+    )
+    unused = [scenario for scenario in available if scenario not in recent]
+    if unused:
+        return unused[0]
+    return max(available, key=lambda scenario: recent.index(scenario))
+
+
+def start(user, *, scenario: str = "", level: str = "") -> ConversationSession:
     """Open a session and have the partner speak first.
 
     The partner opens deliberately: facing an empty box is the hardest moment
     in speaking practice, and a concrete question to answer removes it.
     """
     session = ConversationSession.objects.create(
-        user=user, scenario=scenario, level=level or _speaking_level(user)
+        user=user,
+        scenario=scenario or next_scenario(user),
+        level=level or _speaking_level(user),
     )
 
-    opener = FALLBACK_OPENERS.get(scenario, FALLBACK_OPENERS["casual"])
+    opener = FALLBACK_OPENERS.get(session.scenario, FALLBACK_OPENERS["casual"])
     try:
-        system = prompts.conversation_system(scenario=scenario, level=session.level)
+        system = prompts.conversation_system(scenario=session.scenario, level=session.level)
         generated = get_ai_provider().chat(
             [
                 {"role": "system", "content": system},

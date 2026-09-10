@@ -10,7 +10,6 @@ import {
   Card,
   EmptyState,
   ErrorNote,
-  Field,
   HowTo,
   Pill,
   SectionHeading,
@@ -152,10 +151,11 @@ function Feedback({ feedback }) {
 
 export default function Conversation() {
   const [scenarios, setScenarios] = useState([]);
-  const [scenario, setScenario] = useState("casual");
+  const [scenario, setScenario] = useState("");
   const [session, setSession] = useState(null);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [ending, setEnding] = useState(false);
   const [recording, setRecording] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -167,7 +167,12 @@ export default function Conversation() {
   useEffect(() => {
     api
       .conversationScenarios()
-      .then((data) => setScenarios(data.scenarios))
+      .then((data) => {
+        setScenarios(data.scenarios);
+        // The rotation lives on the server, so the page is told what it would
+        // choose rather than guessing and showing something different.
+        if (data.suggested) setScenario(data.suggested);
+      })
       .catch(() => setScenarios([]));
     pickVoice().then(setVoice);
     return () => stopSpeaking();
@@ -181,6 +186,9 @@ export default function Conversation() {
     (content) => speak(content, { voice }),
     [voice],
   );
+
+  // The situation on screen, so the card can name it before starting.
+  const chosen = scenarios.find((item) => item.key === scenario) ?? null;
 
   const start = async () => {
     setError(null);
@@ -274,20 +282,42 @@ export default function Conversation() {
 
       {!session ? (
         <Card>
-          <SectionHeading title="Pick a situation" />
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <Field label="Situation">
-              <Select value={scenario} onChange={(event) => setScenario(event.target.value)}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <span className="micro">today&rsquo;s conversation</span>
+              <p className="mt-1.5 font-semibold">
+                {(chosen?.key ?? "casual").replace(/_/g, " ")}
+              </p>
+              {chosen?.description && (
+                <p className="mt-0.5 text-sm text-ink-2 dark:text-white/60">
+                  {chosen.description}
+                </p>
+              )}
+            </div>
+            <Button onClick={start} loading={sending} size="lg">
+              Start talking
+            </Button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
+            {/* Not the default, but not a dead end: being handed a medical
+                appointment on a day you want small talk should be escapable. */}
+            <button onClick={() => setPicking((open) => !open)} className="micro hover:text-ink">
+              {picking ? "never mind" : "practise something else"}
+            </button>
+            {picking && (
+              <Select
+                className="max-w-72"
+                value={scenario}
+                onChange={(event) => setScenario(event.target.value)}
+              >
                 {scenarios.map((item) => (
                   <option key={item.key} value={item.key}>
                     {item.key.replace(/_/g, " ")} — {item.description}
                   </option>
                 ))}
               </Select>
-            </Field>
-            <Button onClick={start} loading={sending} size="lg">
-              Start talking
-            </Button>
+            )}
           </div>
           <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
             <Switch
