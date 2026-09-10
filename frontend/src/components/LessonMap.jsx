@@ -123,7 +123,20 @@ export default function LessonMap({ lesson, onChange }) {
       </div>
 
       {/* The map. Scrolls sideways when the day is long. */}
-      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-surface to-[color-mix(in_oklab,var(--color-surface)_92%,var(--color-ink))] ring-1 ring-[color:var(--color-line)] dark:from-white/[0.05] dark:to-white/[0.015] dark:ring-white/10">
+        <div aria-hidden="true" className="techgrid absolute inset-0 opacity-50" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color:var(--color-ink)]/15 to-transparent dark:via-white/25"
+        />
+        {/* Light where the learner currently is, so the eye lands on the step
+            they are meant to do next rather than on the middle of the row. */}
+        <div
+          aria-hidden="true"
+          className="glow bg-[color:var(--color-accent)]/25"
+          style={{ width: 260, height: 260, left: Math.max(0, (points[currentIndex]?.x ?? 40) - 130), top: -90 }}
+        />
+        <div className="relative overflow-x-auto p-5">
         <div className="relative" style={{ width, height: MAP_HEIGHT }}>
           <svg
             className="absolute inset-0 overflow-visible"
@@ -177,10 +190,11 @@ export default function LessonMap({ lesson, onChange }) {
                       "group grid place-items-center rounded-full transition",
                       "h-11 w-11 focus-visible:outline-offset-4",
                       isDone && "bg-[color:var(--color-accent)] text-white",
-                      !isDone && isCurrent && "bg-ink text-white dark:bg-white dark:text-black",
+                      !isDone && isCurrent &&
+                        "bg-ink text-white shadow-[0_0_0_6px_color-mix(in_oklab,var(--color-accent)_22%,transparent)] dark:bg-white dark:text-black",
                       !isDone && !isCurrent && "bg-paper text-ink-3 ring-1 ring-[color:var(--color-line)]",
                       isOpen && "ring-4 ring-[color:var(--color-accent)]/35",
-                      "hover:scale-105",
+                      "hover:scale-110 hover:shadow-[0_0_20px_-2px_var(--color-accent)]",
                     )}
                   >
                     {isDone ? <Icon name="check" size={17} /> : <Icon name={activity.kind} size={18} />}
@@ -200,6 +214,7 @@ export default function LessonMap({ lesson, onChange }) {
               );
             })}
           </ol>
+        </div>
         </div>
       </div>
 

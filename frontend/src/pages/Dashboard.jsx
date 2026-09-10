@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
-import HeroField from "../components/HeroField";
+import Aurora from "../components/Aurora";
 import LessonMap from "../components/LessonMap";
 import Icon from "../lib/icons";
 import { skillLabel } from "../lib/skills";
+import Reveal from "../components/Reveal";
+import { useCountUp } from "../lib/motion";
 import {
   Card,
   CardSkeleton,
@@ -42,22 +44,27 @@ function DashboardSkeleton() {
 /** Hero. Answers "what am I doing today?" before anything else on the page. */
 function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
   const goalPct = goal > 0 ? Math.min(100, (sessions / goal) * 100) : 0;
+  const [shownMinutes, minutesRef] = useCountUp(weeklyMinutes);
 
   return (
-    <section className="animate-rise relative overflow-hidden rounded-2xl bg-sunken p-6 ring-1 ring-[color:var(--color-line)] sm:p-7">
-      <HeroField />
-      {/* Fades the field out under the headline so the text keeps a clean,
-          even ground to sit on -- the animation belongs to the edges. */}
+    <section className="animate-rise relative overflow-hidden rounded-3xl bg-sunken p-7 ring-1 ring-[color:var(--color-line)] sm:p-10 dark:bg-[#080808]">
+      <Aurora />
+      {/* Scrim. The light lives on the right; this keeps an even ground under
+          the headline so nothing has to be read against a moving gradient. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sunken via-sunken/85 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sunken via-sunken/80 to-transparent dark:from-[#080808] dark:via-[#080808]/75"
       />
-      <div className="relative flex flex-wrap items-start justify-between gap-6">
+      <div className="relative flex flex-wrap items-start justify-between gap-8">
         <div className="min-w-0">
-          <p className="micro">
+          <p className="micro inline-flex items-center gap-2">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-accent)] opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)]" />
+            </span>
             {greeting()}, {learner.username}
           </p>
-          <h1 className="display mt-3 text-[34px] sm:text-[44px]">
+          <h1 className="display mt-4 text-[38px] sm:text-[56px]">
             {focus ? (
               <>
                 Today's focus is{" "}
@@ -82,17 +89,17 @@ function Hero({ learner, focus, streak, weeklyMinutes, goal, sessions }) {
             </ProgressRing>
             <p className="micro mt-2">Streak</p>
           </div>
-          <dl className="space-y-3">
+          <dl ref={minutesRef} className="space-y-4">
             <div>
               <dt className="micro">This week</dt>
-              <dd className="text-xl font-bold tabular-nums">
-                {weeklyMinutes}
+              <dd className="text-2xl font-bold tabular-nums">
+                {shownMinutes}
                 <span className="ml-1 text-xs font-medium text-ink-3">min</span>
               </dd>
             </div>
             <div>
               <dt className="micro">Sessions</dt>
-              <dd className="text-xl font-bold tabular-nums">
+              <dd className="text-2xl font-bold tabular-nums">
                 {sessions}
                 <span className="text-ink-3"> / {goal}</span>
               </dd>
@@ -142,6 +149,7 @@ export default function Dashboard() {
         sessions={data.sessions_this_week}
       />
 
+      <Reveal>
       <HowTo
         id="home"
         title="How to use this each day"
@@ -151,9 +159,12 @@ export default function Dashboard() {
           "Tomorrow's plan changes based on how today went, so honest answers matter.",
         ]}
       />
+      </Reveal>
 
       {lesson ? (
+        <Reveal>
         <LessonMap lesson={lesson} onChange={setLesson} />
+        </Reveal>
       ) : (
         <section aria-labelledby="plan-heading">
           <SectionHeading
@@ -203,8 +214,8 @@ export default function Dashboard() {
         </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <Reveal className="grid gap-6 lg:grid-cols-3">
+        <Card interactive className="lg:col-span-2">
           <SectionHeading title="Your skills" />
           <div className="grid gap-4 sm:grid-cols-2">
             {skills.map((skill) => (
@@ -229,7 +240,7 @@ export default function Dashboard() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
+          <Card interactive>
             <SectionHeading title="At a glance" />
             <dl className="grid grid-cols-2 gap-4">
               <StatTile label="Streak" value={streak} unit="days" tone="brand" />
@@ -239,7 +250,7 @@ export default function Dashboard() {
             </dl>
           </Card>
 
-          <Card>
+          <Card interactive>
             <SectionHeading title="Work on these" />
             <ul className="space-y-2.5 text-sm">
               {weak.map((item) => (
@@ -277,7 +288,7 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

@@ -7,7 +7,7 @@
  * classes out of page files and makes a restyle a one-file change.
  */
 
-import { Children, isValidElement, useState } from "react";
+import { Children, isValidElement, useEffect, useState } from "react";
 
 import {
   Select as SelectRoot,
@@ -17,22 +17,51 @@ import {
 } from "@/components/ui/select";
 
 import { cx } from "./cx";
+import { useCountUp, useSpotlight } from "./motion";
 import Icon from "./icons";
 
 /* ---------------------------------------------------------------- Surface */
 
 export function Card({ children, className = "", interactive = false, as: Tag = "div", ...props }) {
+  const spotlight = useSpotlight();
+
   return (
     <Tag
+      ref={interactive ? spotlight : undefined}
       className={cx(
-        "rounded-2xl bg-surface p-5 ring-1 ring-[color:var(--color-line)]",
-        "dark:bg-white/[0.03] dark:ring-white/10",
+        "group/card relative isolate overflow-hidden rounded-2xl p-5",
+        // A gradient rather than a flat fill. The difference is small on one
+        // card and decisive across a page of them: flat fills read as boxes
+        // drawn on a background, a gradient reads as a lit surface.
+        "bg-gradient-to-b from-surface to-[color-mix(in_oklab,var(--color-surface)_92%,var(--color-ink))]",
+        "ring-1 ring-[color:var(--color-line)]",
+        "dark:from-white/[0.055] dark:to-white/[0.02] dark:ring-white/10",
         interactive &&
-          "transition duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:-translate-y-0.5",
+          "transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1",
         className,
       )}
       {...props}
     >
+      {/* Light catching the top edge. Purely decorative, so it is hidden from
+          assistive tech and cannot take pointer events off the content. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color:var(--color-ink)]/15 to-transparent dark:via-white/25"
+      />
+
+      {interactive && (
+        // A highlight that follows the cursor. It only fades in on hover, so a
+        // page at rest stays completely still.
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100"
+          style={{
+            background:
+              "radial-gradient(280px circle at var(--spot-x, 50%) var(--spot-y, 0%), color-mix(in oklab, var(--color-accent) 18%, transparent), transparent 70%)",
+          }}
+        />
+      )}
+
       {children}
     </Tag>
   );
@@ -253,6 +282,11 @@ export function Pill({ children, tone = "default", className = "" }) {
 
 export function ProgressBar({ value, label, sublabel, weak }) {
   const pct = Math.max(0, Math.min(100, value ?? 0));
+  const [grown, setGrown] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setGrown(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between gap-2 text-[13px]">
@@ -267,7 +301,7 @@ export function ProgressBar({ value, label, sublabel, weak }) {
         </span>
       </div>
       <div
-        className="h-1 overflow-hidden rounded-full bg-[color:var(--color-line)] dark:bg-white/10"
+        className="h-1.5 overflow-hidden rounded-full bg-[color:var(--color-line)] dark:bg-white/10"
         role="progressbar"
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}
@@ -276,10 +310,14 @@ export function ProgressBar({ value, label, sublabel, weak }) {
       >
         <div
           className={cx(
-            "h-full rounded-full transition-all duration-700 ease-out",
-            weak ? "bg-[color:var(--color-accent)]" : "bg-ink dark:bg-white",
+            "h-full rounded-full transition-[width] duration-1000 ease-out",
+            weak
+              ? "bg-gradient-to-r from-[color:var(--color-accent)]/60 to-[color:var(--color-accent)] shadow-[0_0_12px_-1px_var(--color-accent)]"
+              : "bg-gradient-to-r from-ink/50 to-ink dark:from-white/50 dark:to-white",
           )}
-          style={{ width: `${pct}%` }}
+          // Starts at zero and transitions to the real width on the first
+          // paint after mount, so the bars fill in rather than appearing done.
+          style={{ width: `${grown ? pct : 0}%` }}
         />
       </div>
     </div>
@@ -332,11 +370,14 @@ export function StatTile({ label, value, unit, tone = "default" }) {
     brand: "text-ink dark:text-white",
     warn: "text-[color:var(--color-accent)]",
   };
+  // Counting draws the eye to the number that changed. It falls straight
+  // through to the value for anything non-numeric, like "0/8".
+  const [shown, ref] = useCountUp(value);
   return (
-    <div>
+    <div ref={ref}>
       <dt className="micro">{label}</dt>
-      <dd className={cx("mt-1.5 text-[26px] font-semibold leading-none tabular-nums", tones[tone])}>
-        {value}
+      <dd className={cx("mt-1.5 text-[30px] font-semibold leading-none tabular-nums", tones[tone])}>
+        {shown}
         {unit && <span className="ml-1 font-mono text-[11px] font-normal text-ink-3">{unit}</span>}
       </dd>
     </div>
