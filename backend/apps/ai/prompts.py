@@ -263,6 +263,16 @@ Return JSON:
     instructions (what the learner should actually do, 1-2 sentences),
     prompt (the writing/speaking prompt or discussion question, if the activity needs one),
     target_expressions (up to 4 expressions to work in, or an empty list)
+
+For target_expressions, give language that belongs to THIS topic and that a
+learner at this level would not already produce unprompted: collocations,
+phrasal verbs, idioms and fixed phrases. For a lesson about a daily routine
+that means things like "grab a coffee", "get going", "wind down", "have a
+lie-in".
+
+Do NOT give connectives or sequencing words -- "first", "then", "after that",
+"finally", "also", "however". Learners have those by A2, they carry no topic,
+and listing them wastes the four slots that could have taught something.
 """
 
 
@@ -437,4 +447,90 @@ Return JSON:
   string), example (your own sentence) and alternatives (up to 2 other ways to
   say it)
 - roleplay_prompt: a short scenario where the learner could use these naturally
+"""
+
+
+# --- Speaking model answer -------------------------------------------------
+
+MODEL_ANSWER_SCHEMA = {
+    "type": "object",
+    "required": ["answer"],
+    "properties": {
+        "answer": {"type": "string"},
+        "notes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["quote", "why"],
+                "properties": {
+                    "quote": {"type": "string"},
+                    "why": {"type": "string"},
+                },
+            },
+        },
+        "expressions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["text", "meaning"],
+                "properties": {
+                    "text": {"type": "string"},
+                    "meaning": {"type": "string"},
+                    "example": {"type": "string"},
+                },
+            },
+        },
+    },
+}
+
+
+def speaking_model_answer(*, prompt: str, level: str, expressions: list[str], moves: list[str]) -> str:
+    """Ask for one worked answer the learner can read aloud and then adapt.
+
+    Deliberately a *model*, not a script to memorise, and the instruction says
+    so: an answer built from someone else's life is not something a learner can
+    reuse, and reciting it teaches nothing about producing their own.
+    """
+    expression_list = "\n".join(f"- {e}" for e in expressions) or "- (none specified)"
+    move_list = "\n".join(f"{i + 1}. {m}" for i, m in enumerate(moves)) or "(no fixed structure)"
+
+    return f"""Write ONE model answer to this speaking prompt, for an English learner at CEFR {level}.
+
+THE PROMPT
+{prompt}
+
+THE STRUCTURE THE ANSWER SHOULD FOLLOW
+{move_list}
+
+EXPRESSIONS TO WORK IN NATURALLY
+{expression_list}
+
+RULES
+- Write it as one person speaking out loud, not as an essay. Contractions,
+  false starts and everyday phrasing are right; formal written English is not.
+- 6 to 10 sentences. Long enough to model a real answer, short enough to say
+  in a minute.
+- Pitch the vocabulary and grammar at {level}. An answer the learner cannot
+  produce is a demonstration of failure, not a model.
+- Invent ordinary, unremarkable specifics. A model answer full of drama is
+  harder to adapt to a normal life.
+- Use every expression above at least once, where it genuinely fits. Do not
+  force one in.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- answer: the full answer as one string, with line breaks between the moves
+- notes: 2-4 objects, each with `quote` (a short phrase lifted verbatim from
+  your answer) and `why` (one sentence on what that phrase is doing -- the
+  move it performs or the effect it has). These teach the learner what to
+  copy, so point at technique, not at vocabulary they can already see.
+- expressions: one object per expression above, each with `text` (exactly as
+  given), `meaning` (what it means *in the sense this lesson is using*, in one
+  short plain sentence a learner at this level would understand) and `example`
+  (one short sentence using it, which may be lifted from your answer).
+
+  The meaning matters more than it looks. A dictionary gives the first listed
+  sense: asked about "to unwind" it explains separating a ball of yarn, which
+  is correct and useless here. Gloss the sense you actually used.
 """

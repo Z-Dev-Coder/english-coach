@@ -315,13 +315,14 @@ function WritingStep({ activity, onDone }) {
 
 /* --------------------------------------------------------------- speaking */
 
-function SpeakingStep({ activity, onDone }) {
+function SpeakingStep({ activity, voice, onDone }) {
   const [spoken, setSpoken] = useState("");
   const [recording, setRecording] = useState(false);
   const [support, setSupport] = useState(null);
   // Prepare first. The record button being on screen while the learner is
   // still reading is the pressure that makes people skip preparing.
   const [ready, setReady] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const recognition = useRef(null);
   const recorder = useRecorder();
 
@@ -330,6 +331,7 @@ function SpeakingStep({ activity, onDone }) {
       .speakingSupport({
         prompt: activity.prompt || activity.instructions,
         expressions: activity.target_expressions ?? [],
+        withAnswer: true,
       })
       .then(setSupport)
       // Scaffolding is help, not a prerequisite: if it fails to load the
@@ -406,9 +408,59 @@ function SpeakingStep({ activity, onDone }) {
           </section>
         )}
 
+        {support?.model_answer?.answer && (
+          <section className="mt-6">
+            <h3 className="micro">an example answer</h3>
+            {!showAnswer ? (
+              <button
+                onClick={() => setShowAnswer(true)}
+                className="mt-2 w-full rounded-xl border border-dashed border-[color:var(--color-line)] p-4 text-left text-[14px] text-ink-2 transition hover:bg-sunken dark:border-white/15 dark:text-white/60"
+              >
+                Show me one way to answer this
+                <span className="micro mt-1 block">
+                  read it, then say your own version — don&rsquo;t recite it
+                </span>
+              </button>
+            ) : (
+              <div className="mt-2 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+                {support.model_answer.is_skeleton && (
+                  <p className="micro mb-2">
+                    a skeleton, not a full answer — the model wasn&rsquo;t reachable
+                  </p>
+                )}
+                <Glossed className="space-y-2 text-[15px] leading-relaxed">
+                  {support.model_answer.answer.split("\n").map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                </Glossed>
+
+                <div className="mt-3">
+                  <PlayLine
+                    text={support.model_answer.answer}
+                    voice={voice}
+                    label="Hear it"
+                    rate={0.9}
+                  />
+                </div>
+
+                {support.model_answer.notes?.length > 0 && (
+                  <ul className="mt-4 space-y-2 border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
+                    {support.model_answer.notes.map((note) => (
+                      <li key={note.quote} className="text-[13px]">
+                        <span className="font-medium">&ldquo;{note.quote}&rdquo;</span>{" "}
+                        <span className="text-ink-2 dark:text-white/60">{note.why}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
         {frame.length > 0 && (
           <section className="mt-6">
-            <h3 className="micro">how to structure your answer</h3>
+            <h3 className="micro">how it was built</h3>
             <ol className="mt-2 space-y-3">
               {frame.map((step, index) => (
                 <li key={step.move} className="flex gap-3">

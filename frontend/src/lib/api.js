@@ -94,8 +94,9 @@ export const api = {
     ).toString();
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
-  speakingSupport: ({ prompt = "", expressions = [] } = {}) => {
+  speakingSupport: ({ prompt = "", expressions = [], withAnswer = false } = {}) => {
     const query = new URLSearchParams();
+    if (withAnswer) query.set("with_answer", "1");
     if (prompt) query.set("prompt", prompt);
     // Repeated key, not a joined string: an expression can contain a comma.
     expressions.forEach((value) => value && query.append("expression", value));

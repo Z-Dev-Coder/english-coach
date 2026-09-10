@@ -175,3 +175,47 @@ def build_support(*, prompt: str, level: str = "B1", expressions: list[str] | No
         "stalling_phrases": PHRASES["buy_time"][band],
         "target_expressions": list(expressions or []),
     }
+
+
+# Connectives a learner has by A2. Their dictionary entries are actively
+# misleading here -- "then: that time" is the noun sense and nothing to do with
+# sequencing -- so they get a usage note instead of a definition.
+USAGE_NOTES = {
+    "first": "Opens the first step. Say it, then pause slightly before the step itself.",
+    "firstly": "Same as 'first', slightly more formal. Fine in a presentation, stiff in conversation.",
+    "then": "Joins one step to the next. Unstressed in speech — it almost disappears.",
+    "after that": "Like 'then', but buys you a moment to think. Useful when you need one.",
+    "next": "Moves to the following step. Interchangeable with 'then' in most answers.",
+    "finally": "Signals the last step, so the listener knows you are finishing.",
+    "in the end": "Not the same as 'finally' — this one means after some difficulty.",
+    "also": "Adds something related. Put it after the subject: 'I also...', not 'Also I...'.",
+    "however": "Written English. In speech, 'but' or 'that said' sounds far more natural.",
+    "so": "Introduces a result, and in speech also just fills a gap while you think.",
+    "because": "Gives the reason. In speech the clause after it is usually short.",
+}
+
+
+def usage_note(expression: str) -> str:
+    """A note on how to use this, for words a definition would not help with."""
+    return USAGE_NOTES.get((expression or "").strip().lower(), "")
+
+
+def fallback_answer(*, prompt: str, level: str, task: str | None = None) -> dict:
+    """A skeleton to fill in, for when the model is unavailable.
+
+    Deliberately not a fake answer. Inventing one without a model would mean
+    writing something generic enough to fit any prompt, which is precisely the
+    failure being fixed. A labelled skeleton is honest about being a scaffold
+    and is still usable -- the learner has the moves and the language for each.
+    """
+    task = task or detect_task(prompt)
+    band = _band(level)
+    lines = []
+    for step in FRAMES[task]:
+        opener = PHRASES[step["phrases"]][band][0]
+        lines.append(f"{opener} ({step['move'].lower()} — {step['hint']})")
+    return {
+        "answer": "\n".join(lines),
+        "notes": [],
+        "is_skeleton": True,
+    }

@@ -391,3 +391,81 @@ def create_passage(user, *, title: str, text: str, level: str = "", topic: str =
         source=Passage.Source.LEARNER,
         owner=user,
     )
+
+
+def speaking_model_answer(*, prompt: str, level: str, expressions: list[str], moves: list[str]) -> dict:
+    """One worked answer to a speaking prompt, for the learner to adapt.
+
+    This is the one part of the speaking scaffolding that goes to a model. The
+    frames and functional language are fixed sets that a model would only
+    paraphrase, but a model *answer* has to be about the actual prompt, so
+    there is nothing to look it up in.
+
+    Cached on the prompt and level, so a given prompt costs one call ever --
+    and every learner who meets it afterwards pays nothing. That is what keeps
+    a per-prompt generation inside the project's zero-recurring-cost rule.
+
+    Falls back to a labelled skeleton rather than an invented answer. Writing
+    one without a model would mean something generic enough to fit any prompt,
+    which is exactly the "too generic" failure this exists to fix.
+    """
+    from apps.ai import prompts as ai_prompts
+    from apps.ai.providers.base import TIER_MEDIUM, AIError
+    from apps.ai.registry import get_ai_provider
+    from apps.ai.services import cached
+    from apps.skills.speaking_support import fallback_answer
+
+    if not prompt:
+        return fallback_answer(prompt=prompt, level=level)
+
+    try:
+        provider = get_ai_provider()
+        data = cached(
+            "speaking_model_answer",
+            {"prompt": prompt, "level": level, "expressions": sorted(expressions)},
+            lambda: provider.generate_json(
+                ai_prompts.speaking_model_answer(
+                    prompt=prompt, level=level, expressions=expressions, moves=moves
+                ),
+                schema=ai_prompts.MODEL_ANSWER_SCHEMA,
+                tier=TIER_MEDIUM,
+                temperature=0.7,
+            ),
+        )
+    except AIError:
+        return fallback_answer(prompt=prompt, level=level)
+
+    answer = str(data.get("answer") or "").strip()
+    if not answer:
+        return fallback_answer(prompt=prompt, level=level)
+
+    notes = []
+    for note in data.get("notes") or []:
+        if not isinstance(note, dict):
+            continue
+        quote = str(note.get("quote") or "").strip()
+        why = str(note.get("why") or "").strip()
+        if quote and why:
+            notes.append({"quote": quote[:120], "why": why[:240]})
+
+    glossed = []
+    for item in data.get("expressions") or []:
+        if not isinstance(item, dict):
+            continue
+        text = str(item.get("text") or "").strip()
+        meaning = str(item.get("meaning") or "").strip()
+        if text and meaning:
+            glossed.append(
+                {
+                    "text": text[:120],
+                    "meaning": meaning[:240],
+                    "example": str(item.get("example") or "").strip()[:200],
+                }
+            )
+
+    return {
+        "answer": answer,
+        "notes": notes[:4],
+        "expressions": glossed,
+        "is_skeleton": False,
+    }

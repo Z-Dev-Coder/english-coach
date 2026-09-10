@@ -166,7 +166,39 @@ class SpeakingSupportView(APIView):
             prompt=prompt, level=level, expressions=expressions
         )
         support["target_expressions"] = _resolve_expressions(expressions)
+
+        # The worked answer. Asked for separately because it is the slow part:
+        # everything above is a lookup, this may be a model call on the first
+        # learner to meet this prompt.
+        if request.query_params.get("with_answer") == "1":
+            answer = services.speaking_model_answer(
+                prompt=prompt,
+                level=level,
+                expressions=[item["text"] for item in support["target_expressions"]],
+                moves=[step["move"] for step in support["frame"]],
+            )
+            support["model_answer"] = answer
+            # The model wrote the answer using these expressions, so it knows
+            # which sense the lesson meant -- which a general dictionary cannot.
+            _apply_glosses(support["target_expressions"], answer.get("expressions") or [])
         return Response(support)
+
+
+def _apply_glosses(resolved, glosses):
+    """Overlay the model's lesson-specific meanings on the resolved list.
+
+    Only where it actually supplied one: a dictionary sense for an ordinary
+    word is perfectly good, and losing it because the model skipped an entry
+    would be a step backwards.
+    """
+    by_text = {str(item.get("text", "")).strip().lower(): item for item in glosses}
+    for entry in resolved:
+        gloss = by_text.get(entry["text"].strip().lower())
+        if not gloss:
+            continue
+        entry["meaning"] = gloss["meaning"]
+        if gloss.get("example"):
+            entry["example"] = gloss["example"]
 
 
 def _resolve_expressions(texts):
@@ -202,6 +234,14 @@ def _resolve_expressions(texts):
             # Not one we teach. The lesson generator writes these freely, so
             # this is the common case -- fall through to the dictionary rather
             # than showing a bare phrase nobody has explained.
+            # A connective's dictionary entry is worse than nothing here:
+            # "then: that time" is the noun sense and says nothing about
+            # sequencing. Where we have a usage note, it wins.
+            note = speaking_support.usage_note(original)
+            if note:
+                resolved.append({"text": original, "meaning": note, "example": ""})
+                continue
+
             found = dictionary_lookup.look_up(original)
             senses = (found.get("entries") or [{}])[0].get("senses") or [{}]
             # "to unwind" is a verb by construction, but a dictionary lists
