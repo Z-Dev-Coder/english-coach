@@ -6,118 +6,73 @@ import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
 import { useRecorder } from "../lib/recorder";
-import { pickVoice, speak, stopSpeaking } from "../lib/speech";
-import {
-  Button,
-  Card,
-  CardSkeleton,
-  ErrorNote,
-  HowTo,
-  Pill,
-} from "../lib/ui";
+import { pickVoice, speakTracked, stopSpeaking } from "../lib/speech";
+import { Button, Card, CardSkeleton, ErrorNote, HowTo, Pill } from "../lib/ui";
 
 /**
- * Shadowing: speak along with the model, a beat behind.
+ * Shadowing: speak along with the audio, a beat behind, without stopping.
  *
- * The hard part of shadowing is not the words -- it is that fluent English
- * arrives in chunks, with the beat on the words that carry meaning and the
- * pitch signalling whether the speaker has finished. A learner given a whole
- * sentence says it flat, one word at a time, and practises the wrong thing.
+ * The first version of this page was a chunk drill -- play a phrase, stop,
+ * press Next, play the next one. That is a reasonable exercise and it is not
+ * shadowing. Shadowing works precisely *because* it does not stop: the learner
+ * has no time to translate, assemble a sentence, or self-correct, so they are
+ * forced onto the rhythm and stress of the speaker instead of their own. Take
+ * the continuity away and you have removed the mechanism, leaving repetition
+ * after a model, which the drill page already does better.
  *
- * So the sentence is not shown as a sentence. It is shown one chunk at a time,
- * sized to the learner's level, with the stressed words marked and an arrow for
- * where the pitch goes. The chunking, stress and intonation all come from the
- * server so the rules live in one tested place rather than being reimplemented
- * in JavaScript.
+ * So the audio now runs start to finish and the page tracks it, highlighting
+ * the phrase being spoken right now. The learner reads ahead by a beat and
+ * speaks along.
  *
- * Recording is deliberately paired with playback here rather than with a
- * score. Recognition can tell you the words were right; only hearing yourself
- * tells you the rhythm was wrong, and rhythm is the entire subject.
+ * Speed is the accommodation instead of pausing. Slowing the whole passage
+ * keeps it continuous, which is the part that matters, while making it
+ * followable -- a beginner shadowing at 0.6 is still shadowing.
  */
 
-const INTONATION = {
-  rise: { arrow: "↗", label: "pitch rises — you have not finished" },
-  fall: { arrow: "↘", label: "pitch falls — this closes the thought" },
-};
+/** A token as it appears in the word list: no surrounding punctuation. */
+const bare = (token) => token.toLowerCase().replace(/^[^\p{Letter}']+|[^\p{Letter}']+$/gu, "");
 
-function Chunk({ chunk, active }) {
-  const tone = INTONATION[chunk.intonation] ?? INTONATION.fall;
-  const stress = new Set(chunk.stress);
-
-  return (
-    <div
-      className={cx(
-        "rounded-xl px-4 py-3 transition",
-        active
-          ? "bg-sunken ring-1 ring-[color:var(--color-accent)]/40 dark:bg-white/[0.06]"
-          : "opacity-45",
-      )}
-    >
-      <p className="text-lg leading-relaxed">
-        {chunk.words.map((word, index) => (
-          <span
-            key={index}
-            className={cx(
-              "mr-1.5 inline-block",
-              // Stressed words are the beat. Weight rather than colour: the
-              // accent is already doing other work on this page, and a
-              // sentence half in orange is harder to read, not easier.
-              stress.has(index) && "font-bold text-ink dark:text-white",
-              !stress.has(index) && "text-ink-3",
-            )}
-          >
-            {word}
-          </span>
-        ))}
-        <span
-          className="ml-1 text-[color:var(--color-accent)]"
-          title={tone.label}
-          aria-label={tone.label}
-        >
-          {tone.arrow}
-        </span>
-      </p>
-      {active && (
-        <p className="micro mt-1.5">
-          bold = stress · {tone.label} · then pause {Math.round(chunk.pause_ms / 100) / 10}s
-        </p>
-      )}
-    </div>
-  );
-}
+const SPEEDS = [
+  { value: 0.6, label: "0.6×" },
+  { value: 0.75, label: "0.75×" },
+  { value: 0.9, label: "0.9×" },
+  { value: 1, label: "Full" },
+];
 
 export default function Shadowing() {
   const [params] = useSearchParams();
-  const passageId = params.get("passage_id");
-
   const [guide, setGuide] = useState(null);
   const [passages, setPassages] = useState(null);
-  const [index, setIndex] = useState(0);
+  const [passageId, setPassageId] = useState(params.get("passage_id") ?? "");
   const [voice, setVoice] = useState(null);
   const [error, setError] = useState(null);
-  const [rate, setRate] = useState(0.85);
+  const [rate, setRate] = useState(0.75);
+  const [offset, setOffset] = useState(-1);
+  const [playing, setPlaying] = useState(false);
   const recorder = useRecorder();
-  const chosen = useRef(passageId);
+  const stopRef = useRef(null);
+  const activeRef = useRef(null);
 
-  const load = useCallback(() => {
-    setError(null);
-    api
-      .passages()
-      .then((list) => {
-        setPassages(list);
-        if (!chosen.current && list.length) chosen.current = String(list[0].id);
-        return api.shadowingGuide({ passage_id: chosen.current });
-      })
-      .then((data) => {
-        setGuide(data);
-        setIndex(0);
-      })
-      .catch(setError);
-  }, []);
+  const load = useCallback(
+    (id) => {
+      setError(null);
+      api
+        .passages()
+        .then((list) => {
+          setPassages(list);
+          const chosen = id || (list[0] && String(list[0].id)) || "";
+          setPassageId(chosen);
+          return chosen ? api.shadowingGuide({ passage_id: chosen }) : null;
+        })
+        .then((data) => data && setGuide(data))
+        .catch(setError);
+    },
+    [],
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(params.get("passage_id") ?? "");
+  }, [load, params]);
 
   useEffect(() => {
     pickVoice().then(setVoice);
@@ -125,21 +80,56 @@ export default function Shadowing() {
   }, []);
 
   const chunks = guide?.chunks ?? [];
-  const chunk = chunks[index];
+  // Which phrase the voice is in the middle of. -1 before playback starts, so
+  // nothing is highlighted until there is something to follow.
+  const activeIndex =
+    offset < 0 ? -1 : chunks.findIndex((chunk) => offset >= chunk.start && offset < chunk.end);
+  const current = activeIndex === -1 && offset >= 0 ? chunks.length - 1 : activeIndex;
+
+  // Keep the spoken line on screen without yanking the page around.
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [current]);
+
+  const stop = useCallback(() => {
+    stopRef.current?.();
+    stopRef.current = null;
+    setPlaying(false);
+    if (recorder.recording) recorder.stop();
+  }, [recorder]);
 
   const play = () => {
-    if (chunk) speak(chunk.text, { rate, voice });
-  };
-
-  const move = (delta) => {
-    stopSpeaking();
+    if (!guide?.text) return;
+    setOffset(0);
+    setPlaying(true);
     recorder.clear();
-    setIndex((current) => Math.min(chunks.length - 1, Math.max(0, current + delta)));
+    // Recording runs for the whole pass, so the learner can hear their own
+    // delivery against the model rather than one phrase at a time.
+    if (recorder.supported) recorder.start();
+    stopRef.current = speakTracked(guide.text, {
+      rate,
+      voice,
+      onProgress: setOffset,
+      onEnd: () => {
+        setPlaying(false);
+        if (recorder.recording) recorder.stop();
+      },
+      onError: (err) => {
+        setError(err);
+        setPlaying(false);
+      },
+    });
   };
 
-  const toggleRecord = () => (recorder.recording ? recorder.stop() : recorder.start());
+  const choose = (id) => {
+    stop();
+    setOffset(-1);
+    setGuide(null);
+    setPassageId(id);
+    api.shadowingGuide({ passage_id: id }).then(setGuide).catch(setError);
+  };
 
-  if (error) return <ErrorNote error={error} onRetry={load} />;
+  if (error) return <ErrorNote error={error} onRetry={() => load(passageId)} />;
 
   return (
     <div className="space-y-6">
@@ -148,7 +138,7 @@ export default function Shadowing() {
           Shadowing <span className="text-[color:var(--color-accent)]">Studio</span>
         </h1>
         <p className="mt-1 text-sm text-ink-2 dark:text-white/55">
-          Speak along with the model, one chunk at a time — the rhythm is the exercise.
+          Speak along with the voice, a beat behind. It doesn&rsquo;t stop — that&rsquo;s the point.
         </p>
       </header>
 
@@ -158,95 +148,133 @@ export default function Shadowing() {
         id="shadowing"
         title="How shadowing works"
         steps={[
-          "Play the chunk and listen to where the beat falls. Don't read ahead.",
-          "Say it along with the model, a beat behind — copy the rhythm, not just the words.",
-          "Record yourself and play both back. Flat delivery is the thing to catch.",
-          "Chunks are sized to your level, so shorter ones mean more control, not less progress.",
+          "Press Play and start speaking about a second behind the voice. Don't wait for gaps.",
+          "Follow the highlight. Read slightly ahead of it so you're never catching up.",
+          "You will fall behind and lose your place. Keep going — rejoining is the skill.",
+          "Too fast? Slow the whole thing down. Slower is still shadowing; stopping isn't.",
         ]}
       />
 
       {!guide ? (
-        <CardSkeleton lines={5} />
+        <CardSkeleton lines={6} />
       ) : (
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="brand">
-                Chunk {index + 1} of {chunks.length}
-              </Pill>
-              <Pill>{guide.level}</Pill>
+              <Pill tone="brand">{guide.level}</Pill>
               {guide.passage && <span className="micro">{guide.passage.title}</span>}
             </div>
-            {passages?.length > 1 && (
-              <span className="micro">{guide.words_per_chunk} words a chunk at your level</span>
+            <div className="flex items-center gap-1.5">
+              <span className="micro">speed</span>
+              {SPEEDS.map((speed) => (
+                <button
+                  key={speed.value}
+                  onClick={() => setRate(speed.value)}
+                  className={cx(
+                    "rounded-full px-2.5 py-1 font-mono text-[11px] transition",
+                    rate === speed.value
+                      ? "bg-ink text-white dark:bg-white dark:text-black"
+                      : "text-ink-3 ring-1 ring-[color:var(--color-line)] hover:text-ink dark:ring-white/10",
+                  )}
+                >
+                  {speed.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* The passage, whole, with the spoken phrase lit. Reading the text
+              as continuous prose is deliberate: chopping it into cards is what
+              made the last version a drill. */}
+          <div className="max-h-[46vh] overflow-y-auto rounded-xl bg-sunken p-5 text-[19px] leading-[1.9] dark:bg-white/[0.04]">
+            {chunks.map((chunk, index) => {
+              const spoken = current > index;
+              const active = current === index;
+              // Matched by word rather than by index: the rendered tokens
+              // carry punctuation, so their positions do not line up with the
+              // stripped word list the stress indices refer to.
+              const stressWords = new Set(
+                chunk.stress.map((i) => chunk.words[i]?.toLowerCase()).filter(Boolean),
+              );
+              return (
+                <span
+                  key={index}
+                  ref={active ? activeRef : undefined}
+                  className={cx(
+                    "rounded px-1 transition-colors duration-200",
+                    active && "bg-[color:var(--color-accent)]/20 text-ink dark:text-white",
+                    !active && spoken && "text-ink-3",
+                    !active && !spoken && "text-ink-2 dark:text-white/70",
+                  )}
+                >
+                  {/* The chunk's own text, not its extracted words: the word
+                      list drops punctuation, and someone reading a beat ahead
+                      of the voice needs the commas and full stops to know
+                      where the phrasing is going. */}
+                  {chunk.text.split(/(\s+)/).map((token, i) =>
+                    /^\s+$/.test(token) ? (
+                      token
+                    ) : (
+                      <span
+                        key={i}
+                        className={cx(active && stressWords.has(bare(token)) && "font-bold")}
+                      >
+                        {token}
+                      </span>
+                    ),
+                  )}{" "}
+                </span>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {playing ? (
+              <Button variant="danger" onClick={stop} size="lg">
+                <Icon name="stop" size={14} /> Stop
+              </Button>
+            ) : (
+              <Button onClick={play} size="lg">
+                <Icon name="play" size={14} /> {offset >= 0 ? "Play again" : "Play and speak along"}
+              </Button>
+            )}
+            {recorder.recording && (
+              <span className="micro text-[color:var(--color-accent)]">recording you</span>
             )}
           </div>
 
-          {chunk ? (
-            <>
-              <div className="space-y-2">
-                {chunks.slice(Math.max(0, index - 1), index + 2).map((item, offset) => (
-                  <Chunk
-                    key={Math.max(0, index - 1) + offset}
-                    chunk={item}
-                    active={Math.max(0, index - 1) + offset === index}
-                  />
-                ))}
-              </div>
+          {recorder.url && !playing && (
+            <div className="mt-4 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+              <p className="micro">your run — listen for where the rhythm drifted</p>
+              <audio src={recorder.url} controls className="mt-2 w-full" />
+            </div>
+          )}
 
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <Button onClick={play}>
-                  <Icon name="play" size={13} /> Play chunk
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setRate((current) => (current === 0.85 ? 0.6 : 0.85));
-                  }}
-                >
-                  <Icon name="slow" size={13} /> {rate === 0.85 ? "Slower" : "Normal speed"}
-                </Button>
-                {recorder.supported && (
-                  <Button
-                    variant={recorder.recording ? "danger" : "secondary"}
-                    onClick={toggleRecord}
-                  >
-                    <Icon name={recorder.recording ? "stop" : "mic"} size={13} />
-                    {recorder.recording ? "Stop" : "Record"}
-                  </Button>
-                )}
-              </div>
-
-              {recorder.url && (
-                <div className="mt-4 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
-                  <p className="micro">hear yourself back</p>
-                  <audio src={recorder.url} controls className="mt-2 w-full" />
-                  <button onClick={play} className="micro mt-2 hover:text-ink">
-                    play the model again to compare
-                  </button>
-                </div>
-              )}
-
-              {!recorder.supported && (
-                <p className="mt-3 text-[13px] text-ink-3">
-                  This browser can&rsquo;t record audio, so there&rsquo;s nothing to play back.
-                  Shadowing out loud still works — that&rsquo;s the part that matters.
-                </p>
-              )}
-
-              <div className="mt-5 flex items-center gap-2 border-t border-[color:var(--color-line)] pt-4 dark:border-white/10">
-                <Button variant="ghost" onClick={() => move(-1)} disabled={index === 0}>
-                  <Icon name="arrowLeft" size={13} /> Back
-                </Button>
-                <Button onClick={() => move(1)} disabled={index >= chunks.length - 1}>
-                  Next chunk <Icon name="arrowRight" size={13} />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <p className="text-[13px] text-ink-3">
-              Nothing to shadow yet — add a passage on the Reading tab first.
+          {!recorder.supported && (
+            <p className="mt-3 text-[13px] text-ink-3">
+              This browser can&rsquo;t record, so there&rsquo;s nothing to play back. Shadowing out
+              loud still works — that&rsquo;s the part that matters.
             </p>
+          )}
+
+          {passages?.length > 1 && (
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[color:var(--color-line)] pt-4 dark:border-white/10">
+              <span className="micro">shadow something else</span>
+              {passages.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => choose(String(item.id))}
+                  className={cx(
+                    "rounded-full px-3 py-1 text-[12px] transition",
+                    String(item.id) === String(passageId)
+                      ? "bg-ink text-white dark:bg-white dark:text-black"
+                      : "text-ink-2 ring-1 ring-[color:var(--color-line)] hover:bg-sunken dark:ring-white/10",
+                  )}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
           )}
         </Card>
       )}

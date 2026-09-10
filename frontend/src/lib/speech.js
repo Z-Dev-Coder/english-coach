@@ -82,6 +82,84 @@ export function stopSpeaking() {
 }
 
 /**
+ * Speak, reporting how far through the text the voice has got.
+ *
+ * This is what makes shadowing possible rather than merely described. Real
+ * shadowing means the audio runs continuously while the learner speaks a beat
+ * behind it, so the page has to show which phrase is being said *now* -- and
+ * `speak()` above only knows about starting and ending.
+ *
+ * `onProgress` receives a character offset into the text. Browsers report that
+ * through the `boundary` event, which Chrome and Edge fire per word and Safari
+ * largely does not. So there is a fallback: if no boundary arrives shortly
+ * after playback begins, progress is estimated from elapsed time against a
+ * words-per-minute figure scaled by the rate. Estimated highlighting drifts,
+ * but it drifts by a word or so, and that is far better than a static block of
+ * text while audio plays.
+ */
+export function speakTracked(text, { rate = 1, voice = null, onProgress, onEnd, onError } = {}) {
+  if (!synth || !text) {
+    onError?.(new Error("Speech synthesis is not available in this browser."));
+    return () => {};
+  }
+
+  synth.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = rate;
+  utterance.lang = voice?.lang || "en-US";
+  if (voice) utterance.voice = voice;
+
+  let sawBoundary = false;
+  let timer = null;
+  const startedAt = Date.now();
+
+  const stopTimer = () => {
+    if (timer) clearInterval(timer);
+    timer = null;
+  };
+
+  utterance.onboundary = (event) => {
+    sawBoundary = true;
+    stopTimer();
+    onProgress?.(event.charIndex ?? 0);
+  };
+
+  utterance.onend = () => {
+    stopTimer();
+    onProgress?.(text.length);
+    onEnd?.();
+  };
+
+  utterance.onerror = (event) => {
+    stopTimer();
+    if (event.error === "interrupted" || event.error === "canceled") return;
+    onError?.(new Error(event.error || "Playback failed."));
+  };
+
+  synth.speak(utterance);
+
+  // Give the real events a moment to show up before guessing.
+  setTimeout(() => {
+    if (sawBoundary) return;
+    // ~165 wpm is an ordinary reading pace for a synthesised voice at rate 1.
+    const charsPerMs = (165 * 5) / 60000;
+    timer = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const estimate = Math.min(text.length, Math.round(elapsed * charsPerMs * rate));
+      onProgress?.(estimate);
+      if (estimate >= text.length) stopTimer();
+    }, 120);
+  }, 400);
+
+  return () => {
+    stopTimer();
+    synth.cancel();
+  };
+}
+
+
+/**
  * Listen to the microphone and resolve with a transcript.
  *
  * Returns { promise, stop }. The caller stops it explicitly rather than relying

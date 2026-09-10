@@ -110,3 +110,33 @@ class IntonationTests(SimpleTestCase):
         self.assertEqual(guide["chunks"][-1]["intonation"], "fall")
         for chunk in guide["chunks"][:-1]:
             self.assertEqual(chunk["intonation"], "rise")
+
+
+class OffsetTests(SimpleTestCase):
+    """Chunks carry where they start in the text.
+
+    Speech synthesis reports progress as a character offset, so without this
+    the page cannot tell which phrase is being spoken right now -- and
+    following the phrase as it is spoken is the whole exercise.
+    """
+
+    def test_offsets_point_at_the_chunk_in_the_original_text(self):
+        guide = build_guide(SENTENCE, level="A2")
+        for chunk in guide["chunks"]:
+            with self.subTest(chunk=chunk["text"]):
+                self.assertEqual(
+                    guide["text"][chunk["start"] : chunk["end"]],
+                    chunk["text"],
+                )
+
+    def test_offsets_move_forward(self):
+        guide = build_guide(SENTENCE, level="A2")
+        starts = [chunk["start"] for chunk in guide["chunks"]]
+        self.assertEqual(starts, sorted(starts))
+
+    def test_a_repeated_phrase_maps_to_the_right_occurrence(self):
+        # Searching from the start every time would map both to the first,
+        # so the highlight would jump backwards mid-sentence.
+        guide = build_guide("Go now. Go now.", level="B1")
+        starts = [chunk["start"] for chunk in guide["chunks"]]
+        self.assertEqual(len(set(starts)), len(starts))

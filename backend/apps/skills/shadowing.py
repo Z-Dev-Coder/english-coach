@@ -145,8 +145,12 @@ def build_guide(text: str, *, level: str = "B1") -> dict:
     """The full shadowing guide for a passage or sentence."""
     limit = WORDS_PER_CHUNK.get((level or "B1").upper(), WORDS_PER_CHUNK["B1"])
 
-    sentences = [s for s in _SENTENCE_SPLIT.split((text or "").strip()) if s.strip()]
+    text = (text or "").strip()
+    sentences = [s for s in _SENTENCE_SPLIT.split(text) if s.strip()]
     chunks: list[dict] = []
+    # Walks forward through the text so a repeated phrase maps to the right
+    # occurrence rather than always the first.
+    cursor = 0
 
     for sentence_index, sentence in enumerate(sentences):
         pieces: list[str] = []
@@ -166,9 +170,20 @@ def build_guide(text: str, *, level: str = "B1") -> dict:
             else:
                 pause = PAUSE_WITHIN_SENTENCE
 
+            # Where this chunk starts in the original text. Speech synthesis
+            # reports progress as a character offset, so without this the UI
+            # cannot know which phrase is being spoken right now -- and
+            # following the phrase as it is spoken is the whole exercise.
+            start = text.find(piece, cursor)
+            if start == -1:  # whitespace normalisation lost it; fall back
+                start = cursor
+            cursor = start + len(piece)
+
             chunks.append(
                 {
                     "text": piece,
+                    "start": start,
+                    "end": cursor,
                     "words": _words(piece),
                     "stress": stressed_indices(piece),
                     "intonation": intonation_for(piece, is_final=last_in_sentence),
@@ -178,6 +193,7 @@ def build_guide(text: str, *, level: str = "B1") -> dict:
             )
 
     return {
+        "text": text,
         "level": (level or "B1").upper(),
         "words_per_chunk": limit,
         "chunk_count": len(chunks),
