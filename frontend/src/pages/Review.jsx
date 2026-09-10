@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import Glossed from "../components/Glossed";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import {
@@ -102,7 +103,7 @@ function ReviewCard({ item, onAnswer, submitting }) {
         </div>
       ) : (
         <div className="animate-rise">
-          <div className="mt-6 border-t border-[color:var(--color-line)] pt-5 dark:border-white/5">
+          <Glossed className="mt-6 border-t border-[color:var(--color-line)] pt-5 dark:border-white/5">
             <p className="text-xl font-semibold">{expression.text}</p>
             <p className="mt-1 text-ink-2 dark:text-white/70">{expression.meaning}</p>
 
@@ -124,7 +125,7 @@ function ReviewCard({ item, onAnswer, submitting }) {
                 Register: <span className="font-medium">{expression.register}</span>
               </p>
             )}
-          </div>
+          </Glossed>
 
           <div className="mt-6">
             <p className="mb-2 text-sm font-medium text-ink-2">How did that go?</p>

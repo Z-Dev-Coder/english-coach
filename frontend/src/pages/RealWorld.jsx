@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import Glossed from "../components/Glossed";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
@@ -274,10 +275,12 @@ function DialogueStudio() {
             action={result.register ? <Pill tone="brand">{result.register}</Pill> : null}
           />
           {result.summary && (
-            <p className="text-ink-2 dark:text-white/70">{result.summary}</p>
+            <Glossed as="p" className="text-ink-2 dark:text-white/70">
+              {result.summary}
+            </Glossed>
           )}
 
-          <ul className="mt-5 space-y-3">
+          <Glossed as="ul" className="mt-5 space-y-3">
             {result.expressions.map((item, index) => (
               <li key={index} className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
                 <div className="flex flex-wrap items-center gap-2">
@@ -303,7 +306,7 @@ function DialogueStudio() {
                 )}
               </li>
             ))}
-          </ul>
+          </Glossed>
 
           <div className="mt-5">
             <AddToReview

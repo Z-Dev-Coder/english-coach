@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from apps.review import services
 from apps.review.models import Review
+from apps.vocabulary import lookup
 from apps.vocabulary.models import ExampleSentence, Expression, MasteryState, VocabularyProgress
 
 from .review_serializers import (
@@ -166,3 +167,25 @@ class ReviewHistoryView(APIView):
             .select_related("progress__expression")[:50]
         )
         return Response(ReviewLogSerializer(logs, many=True).data)
+
+
+class DefineView(APIView):
+    """Define a single word, for the hover-a-word popover in reading content.
+
+    GET rather than POST: it is a pure read, and being cacheable by the browser
+    matters for something triggered by pointer movement.
+
+    Missing words are a 200 with `found: false`, not a 404. The client asks
+    about whatever token the pointer happened to land on -- a name, a number,
+    a typo in the learner's own writing -- and none of those are error
+    conditions worth logging or retrying.
+    """
+
+    def get(self, request):
+        word = request.query_params.get("word", "")
+        if not word:
+            return Response(
+                {"detail": "A `word` query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(lookup.look_up(word))

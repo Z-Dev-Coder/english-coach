@@ -204,3 +204,44 @@ class VocabularyProgress(models.Model):
         if self.reps == 0:
             return 0.0
         return (self.reps - self.lapses) / self.reps
+
+
+class WordDefinition(models.Model):
+    """A cached dictionary lookup.
+
+    Hovering words in a reading passage generates a lot of repeat lookups: the
+    same learner rereads the same paragraph, and common words recur across
+    every text. Caching them turns that into one request per word, ever, which
+    is what keeps this feature inside the project's zero-recurring-cost rule.
+
+    Misses are cached too. A word the dictionary does not have -- a name, a
+    typo, a rare inflection -- would otherwise be re-fetched on every single
+    hover, which is the worst case rather than the rare one.
+    """
+
+    word = models.CharField(
+        max_length=80,
+        unique=True,
+        help_text="Normalised lookup key: lowercase, no punctuation.",
+    )
+    entries = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Parsed senses. Empty means the lookup found nothing.",
+    )
+    source = models.CharField(
+        max_length=16,
+        default="dictionary",
+        help_text="Where the entry came from, so a bad source can be purged.",
+    )
+    fetched_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["word"]
+
+    def __str__(self) -> str:
+        return self.word
+
+    @property
+    def found(self) -> bool:
+        return bool(self.entries)

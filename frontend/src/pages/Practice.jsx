@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 import PracticeNav from "../components/PracticeNav";
 import WordDiff from "../components/WordDiff";
+import Glossed from "../components/Glossed";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
@@ -215,11 +216,11 @@ function Reading({ passages, onAdded }) {
             <Pill tone="brand">{reading.level}</Pill>
             <Pill>{reading.word_count} words</Pill>
           </div>
-          <div className="space-y-3 text-lg leading-relaxed">
+          <Glossed className="space-y-3 text-lg leading-relaxed">
             {reading.text.split("\n").map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
-          </div>
+          </Glossed>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Button onClick={finish} disabled={saved}>
               {saved ? "Recorded" : "I've finished reading"}
@@ -530,6 +531,7 @@ export default function Practice() {
           title="How to use reading"
           steps={[
             "Read once for the gist, then again for phrases you couldn't have written yourself.",
+            "Click any word you don't know to see what it means, and add it to your reviews.",
             "Add your own text to study an email, article or message you actually received.",
           ]}
         />

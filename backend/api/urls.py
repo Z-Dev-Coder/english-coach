@@ -27,6 +27,7 @@ urlpatterns = [
     # generated and stateful.
     path("plan/today/", views.TodayLessonView.as_view(), name="today-lesson"),
     path("learner-context/", lesson_views.LearnerContextView.as_view(), name="learner-context"),
+    path("vocabulary/define/", review_views.DefineView.as_view(), name="define"),
     path("review/queue/", review_views.ReviewQueueView.as_view(), name="review-queue"),
     path("review/answer/", review_views.ReviewAnswerView.as_view(), name="review-answer"),
     path("review/stats/", review_views.ReviewStatsView.as_view(), name="review-stats"),

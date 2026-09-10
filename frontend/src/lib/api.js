@@ -95,6 +95,7 @@ export const api = {
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
   addVocabulary: (body) => request("/vocabulary/add/", { method: "POST", body }),
+  defineWord: (word) => request(`/vocabulary/define/?word=${encodeURIComponent(word)}`),
   addExtractedVocabulary: (body) =>
     request("/vocabulary/add-extracted/", { method: "POST", body }),
 
