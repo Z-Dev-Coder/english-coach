@@ -135,6 +135,61 @@ def candidate_forms(word: str) -> list[str]:
     return forms
 
 
+# What a learner reading a sentence is most likely to have met, in order.
+# Anything not listed sits between these and the trailing group below.
+_PART_RANK = {
+    "noun": 0,
+    "verb": 1,
+    "adjective": 2,
+    "adverb": 3,
+    "phrase": 4,
+    "preposition": 5,
+    "conjunction": 6,
+    "pronoun": 7,
+    "determiner": 8,
+    "interjection": 9,
+}
+# Not word senses in any useful way: Wiktionary files language codes under
+# Symbol, which is why "run" opened on the ISO code for Kirundi.
+_PART_LAST = {"symbol", "letter", "abbreviation", "initialism", "acronym",
+              "proper noun", "numeral", "prefix", "suffix", "particle"}
+
+
+def _part_rank(part: str) -> int:
+    part = (part or "").lower()
+    if part in _PART_LAST:
+        return 100
+    return _PART_RANK.get(part, 50)
+
+
+def _interleave(groups: list[list[dict]], limit: int) -> list[dict]:
+    """One sense from each group in turn, until `limit` is reached.
+
+    `groups` are the senses of one part of speech each, in source order. Taking
+    them round-robin means a four-slot panel shows noun *and* verb rather than
+    four senses of whichever came first.
+    """
+    # Rank first, so the round-robin starts from the word classes a reader is
+    # most likely to want. Sorting is stable, so blocks of equal rank keep the
+    # order the source gave them.
+    groups = sorted(groups, key=lambda group: _part_rank(group[0].get("part_of_speech", "")))
+
+    chosen: list[dict] = []
+    depth = 0
+    while len(chosen) < limit:
+        added = False
+        for group in groups:
+            if depth < len(group):
+                chosen.append(group[depth])
+                added = True
+                if len(chosen) >= limit:
+                    break
+        if not added:
+            break
+        depth += 1
+    return chosen
+
+
 def parse_entries(payload: object, *, word: str) -> list[dict]:
     """Turn a dictionaryapi.dev response into our own small shape.
 
@@ -146,7 +201,7 @@ def parse_entries(payload: object, *, word: str) -> list[dict]:
     if not isinstance(payload, list):
         return []
 
-    senses: list[dict] = []
+    groups: list[list[dict]] = []
     phonetic = ""
 
     for entry in payload:
@@ -164,26 +219,24 @@ def parse_entries(payload: object, *, word: str) -> list[dict]:
             if not isinstance(meaning, dict):
                 continue
             part = clean_text(meaning.get("partOfSpeech"), 24)
+            group: list[dict] = []
             for definition in meaning.get("definitions") or []:
                 if not isinstance(definition, dict):
                     continue
                 text = clean_text(definition.get("definition"), MAX_DEFINITION_CHARS)
                 if not text:
                     continue
-                senses.append(
+                group.append(
                     {
                         "part_of_speech": part,
                         "definition": text,
                         "example": clean_text(definition.get("example"), MAX_EXAMPLE_CHARS),
                     }
                 )
-                if len(senses) >= MAX_SENSES:
-                    break
-            if len(senses) >= MAX_SENSES:
-                break
-        if len(senses) >= MAX_SENSES:
-            break
+            if group:
+                groups.append(group)
 
+    senses = _interleave(groups, MAX_SENSES)
     if not senses:
         return []
 
@@ -206,13 +259,14 @@ def parse_wiktionary(payload: object, *, word: str) -> list[dict]:
     if not isinstance(payload, dict):
         return []
 
-    senses: list[dict] = []
+    groups: list[list[dict]] = []
     # English only. The same endpoint returns French, German and others for
     # words that happen to be spelled the same.
     for block in payload.get("en") or []:
         if not isinstance(block, dict):
             continue
         part = clean_text(block.get("partOfSpeech"), 24).lower()
+        group: list[dict] = []
         for definition in block.get("definitions") or []:
             if not isinstance(definition, dict):
                 continue
@@ -225,14 +279,11 @@ def parse_wiktionary(payload: object, *, word: str) -> list[dict]:
             example = ""
             if isinstance(examples, list) and examples:
                 example = clean_text(examples[0], MAX_EXAMPLE_CHARS)
-            senses.append(
-                {"part_of_speech": part, "definition": text, "example": example}
-            )
-            if len(senses) >= MAX_SENSES:
-                break
-        if len(senses) >= MAX_SENSES:
-            break
+            group.append({"part_of_speech": part, "definition": text, "example": example})
+        if group:
+            groups.append(group)
 
+    senses = _interleave(groups, MAX_SENSES)
     if not senses:
         return []
     return [{"word": word, "phonetic": "", "senses": senses}]

@@ -61,29 +61,38 @@ class Unreachable(Exception):
     """
 
 
-# How long a source stays "skip it" after failing. Long enough that a sustained
-# outage costs one timeout every few minutes rather than one per word; short
-# enough that a brief blip heals on its own without anyone restarting anything.
+# How long a source stays "skip it" once it has been tripped. Long enough that a
+# sustained outage costs one timeout every few minutes rather than one per word;
+# short enough that it heals without anyone restarting anything.
 FAILURE_COOLDOWN = 300
+
+# One timeout is ordinary internet weather. Tripping a source on a single slow
+# response took a healthy dictionary offline for five minutes at a time.
+FAILURES_BEFORE_COOLDOWN = 2
 
 # Deliberately in-process rather than in the shared cache. This is a personal
 # app on one server, the state is a latency optimisation rather than
 # correctness, and losing it on restart is harmless: the worst case is one slow
 # lookup. Anything more durable would be machinery for no benefit.
 _last_failure: dict[str, float] = {}
+_consecutive_failures: dict[str, int] = {}
 
 
 def _recently_failed(url: str) -> bool:
+    if _consecutive_failures.get(url, 0) < FAILURES_BEFORE_COOLDOWN:
+        return False
     failed_at = _last_failure.get(url)
     return failed_at is not None and (time.monotonic() - failed_at) < FAILURE_COOLDOWN
 
 
 def _note_failure(url: str) -> None:
     _last_failure[url] = time.monotonic()
+    _consecutive_failures[url] = _consecutive_failures.get(url, 0) + 1
 
 
 def _note_success(url: str) -> None:
     _last_failure.pop(url, None)
+    _consecutive_failures.pop(url, None)
 
 
 def _get_json(url: str, word: str) -> object:
@@ -126,11 +135,18 @@ def _fetch(word: str) -> list[dict]:
     pointer. One failure buys a few minutes of not asking again, which brings
     the same lookup back under half a second.
     """
-    reachable = False
+    sources = ((DICTIONARY_URL, parse_entries), (WIKTIONARY_URL, parse_wiktionary))
 
-    for url, parse in ((DICTIONARY_URL, parse_entries), (WIKTIONARY_URL, parse_wiktionary)):
-        if _recently_failed(url):
-            continue
+    live = [source for source in sources if not _recently_failed(source[0])]
+    # The cooldown exists to skip *past* a dead source to a live one. With none
+    # left it would instead mean answering "no dictionary" without asking
+    # anyone, so fall back to trying everything. A slow lookup is worth more
+    # than a confident wrong answer.
+    if not live:
+        live = list(sources)
+
+    reachable = False
+    for url, parse in live:
         try:
             payload = _get_json(url, word)
         except Unreachable:

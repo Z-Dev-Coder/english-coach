@@ -216,12 +216,88 @@ class ParseWiktionaryTests(TestCase):
                 self.assertEqual(parse_wiktionary(payload, word="x"), [])
 
 
+class SenseSelectionTests(TestCase):
+    """Which four senses reach the panel.
+
+    Both sources list every sense of one part of speech before the first sense
+    of the next, so taking the first four in order filled the panel from
+    whichever word class the source happened to start with. Looking up
+    "commute" in "the commute this morning" showed four verb senses -- abating
+    a penalty, reducing a prison sentence -- and never reached the noun the
+    sentence was actually using.
+    """
+
+    @staticmethod
+    def _wiktionary(*blocks):
+        return {
+            "en": [
+                {
+                    "partOfSpeech": part,
+                    "definitions": [{"definition": d} for d in definitions],
+                }
+                for part, definitions in blocks
+            ]
+        }
+
+    def test_shows_more_than_one_part_of_speech(self):
+        payload = self._wiktionary(
+            ("Verb", ["To exchange.", "To abate a penalty.", "To pay in advance.", "To cash in."]),
+            ("Noun", ["A regular journey between home and work."]),
+        )
+        [entry] = parse_wiktionary(payload, word="commute")
+        parts = {sense["part_of_speech"] for sense in entry["senses"]}
+        self.assertIn("noun", parts)
+        self.assertIn("verb", parts)
+
+    def test_puts_ordinary_word_classes_before_the_odd_ones(self):
+        # Wiktionary files language codes under Symbol, which is how looking up
+        # "run" opened on "ISO 639-3 language code for Kirundi".
+        payload = self._wiktionary(
+            ("Symbol", ["ISO 639-3 language code for Kirundi."]),
+            ("Noun", ["Act or instance of running."]),
+        )
+        [entry] = parse_wiktionary(payload, word="run")
+        self.assertEqual(entry["senses"][0]["part_of_speech"], "noun")
+
+    def test_keeps_source_order_within_a_part_of_speech(self):
+        payload = self._wiktionary(("Noun", ["First.", "Second.", "Third."]))
+        [entry] = parse_wiktionary(payload, word="x")
+        self.assertEqual(
+            [sense["definition"] for sense in entry["senses"]],
+            ["First.", "Second.", "Third."],
+        )
+
+    def test_a_single_part_of_speech_is_unaffected(self):
+        payload = self._wiktionary(("Noun", ["One.", "Two.", "Three.", "Four.", "Five."]))
+        [entry] = parse_wiktionary(payload, word="x")
+        self.assertEqual(len(entry["senses"]), 4)
+
+    def test_the_same_rule_applies_to_the_other_source(self):
+        payload = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "verb",
+                        "definitions": [{"definition": f"Verb {i}."} for i in range(5)],
+                    },
+                    {
+                        "partOfSpeech": "noun",
+                        "definitions": [{"definition": "A regular journey."}],
+                    },
+                ]
+            }
+        ]
+        [entry] = parse_entries(payload, word="commute")
+        self.assertIn("noun", {sense["part_of_speech"] for sense in entry["senses"]})
+
+
 class LookUpTests(TestCase):
     def setUp(self):
         # The failure cooldown is module-level state, so it outlives a test.
         # Without this reset, a test that simulates an outage leaves the source
         # marked down and the next test silently skips it.
         lookup._last_failure.clear()
+        lookup._consecutive_failures.clear()
 
     def test_prefers_our_own_expression_over_the_dictionary(self):
         # Our meaning is written at the learner's level and carries register,
@@ -359,9 +435,39 @@ class SourceCooldownTests(TestCase):
 
     def setUp(self):
         lookup._last_failure.clear()
+        lookup._consecutive_failures.clear()
 
-    def test_a_failed_source_is_not_retried_immediately(self):
+    def test_one_source_failing_does_not_stop_the_other(self):
+        """The bug behind "Can't reach the dictionary right now" on a real word.
+
+        Once every source was cooling down, the loop skipped all of them and
+        reported failure without making a request -- so a single slow response
+        from the healthy source silenced it for five minutes.
+        """
         import requests
+
+        wiktionary = {
+            "en": [{"partOfSpeech": "Adverb", "definitions": [{"definition": "At last."}]}]
+        }
+
+        def fake_get(url, **kwargs):
+            if "dictionaryapi.dev" in url:
+                raise requests.ConnectionError("down")
+            return mock.Mock(status_code=200, json=mock.Mock(return_value=wiktionary))
+
+        with mock.patch("apps.vocabulary.lookup.requests.get", side_effect=fake_get):
+            for _ in range(4):
+                result = lookup.look_up(f"word{_}")
+                self.assertTrue(result["found"], "a healthy source went silent")
+
+    def test_every_source_cooling_down_still_gets_tried(self):
+        import requests
+
+        # Trip both sources properly.
+        for url in (lookup.DICTIONARY_URL, lookup.WIKTIONARY_URL):
+            for _ in range(lookup.FAILURES_BEFORE_COOLDOWN):
+                lookup._note_failure(url)
+            self.assertTrue(lookup._recently_failed(url))
 
         calls = []
 
@@ -371,12 +477,16 @@ class SourceCooldownTests(TestCase):
 
         with mock.patch("apps.vocabulary.lookup.requests.get", side_effect=fake_get):
             lookup.look_up("commute")
-            first_round = len(calls)
-            lookup.look_up("nightmare")
 
-        # Both sources tried once; the second word tried neither.
-        self.assertEqual(first_round, 2)
+        # It must still have asked, rather than answering from the cooldown.
         self.assertEqual(len(calls), 2)
+
+    def test_a_single_timeout_does_not_trip_a_source(self):
+        # One slow response is ordinary; an outage is repeated failure.
+        lookup._note_failure(lookup.WIKTIONARY_URL)
+        self.assertFalse(lookup._recently_failed(lookup.WIKTIONARY_URL))
+        lookup._note_failure(lookup.WIKTIONARY_URL)
+        self.assertTrue(lookup._recently_failed(lookup.WIKTIONARY_URL))
 
     def test_the_cooldown_expires(self):
         import requests
@@ -397,7 +507,8 @@ class SourceCooldownTests(TestCase):
         self.assertTrue(result["found"])
 
     def test_success_clears_a_previous_failure(self):
-        lookup._note_failure(lookup.WIKTIONARY_URL)
+        for _ in range(lookup.FAILURES_BEFORE_COOLDOWN):
+            lookup._note_failure(lookup.WIKTIONARY_URL)
         self.assertTrue(lookup._recently_failed(lookup.WIKTIONARY_URL))
         lookup._note_success(lookup.WIKTIONARY_URL)
         self.assertFalse(lookup._recently_failed(lookup.WIKTIONARY_URL))

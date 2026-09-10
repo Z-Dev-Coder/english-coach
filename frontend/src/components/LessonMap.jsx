@@ -35,6 +35,10 @@ function activityHref(activity) {
   Object.entries(activity.params || {}).forEach(([key, value]) => {
     if (value != null && value !== "") params.set(key, value);
   });
+  // The prompt is a field on the activity rather than one of its params, so
+  // it was being dropped from the link -- which is why a writing step opened
+  // on the default prompt instead of the one the plan chose.
+  if (activity.prompt) params.set("prompt", activity.prompt);
   const query = params.toString();
   return `${activity.route}${query ? `?${query}` : ""}`;
 }

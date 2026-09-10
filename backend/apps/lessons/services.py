@@ -107,20 +107,106 @@ def learner_context(user, minutes: int | None = None) -> dict:
     }
 
 
+# How far back to look when deciding what counts as "recently used". Long
+# enough that a week does not repeat itself; short enough that a small library
+# still comes round again rather than running dry.
+ROTATION_WINDOW_DAYS = 21
+
+
+def _recently_used_passage_ids(user) -> list[int]:
+    """Passage ids this learner has already been given, most recent first.
+
+    Across listening *and* reading, because they draw on one library. Tracking
+    them separately let the same text be "fresh" for one skill the day after
+    it was used for the other.
+    """
+    from apps.lessons.models import LessonActivity
+
+    cutoff = timezone.now().date() - dt.timedelta(days=ROTATION_WINDOW_DAYS)
+    recent = (
+        LessonActivity.objects.filter(
+            lesson__user=user,
+            lesson__date__gte=cutoff,
+            kind__in=("listening", "reading"),
+        )
+        .order_by("-lesson__date", "-position")
+        .values_list("params", flat=True)
+    )
+
+    seen: list[int] = []
+    for params in recent:
+        passage_id = (params or {}).get("passage_id")
+        if isinstance(passage_id, int) and passage_id not in seen:
+            seen.append(passage_id)
+    return seen
+
+
 def _passage_for(user, level: str):
-    """Pick a passage near the learner's level, preferring their own text."""
+    """Pick a passage at the learner's level that they have not just done.
+
+    Level first, because a plan that says B1 and then hands over a C1 text is
+    not a plan. Only if nothing at that level is left unused does it widen --
+    repeating a passage at the right level beats moving to the wrong one.
+    """
     from django.db.models import Q
 
     from apps.skills.models import Passage
 
-    pool = Passage.objects.filter(Q(owner=user) | Q(owner__isnull=True))
-    return pool.filter(level=level).order_by("?").first() or pool.order_by("?").first()
+    pool = list(
+        Passage.objects.filter(Q(owner=user) | Q(owner__isnull=True)).order_by("id")
+    )
+    if not pool:
+        return None
+
+    used = _recently_used_passage_ids(user)
+
+    def pick(candidates):
+        if not candidates:
+            return None
+        fresh = [item for item in candidates if item.id not in used]
+        if fresh:
+            return fresh[0]
+        # Everything here has been used: take the one used longest ago, so the
+        # library cycles instead of sticking on whichever came first.
+        return max(candidates, key=lambda item: used.index(item.id))
+
+    at_level = [item for item in pool if item.level == level]
+    own = [item for item in at_level if item.owner_id == user.id]
+
+    # Their own text first: they chose it, so it is the most relevant thing
+    # available at the right level.
+    return pick(own) or pick(at_level) or pick(pool)
+
+
+def _writing_prompt_for(user) -> str:
+    """A writing prompt the learner has not had recently.
+
+    Was indexed by the activity's position in the plan, which meant the same
+    prompt every day whenever writing landed in the same slot.
+    """
+    from apps.lessons.models import LessonActivity
+
+    cutoff = timezone.now().date() - dt.timedelta(days=ROTATION_WINDOW_DAYS)
+    used = list(
+        LessonActivity.objects.filter(
+            lesson__user=user, lesson__date__gte=cutoff, kind="writing"
+        )
+        .order_by("-lesson__date", "-position")
+        .values_list("prompt", flat=True)
+    )
+
+    for prompt in DEFAULT_WRITING_PROMPTS:
+        if prompt not in used:
+            return prompt
+    # All of them used: take the one used longest ago.
+    return max(DEFAULT_WRITING_PROMPTS, key=lambda prompt: used.index(prompt))
 
 
 def _template_activities(user, context: dict) -> list[dict]:
     """Build the concrete activity list from the plan alone. Never fails."""
     activities: list[dict] = []
     level = context["overall_level"]
+    passage_of_the_day = None
 
     for position, block in enumerate(context["plan"]):
         kind = block["skill"]
@@ -144,13 +230,17 @@ def _template_activities(user, context: dict) -> list[dict]:
                 else "Review (nothing due)"
             )
         elif kind in {"listening", "reading"}:
-            passage = _passage_for(user, level)
+            # One text for the day. Reading it and then hearing it is worth
+            # more than two unrelated texts in a twenty-minute session.
+            if passage_of_the_day is None:
+                passage_of_the_day = _passage_for(user, level)
+            passage = passage_of_the_day
             if passage:
                 activity["params"] = {"passage_id": passage.id, "tab": kind}
                 activity["title"] = f"{TEMPLATE_TITLES[kind]}: {passage.title}"
         elif kind == "writing":
             activity["params"] = {"tab": "writing"}
-            activity["prompt"] = DEFAULT_WRITING_PROMPTS[position % len(DEFAULT_WRITING_PROMPTS)]
+            activity["prompt"] = _writing_prompt_for(user)
 
         activities.append(activity)
 

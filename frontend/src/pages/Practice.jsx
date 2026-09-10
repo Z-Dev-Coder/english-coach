@@ -32,8 +32,10 @@ const WRITING_PROMPTS = [
 
 /* ------------------------------------------------------------- Listening */
 
-function Listening({ passages, voice }) {
-  const [passageId, setPassageId] = useState("");
+function Listening({ passages, voice, assignedId, level }) {
+  // Starts on whatever today's lesson assigned. Empty means "no lesson sent me
+  // here", and only then does the first passage make sense as a default.
+  const [passageId, setPassageId] = useState(() => (assignedId ? String(assignedId) : ""));
   const [index, setIndex] = useState(0);
   const [written, setWritten] = useState("");
   const [result, setResult] = useState(null);
@@ -46,7 +48,15 @@ function Listening({ passages, voice }) {
     if (!startedAt.current) startedAt.current = Date.now();
   };
 
+  const [browsing, setBrowsing] = useState(false);
   const passage = passages.find((item) => String(item.id) === passageId) || passages[0];
+  const assigned = assignedId != null && String(assignedId) === String(passage?.id);
+
+  // Own level only, unless they have asked to see everything. A picker that
+  // lists every level next to a profile that states one is just a way to
+  // practise at the wrong difficulty.
+  const atLevel = passages.filter((item) => item.level === level);
+  const choices = browsing || atLevel.length === 0 ? passages : atLevel;
   const sentences = passage?.sentences ?? [];
   const sentence = sentences[index];
 
@@ -80,26 +90,42 @@ function Listening({ passages, voice }) {
     return <EmptyState icon="🎧" title="No passages yet" body="Add some text on the Reading tab first." />;
   }
 
+  const choose = (value) => {
+    setPassageId(value);
+    setIndex(0);
+    setWritten("");
+    setResult(null);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
-        <Field label="Passage">
-          <Select
-            value={passage ? String(passage.id) : ""}
-            onChange={(event) => {
-              setPassageId(event.target.value);
-              setIndex(0);
-              setWritten("");
-              setResult(null);
-            }}
-          >
-            {passages.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title} ({item.level})
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {assigned && !browsing ? (
+          // Assigned by today's plan. Stated, not offered: the plan already
+          // weighed this against the learner's level and weak skills, and
+          // re-opening that as a dropdown just invites contradicting it.
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="micro">today&rsquo;s listening</span>
+              <p className="mt-1 font-semibold">
+                {passage.title} <Pill>{passage.level}</Pill>
+              </p>
+            </div>
+            <button onClick={() => setBrowsing(true)} className="micro hover:text-ink">
+              browse all passages
+            </button>
+          </div>
+        ) : (
+          <Field label="Passage">
+            <Select value={passage ? String(passage.id) : ""} onChange={(e) => choose(e.target.value)}>
+              {choices.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title} ({item.level})
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <p className="mt-4 text-sm text-ink-2 dark:text-white/55">
           Sentence {index + 1} of {sentences.length}. Listen, then type what you hear — the text
@@ -162,8 +188,13 @@ function Listening({ passages, voice }) {
 
 /* --------------------------------------------------------------- Reading */
 
-function Reading({ passages, onAdded }) {
-  const [reading, setReading] = useState(null);
+function Reading({ passages, assignedId, onAdded }) {
+  // Opened straight onto the assigned text. Landing on the passage list after
+  // pressing Start on a lesson step means being asked to choose something the
+  // plan already chose.
+  const [reading, setReading] = useState(
+    () => passages.find((item) => String(item.id) === String(assignedId)) ?? null,
+  );
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -301,8 +332,9 @@ function Reading({ passages, onAdded }) {
 
 /* --------------------------------------------------------------- Writing */
 
-function Writing() {
-  const [prompt, setPrompt] = useState(WRITING_PROMPTS[0]);
+function Writing({ assignedPrompt }) {
+  // Today's lesson decides. The fallback is only for arriving here directly.
+  const prompt = assignedPrompt || WRITING_PROMPTS[0];
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -343,14 +375,10 @@ function Writing() {
         <SectionHeading
           title="Writing prompt"
           action={
-            <button
-              onClick={() =>
-                setPrompt(WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)])
-              }
-              className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-300"
-            >
-              Another prompt
-            </button>
+            // Deliberately not a "give me another" button. The plan chose this
+            // one from what the learner is weakest at; shopping for a different
+            // prompt is shopping for an easier one.
+            <span className="micro">from today&rsquo;s plan</span>
           }
         />
         <p className="text-lg">{prompt}</p>
@@ -483,6 +511,11 @@ export default function Practice() {
   // Read-only: PracticeNav owns switching, via links rather than state.
   const [params] = useSearchParams();
   const tab = params.get("tab") || "listening";
+  // What today's lesson sent us here to do. Absent when the learner navigated
+  // to Practice on their own, which is a different situation and looks it.
+  const assignedPassageId = params.get("passage_id");
+  const assignedPrompt = params.get("prompt");
+  const [profile, setProfile] = useState(null);
   const [passages, setPassages] = useState(null);
   const [voice, setVoice] = useState(null);
   const [error, setError] = useState(null);
@@ -501,6 +534,11 @@ export default function Practice() {
   useEffect(() => {
     pickVoice().then(setVoice);
     return () => stopSpeaking();
+  }, []);
+
+  useEffect(() => {
+    // Only for choosing difficulty, so a failure here must not stop practice.
+    api.profile().then(setProfile).catch(() => setProfile(null));
   }, []);
 
   return (
@@ -554,14 +592,22 @@ export default function Practice() {
         <CardSkeleton lines={4} />
       ) : (
         <>
-          {tab === "listening" && <Listening passages={passages ?? []} voice={voice} />}
+          {tab === "listening" && (
+            <Listening
+              passages={passages ?? []}
+              voice={voice}
+              assignedId={assignedPassageId}
+              level={profile?.overall_level}
+            />
+          )}
           {tab === "reading" && (
             <Reading
               passages={passages ?? []}
+              assignedId={assignedPassageId}
               onAdded={(created) => setPassages((current) => [created, ...(current ?? [])])}
             />
           )}
-          {tab === "writing" && <Writing />}
+          {tab === "writing" && <Writing assignedPrompt={assignedPrompt} />}
         </>
       )}
     </div>

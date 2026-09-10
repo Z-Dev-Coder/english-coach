@@ -33,6 +33,10 @@ import { wordAtPoint } from "../lib/wordAtPoint";
 const HOVER_DELAY = 450;
 const PANEL_WIDTH = 320;
 const GAP = 10;
+// Below this the panel is not worth showing in place; above it, a
+// definition popover starts to feel like a page.
+const MIN_HEIGHT = 180;
+const MAX_HEIGHT = 420;
 
 // Shared across every Glossed block on the page: the same word in a passage
 // and in its question should not be fetched twice.
@@ -72,24 +76,42 @@ function useDefinition(word) {
   return state;
 }
 
-/** Keeps the panel on screen next to the word it belongs to. */
+/**
+ * Places the panel beside its word, inside the window.
+ *
+ * Returns a `maxHeight` as well as a position: a panel that is taller than the
+ * space it has is a panel whose last sense cannot be read, and being `fixed`
+ * means no ancestor scrollbar will rescue it.
+ */
 function position(rect) {
   const left = Math.min(
     Math.max(GAP, rect.left + rect.width / 2 - PANEL_WIDTH / 2),
-    window.innerWidth - PANEL_WIDTH - GAP,
+    Math.max(GAP, window.innerWidth - PANEL_WIDTH - GAP),
   );
-  // Below the word by default, above it when there is no room below.
-  const below = rect.bottom + GAP;
-  const room = window.innerHeight - rect.bottom;
-  return room > 220
-    ? { left, top: below, placement: "below" }
-    : { left, top: rect.top - GAP, placement: "above" };
+
+  const roomBelow = window.innerHeight - rect.bottom - GAP * 2;
+  const roomAbove = rect.top - GAP * 2;
+  // Prefer below -- it keeps the word visible above the panel while you read
+  // it -- unless above genuinely has more space to offer.
+  const below = roomBelow >= MIN_HEIGHT || roomBelow >= roomAbove;
+  const room = below ? roomBelow : roomAbove;
+
+  return {
+    left,
+    // One edge is pinned to the word and the other is left to the content.
+    // Deliberately not `top` + translateY(-100%): the entry animation ends on
+    // `transform: none`, and an animation overrides an inline style, so the
+    // panel was placed above and then painted below the word.
+    top: below ? rect.bottom + GAP : undefined,
+    bottom: below ? undefined : window.innerHeight - rect.top + GAP,
+    maxHeight: Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, room)),
+  };
 }
 
 function Panel({ target, onClose, pinned }) {
   const { status, data } = useDefinition(target.word);
   const [saving, setSaving] = useState(false);
-  const { left, top, placement } = position(target.rect);
+  const { left, top, bottom, maxHeight } = position(target.rect);
 
   const entry = data?.entries?.[0];
   const senses = entry?.senses ?? [];
@@ -119,18 +141,16 @@ function Panel({ target, onClose, pinned }) {
       role="dialog"
       aria-label={`Definition of ${target.word}`}
       className="fixed z-50 animate-rise"
-      style={{
-        left,
-        top,
-        width: PANEL_WIDTH,
-        transform: placement === "above" ? "translateY(-100%)" : undefined,
-      }}
+      style={{ left, top, bottom, width: PANEL_WIDTH }}
       // The panel sits inside the same pointer world as the text; without this
       // a hover-opened panel closes the moment you move onto it to read it.
       onPointerEnter={(event) => event.stopPropagation()}
     >
-      <div className="overflow-hidden rounded-xl bg-surface shadow-lift ring-1 ring-[color:var(--color-line)] dark:bg-[#141414] dark:ring-white/12">
-        <div className="flex items-baseline gap-2 border-b border-[color:var(--color-line)] px-4 py-2.5 dark:border-white/10">
+      <div
+        className="flex flex-col overflow-hidden rounded-xl bg-surface shadow-lift ring-1 ring-[color:var(--color-line)] dark:bg-[#141414] dark:ring-white/12"
+        style={{ maxHeight }}
+      >
+        <div className="flex shrink-0 items-baseline gap-2 border-b border-[color:var(--color-line)] px-4 py-2.5 dark:border-white/10">
           <span className="font-semibold">{entry?.word ?? target.word}</span>
           {entry?.phonetic && (
             <span className="font-mono text-[11px] text-ink-3">{entry.phonetic}</span>
@@ -147,7 +167,9 @@ function Panel({ target, onClose, pinned }) {
           )}
         </div>
 
-        <div className="px-4 py-3">
+        {/* The only part that scrolls. `overscroll-contain` stops a flick
+            at the end of the list from scrolling the passage behind it. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
           {status === "loading" && (
             <div className="flex items-center gap-2 text-[13px] text-ink-3">
               <Spinner /> Looking it up…
@@ -184,7 +206,7 @@ function Panel({ target, onClose, pinned }) {
         </div>
 
         {status === "ready" && senses.length > 0 && data?.source !== "app" && (
-          <div className="border-t border-[color:var(--color-line)] px-4 py-2 dark:border-white/10">
+          <div className="shrink-0 border-t border-[color:var(--color-line)] px-4 py-2 dark:border-white/10">
             <button
               onClick={save}
               disabled={saving}
