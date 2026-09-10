@@ -247,3 +247,42 @@ class AttemptsAPITests(APITestCase):
         )
         response = self.client.get(reverse("skill-summary"))
         self.assertEqual(response.data[Skill.LISTENING]["attempts"], 1)
+
+
+class ShadowingGuideEndpointTests(APITestCase):
+    """The guide endpoint. The chunking rules are tested in apps.skills."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="shadow", password="shadowing12345"
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_it_returns_chunks_for_supplied_text(self):
+        response = self.client.get(
+            "/api/skills/shadowing/guide/",
+            {"text": "The hardest part is the beginning, not the middle.", "level": "A2"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(response.data["chunks"]), 1)
+        chunk = response.data["chunks"][0]
+        for key in ("text", "words", "stress", "intonation", "pause_ms"):
+            self.assertIn(key, chunk)
+
+    def test_it_defaults_to_the_learners_own_level(self):
+        # Chunk length is the entire point of the guide, so defaulting to a
+        # fixed level would hand a beginner a C1-sized phrase.
+        response = self.client.get(
+            "/api/skills/shadowing/guide/", {"text": "A short sentence here."}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["level"])
+
+    def test_no_text_is_a_400_rather_than_an_empty_guide(self):
+        response = self.client.get("/api/skills/shadowing/guide/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_it_requires_authentication(self):
+        self.client.force_authenticate(None)
+        response = self.client.get("/api/skills/shadowing/guide/", {"text": "Hello there."})
+        self.assertEqual(response.status_code, 401)

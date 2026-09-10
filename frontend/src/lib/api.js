@@ -94,6 +94,12 @@ export const api = {
     ).toString();
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
+  shadowingGuide: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== ""),
+    ).toString();
+    return request(`/skills/shadowing/guide/${query ? `?${query}` : ""}`);
+  },
   addVocabulary: (body) => request("/vocabulary/add/", { method: "POST", body }),
   defineWord: (word) => request(`/vocabulary/define/?word=${encodeURIComponent(word)}`),
   addExtractedVocabulary: (body) =>

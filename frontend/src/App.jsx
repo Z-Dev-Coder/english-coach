@@ -18,6 +18,7 @@ import RealWorld from "./pages/RealWorld";
 import Review from "./pages/Review";
 import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
+import Shadowing from "./pages/Shadowing";
 
 // Six entries, not eight. Speaking and Conversation were separate top-level
 // items called "Speaking" and "Talk" — two names for the same idea. They now
@@ -25,7 +26,7 @@ import SpeakingStudio from "./pages/SpeakingStudio";
 const NAV = [
   { to: "/", label: "Home", icon: "home" },
   { to: "/review", label: "Review", icon: "review" },
-  { to: "/practice", label: "Practice", icon: "practice", family: ["/speaking", "/conversation", "/drill"] },
+  { to: "/practice", label: "Practice", icon: "practice", family: ["/speaking", "/conversation", "/drill", "/shadowing"] },
   { to: "/real-world", label: "Real World", icon: "world" },
   { to: "/progress", label: "Progress", icon: "progress" },
   { to: "/profile", label: "Profile", icon: "profile" },
@@ -228,6 +229,7 @@ export default function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/drill" element={<Drill />} />
+          <Route path="/shadowing" element={<Shadowing />} />
           <Route path="/real-world" element={<RealWorld />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/conversation" element={<Conversation />} />

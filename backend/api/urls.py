@@ -34,6 +34,11 @@ urlpatterns = [
     path("review/history/", review_views.ReviewHistoryView.as_view(), name="review-history"),
     path("skills/dictation/", skills_views.DictationView.as_view(), name="dictation"),
     path("skills/shadowing/", skills_views.ShadowingView.as_view(), name="shadowing"),
+    path(
+        "skills/shadowing/guide/",
+        skills_views.ShadowingGuideView.as_view(),
+        name="shadowing-guide",
+    ),
     path("skills/writing/", skills_views.WritingView.as_view(), name="writing"),
     path("skills/reading/", skills_views.ReadingView.as_view(), name="reading"),
     path("skills/drill/", skills_views.DrillView.as_view(), name="drill"),

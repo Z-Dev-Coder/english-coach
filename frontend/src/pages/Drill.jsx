@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
+import { useRecorder } from "../lib/recorder";
 import {
   Button,
   Card,
@@ -100,6 +101,7 @@ export default function Drill() {
 
   const [spoken, setSpoken] = useState("");
   const [recording, setRecording] = useState(false);
+  const recorder = useRecorder();
   const [written, setWritten] = useState("");
   const [variation, setVariation] = useState("");
   const [personal, setPersonal] = useState("");
@@ -144,10 +146,16 @@ export default function Drill() {
     setError(null);
     if (recording) {
       recognition.current?.stop();
+      recorder.stop();
       return;
     }
     setRecording(true);
     setSpoken("");
+    recorder.clear();
+    // Recognition and recording run together off the same permission: one
+    // gives the words, the other gives the delivery. Recording is best-effort,
+    // so a browser that refuses it still gets the transcript.
+    recorder.start();
     const session = listen({ interim: setSpoken });
     recognition.current = session;
     try {
@@ -155,6 +163,7 @@ export default function Drill() {
     } catch (err) {
       setError(err);
     } finally {
+      recorder.stop();
       setRecording(false);
     }
   };
@@ -257,6 +266,23 @@ export default function Drill() {
                 </Button>
               )}
             </div>
+
+            {recorder.url && (
+              <div className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+                <p className="micro">hear yourself back</p>
+                {/* Controls only, no autoplay: it plays when asked, and the
+                    model line sits beside it so the two can be alternated. */}
+                <audio src={recorder.url} controls className="mt-2 w-full" />
+                <div className="mt-2">
+                  <PlayButton
+                    text={drill.sentence}
+                    rate={1}
+                    label="Compare with the model"
+                    voice={voice}
+                  />
+                </div>
+              </div>
+            )}
 
             {spoken && (
               <div className="rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">

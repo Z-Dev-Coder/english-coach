@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.profiles.constants import CEFR
-from apps.skills import services
+from apps.skills import services, shadowing
 from apps.skills.models import ActivityType, Passage, SkillAttempt
 
 
@@ -136,6 +136,35 @@ class DictationView(APIView):
             duration_ms=data["duration_ms"],
         )
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
+
+
+class ShadowingGuideView(APIView):
+    """How to shadow a passage: chunk boundaries, stress and intonation.
+
+    GET, because it is a pure function of the text and the level -- nothing is
+    recorded by asking how to say something. Level defaults to the learner's
+    own speaking level rather than a fixed value, since chunk length is the
+    whole point of the guide.
+    """
+
+    def get(self, request):
+        passage = _passage_for(request, request.query_params.get("passage_id"))
+        text = request.query_params.get("text") or (passage.text if passage else "")
+        if not text:
+            return Response(
+                {"detail": "Pass `text`, or a `passage_id` you have access to."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        level = request.query_params.get("level") or ""
+        if not level:
+            progress = request.user.skill_progress.filter(skill="speaking").first()
+            level = progress.level if progress else request.user.learner_profile.overall_level
+
+        guide = shadowing.build_guide(text, level=level)
+        if passage is not None:
+            guide["passage"] = {"id": passage.id, "title": passage.title}
+        return Response(guide)
 
 
 class ShadowingView(APIView):

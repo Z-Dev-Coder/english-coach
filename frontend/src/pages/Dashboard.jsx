@@ -186,9 +186,12 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2.5">
                     <span
                       aria-hidden="true"
-                      className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-lg dark:bg-brand-500/15"
+                      className="grid h-9 w-9 place-items-center rounded-xl bg-sunken dark:bg-white/[0.06]"
                     >
-                      {skillIcon(block.skill)}
+                      {/* Was calling skillIcon, which is not imported here --
+                          this whole branch threw whenever no lesson existed.
+                          The line icon set is what the rest of the page uses. */}
+                      <Icon name={block.skill} size={17} className="text-ink-2" />
                     </span>
                     <span className="font-semibold">{skillLabel(block.skill)}</span>
                   </div>

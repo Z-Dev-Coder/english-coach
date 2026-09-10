@@ -15,6 +15,7 @@ const TABS = [
   { label: "Reading", to: "/practice?tab=reading", match: ["reading"] },
   { label: "Writing", to: "/practice?tab=writing", match: ["writing"] },
   { label: "Speaking", to: "/speaking" },
+  { label: "Shadow", to: "/shadowing" },
   { label: "Talk", to: "/conversation" },
   { label: "Drill", to: "/drill" },
 ];
