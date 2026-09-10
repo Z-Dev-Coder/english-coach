@@ -7,7 +7,7 @@ import Icon from "../lib/icons";
 import { skillLabel } from "../lib/skills";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { Button, ErrorNote, Pill, SectionHeading } from "../lib/ui";
+import { ErrorNote, Pill, SectionHeading } from "../lib/ui";
 
 /**
  * Today's lesson as a horizontal map.
@@ -18,8 +18,14 @@ import { Button, ErrorNote, Pill, SectionHeading } from "../lib/ui";
  * route stays readable at a glance.
  *
  * One honest limit on the metaphor: Duolingo's map is a fixed curriculum
- * climbed over months. This app recomputes the plan every morning from measured
- * weakness, so a permanent map would misrepresent it. This is today's route.
+ * climbed over months. This route is built from measured weakness and lasts
+ * until it is finished -- however many days that takes -- and the next one is
+ * built from where the learner is by then. So it is a real route, but only
+ * this one.
+ *
+ * There is deliberately no reshuffle. Rebuilding the plan on demand is a way
+ * to re-roll until the work looks easier, and it contradicts the rule that
+ * content renews on completion.
  */
 
 const STEP_X = 128;   // horizontal spacing between nodes
@@ -80,11 +86,13 @@ export default function LessonMap({ lesson, onChange }) {
   const width = 80 + Math.max(0, activities.length - 1) * STEP_X;
   const open = activities[openIndex];
 
-  const complete = async (activityId) => {
-    setBusy(activityId);
+  const next = async () => {
+    setBusy("next");
     setError(null);
     try {
-      onChange(await api.completeActivity(lesson.id, activityId));
+      // The server returns the lesson in progress, or builds one when the last
+      // is finished -- so simply asking again is what starts the next plan.
+      onChange(await api.todayLesson());
       setSelected(null);
     } catch (err) {
       setError(err);
@@ -93,11 +101,11 @@ export default function LessonMap({ lesson, onChange }) {
     }
   };
 
-  const regenerate = async () => {
-    setBusy("regenerate");
+  const complete = async (activityId) => {
+    setBusy(activityId);
     setError(null);
     try {
-      onChange(await api.regenerateLesson());
+      onChange(await api.completeActivity(lesson.id, activityId));
       setSelected(null);
     } catch (err) {
       setError(err);
@@ -120,9 +128,7 @@ export default function LessonMap({ lesson, onChange }) {
           <span className="font-mono text-[11px] tabular-nums text-ink-2">
             {done}/{activities.length}
           </span>
-          <Button variant="ghost" size="sm" onClick={regenerate} loading={busy === "regenerate"}>
-            Shuffle
-          </Button>
+
         </div>
       </div>
 
@@ -282,9 +288,21 @@ export default function LessonMap({ lesson, onChange }) {
       )}
 
       {lesson.status === "completed" && (
-        <p className="micro text-center text-[color:var(--color-accent)]">
-          ( day complete — tomorrow&rsquo;s plan shifts based on how today went )
-        </p>
+        <div className="rounded-2xl bg-sunken p-5 text-center dark:bg-white/[0.04]">
+          <p className="micro text-[color:var(--color-accent)]">plan complete</p>
+          <p className="mt-1.5 text-[15px] font-semibold">Every step done.</p>
+          <p className="mt-1 text-[13px] text-ink-2 dark:text-white/60">
+            The next one is built from where you are now — start it whenever you want, today
+            or next week.
+          </p>
+          <button
+            onClick={next}
+            disabled={busy === "next"}
+            className="mt-3.5 rounded-full bg-ink px-4 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-black"
+          >
+            {busy === "next" ? "Building it…" : "Start the next plan"}
+          </button>
+        </div>
       )}
     </section>
   );

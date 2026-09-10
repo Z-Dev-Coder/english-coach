@@ -152,11 +152,12 @@ export default function Dashboard() {
       <Reveal>
       <HowTo
         id="home"
-        title="How to use this each day"
+        title="How this works"
         steps={[
-          "Work down today's plan in order. Each step links straight to the activity.",
+          "Work down the plan in order. Each step links straight to the activity.",
           "Aim to finish it — the plan is already sized to the minutes you set.",
-          "Tomorrow's plan changes based on how today went, so honest answers matter.",
+          "It waits for you. Miss a few days and it's still here, at the step you left.",
+          "A new plan is built when you finish this one, from how it actually went.",
         ]}
       />
       </Reveal>

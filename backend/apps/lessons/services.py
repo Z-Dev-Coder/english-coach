@@ -288,6 +288,12 @@ def _enrich_with_ai(activities: list[dict], context: dict) -> tuple[list[dict], 
                 "mistakes": context["recent_mistakes"],
                 "interests": context["interests"],
                 "plan": context["plan"],
+                # Which lesson this is for this learner. Without it, every key
+                # in this dict is a slow-moving fact about the *learner*, so
+                # consecutive lessons hashed the same and the second was served
+                # the first one's title, theme and prompts -- undoing the
+                # rotation underneath it. Retrying the same lesson still hits.
+                "sequence": context.get("lesson_number", 0),
             },
             lambda: provider.generate_json(
                 prompts.generate_lesson(context),
@@ -327,20 +333,38 @@ def _enrich_with_ai(activities: list[dict], context: dict) -> tuple[list[dict], 
     return activities, meta, True
 
 
+def current_lesson(user) -> Lesson | None:
+    """The plan the learner is part-way through, if any.
+
+    Deliberately not filtered by date. The whole point is that an unfinished
+    plan is still waiting whether it was started this morning or a fortnight
+    ago -- a week away from the app should cost momentum, not progress.
+    """
+    return (
+        Lesson.objects.filter(user=user)
+        .exclude(status__in=[Lesson.Status.COMPLETED, Lesson.Status.ABANDONED])
+        .order_by("-date", "-id")
+        .first()
+    )
+
+
 @transaction.atomic
 def generate_lesson(user, *, date: dt.date | None = None, minutes: int | None = None, use_ai: bool = True) -> Lesson:
-    """Get or create today's lesson.
+    """Return the lesson in progress, or build a new one if the last is done.
 
-    Idempotent per day: a second call returns the existing lesson rather than
-    regenerating, so refreshing the page never discards progress or swaps the
-    material out from under the learner.
+    Idempotent: a second call returns the same lesson rather than regenerating,
+    so refreshing the page never discards progress or swaps the material out
+    from under the learner.
     """
     date = date or timezone.localdate()
-    existing = Lesson.objects.filter(user=user, date=date).first()
+    existing = current_lesson(user)
     if existing:
         return existing
 
     context = learner_context(user, minutes=minutes)
+    # Counts finished and retired lessons alike: both are material this learner
+    # has already been shown, and both should push the next one along.
+    context["lesson_number"] = Lesson.objects.filter(user=user).count() + 1
     activities = _template_activities(user, context)
 
     meta: dict = {}
@@ -370,11 +394,19 @@ def generate_lesson(user, *, date: dt.date | None = None, minutes: int | None = 
 def regenerate(
     user, *, date: dt.date | None = None, minutes: int | None = None, use_ai: bool = True
 ) -> Lesson:
-    """Throw today's lesson away and build a new one.
+    """Retire the lesson in progress and build a replacement.
 
     Explicit, because it discards progress. Only ever called from a deliberate
-    "give me something else" action, never automatically.
+    "this one is no use to me" action, never automatically.
+
+    Retired rather than deleted. The activity rows are the record of what
+    material this learner has already been given, and deleting them would let
+    the replacement hand back the very passage the discarded lesson had just
+    used -- which is the loop this was all meant to end.
     """
     date = date or timezone.localdate()
-    Lesson.objects.filter(user=user, date=date).delete()
+    current = current_lesson(user)
+    if current is not None:
+        current.status = Lesson.Status.ABANDONED
+        current.save(update_fields=["status"])
     return generate_lesson(user, date=date, minutes=minutes, use_ai=use_ai)

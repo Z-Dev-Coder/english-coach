@@ -251,7 +251,13 @@ class LessonLifecycleTests(TestCase):
         first = services.generate_lesson(self.user, use_ai=False)
         second = services.regenerate(self.user, use_ai=False)
         self.assertNotEqual(first.id, second.id)
-        self.assertEqual(Lesson.objects.count(), 1)
+
+        # The old lesson is retired, not deleted: its activities record what
+        # material has already been handed out, and losing that would let the
+        # replacement serve the very passage the discarded lesson just used.
+        first.refresh_from_db()
+        self.assertEqual(first.status, Lesson.Status.ABANDONED)
+        self.assertEqual(Lesson.objects.count(), 2)
 
     def test_completing_activities_advances_the_status(self):
         lesson = services.generate_lesson(self.user, use_ai=False)

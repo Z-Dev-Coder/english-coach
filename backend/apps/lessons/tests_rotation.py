@@ -30,7 +30,18 @@ class PassageRotationTests(TestCase):
             )
 
     def _lesson_on(self, date):
-        return services.generate_lesson(self.user, date=date, use_ai=False)
+        """One finished lesson, then the next.
+
+        Lessons renew on completion rather than on the date, so a test that
+        only advances the clock now gets the same unfinished lesson back --
+        which is the point of the rule. Finishing it is what a learner does
+        before the next one exists.
+        """
+        lesson = services.generate_lesson(self.user, date=date, use_ai=False)
+        for activity in lesson.activities.all():
+            activity.complete()
+        lesson.refresh_from_db()
+        return lesson
 
     def _passage_ids(self, lesson):
         return {
@@ -114,6 +125,9 @@ class WritingPromptRotationTests(TestCase):
             )
             for activity in lesson.activities.filter(kind="writing"):
                 prompts.append(activity.prompt)
+            # Finish it, or the next request returns this same lesson.
+            for activity in lesson.activities.all():
+                activity.complete()
 
         if len(prompts) > 1:
             # Indexing by plan position meant the same prompt every day

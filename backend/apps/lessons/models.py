@@ -8,15 +8,24 @@ class Lesson(models.Model):
 
     The planner (apps.profiles) decides how many minutes each skill gets. A
     Lesson turns that allocation into specific things to do, and remembers what
-    was done. One per learner per day: asking for today's lesson twice returns
-    the same lesson rather than regenerating it, so a refresh never loses
-    progress or silently swaps the material.
+    was done.
+
+    One *unfinished* lesson per learner, not one per day. An unfinished plan
+    waits however long it takes to come back to -- a week off should not cost
+    the learner their place, and keying this to the date meant every skipped
+    morning silently threw away a half-finished plan and minted another. A new
+    lesson is built only when the last one is complete.
     """
 
     class Status(models.TextChoices):
         READY = "ready", "Ready"
         IN_PROGRESS = "in_progress", "In progress"
         COMPLETED = "completed", "Completed"
+        # Started, never finished, and superseded. Kept rather than deleted:
+        # these rows are the history that stops the next lesson handing out
+        # material the learner has already seen. Calling them "completed"
+        # would be simpler and would misreport what the learner actually did.
+        ABANDONED = "abandoned", "Abandoned"
 
     class Origin(models.TextChoices):
         TEMPLATE = "template", "Built from the plan"
@@ -44,7 +53,15 @@ class Lesson(models.Model):
     class Meta:
         ordering = ["-date"]
         constraints = [
-            models.UniqueConstraint(fields=["user", "date"], name="uniq_lesson_per_day")
+            # The real invariant, and still the thing that closes the race the
+            # per-day constraint existed for: two simultaneous requests cannot
+            # both create a plan. Per-day would now also block a learner who
+            # finishes early from starting another on the same day.
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=~models.Q(status__in=["completed", "abandoned"]),
+                name="uniq_unfinished_lesson_per_user",
+            )
         ]
         indexes = [models.Index(fields=["user", "-date"])]
 
@@ -60,8 +77,21 @@ class Lesson(models.Model):
         return done / len(activities)
 
     def refresh_status(self) -> str:
-        """Keep status in step with the activities, without a separate write path."""
-        progress = self.progress
+        """Keep status in step with the activities, without a separate write path.
+
+        Counts in the database rather than through `self.progress`. That
+        property reads `self.activities.all()`, which is the *prefetched* list
+        whenever the lesson was loaded with `prefetch_related` -- captured
+        before the activity that triggered this was saved. It therefore counted
+        one short on the final activity, and a fully finished lesson sat in
+        "in progress" forever.
+        """
+        totals = self.activities.aggregate(
+            total=models.Count("id"),
+            done=models.Count("id", filter=models.Q(completed_at__isnull=False)),
+        )
+        progress = (totals["done"] / totals["total"]) if totals["total"] else 0.0
+
         if progress >= 1.0:
             self.status = self.Status.COMPLETED
             self.completed_at = self.completed_at or timezone.now()
