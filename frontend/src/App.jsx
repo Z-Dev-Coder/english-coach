@@ -18,6 +18,7 @@ import RealWorld from "./pages/RealWorld";
 import Review from "./pages/Review";
 import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
+import LessonRunner from "./pages/LessonRunner";
 import Shadowing from "./pages/Shadowing";
 
 // Six entries, not eight. Speaking and Conversation were separate top-level
@@ -230,6 +231,7 @@ export default function App() {
           <Route path="/practice" element={<Practice />} />
           <Route path="/drill" element={<Drill />} />
           <Route path="/shadowing" element={<Shadowing />} />
+          <Route path="/lesson" element={<LessonRunner />} />
           <Route path="/real-world" element={<RealWorld />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/conversation" element={<Conversation />} />

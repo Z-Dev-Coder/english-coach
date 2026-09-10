@@ -36,19 +36,6 @@ const NODE = 44;
 // left forty wasted pixels above and below the route.
 const MAP_HEIGHT = MID_Y + AMPLITUDE + NODE / 2 + 18;
 
-function activityHref(activity) {
-  const params = new URLSearchParams();
-  Object.entries(activity.params || {}).forEach(([key, value]) => {
-    if (value != null && value !== "") params.set(key, value);
-  });
-  // The prompt is a field on the activity rather than one of its params, so
-  // it was being dropped from the link -- which is why a writing step opened
-  // on the default prompt instead of the one the plan chose.
-  if (activity.prompt) params.set("prompt", activity.prompt);
-  const query = params.toString();
-  return `${activity.route}${query ? `?${query}` : ""}`;
-}
-
 /** Smooth curve through the node centres, as a cubic path. */
 function routePath(points) {
   if (points.length < 2) return "";
@@ -93,19 +80,6 @@ export default function LessonMap({ lesson, onChange }) {
       // The server returns the lesson in progress, or builds one when the last
       // is finished -- so simply asking again is what starts the next plan.
       onChange(await api.todayLesson());
-      setSelected(null);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const complete = async (activityId) => {
-    setBusy(activityId);
-    setError(null);
-    try {
-      onChange(await api.completeActivity(lesson.id, activityId));
       setSelected(null);
     } catch (err) {
       setError(err);
@@ -179,6 +153,10 @@ export default function LessonMap({ lesson, onChange }) {
             {activities.map((activity, index) => {
               const isDone = activity.is_complete;
               const isCurrent = index === currentIndex;
+              // Ahead of where the learner is. Locked, because the plan is
+              // ordered by weakest skill first and skipping to the comfortable
+              // step turns the session into revision.
+              const isLocked = !isDone && !isCurrent;
               const isOpen = index === openIndex;
               const point = points[index];
 
@@ -191,11 +169,16 @@ export default function LessonMap({ lesson, onChange }) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                   <button
-                    onClick={() => setSelected(index)}
-                    onMouseEnter={() => setSelected(index)}
-                    onFocus={() => setSelected(index)}
+                    onClick={() => !isLocked && setSelected(index)}
+                    onMouseEnter={() => !isLocked && setSelected(index)}
+                    onFocus={() => !isLocked && setSelected(index)}
+                    aria-disabled={isLocked || undefined}
                     aria-current={isCurrent ? "step" : undefined}
-                    aria-label={`Step ${index + 1}: ${activity.title}`}
+                    aria-label={
+                      isLocked
+                        ? `Step ${index + 1}, locked until the step before it is done`
+                        : `Step ${index + 1}: ${activity.title}`
+                    }
                     className={cx(
                       "group grid place-items-center rounded-full transition",
                       "h-11 w-11 focus-visible:outline-offset-4",
@@ -207,7 +190,13 @@ export default function LessonMap({ lesson, onChange }) {
                       "hover:scale-110 hover:shadow-[0_0_20px_-2px_var(--color-accent)]",
                     )}
                   >
-                    {isDone ? <Icon name="check" size={17} /> : <Icon name={activity.kind} size={18} />}
+                    {isDone ? (
+                      <Icon name="check" size={17} />
+                    ) : isLocked ? (
+                      <Icon name="lock" size={15} />
+                    ) : (
+                      <Icon name={activity.kind} size={18} />
+                    )}
                   </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[220px]">
@@ -264,7 +253,7 @@ export default function LessonMap({ lesson, onChange }) {
 
           <div className="mt-3.5 flex flex-wrap items-center gap-3">
             <Link
-              to={activityHref(open)}
+              to="/lesson"
               className={cx(
                 "rounded-full px-4 py-1.5 text-[13px] font-medium transition",
                 open.is_complete
@@ -272,17 +261,10 @@ export default function LessonMap({ lesson, onChange }) {
                   : "bg-ink text-white hover:opacity-90 dark:bg-white dark:text-black",
               )}
             >
-              {open.is_complete ? "Do it again" : "Start"}
+              {open.is_complete ? "Done" : "Start the lesson"}
             </Link>
-            {!open.is_complete && (
-              <button
-                onClick={() => complete(open.id)}
-                disabled={busy === open.id}
-                className="micro hover:text-ink"
-              >
-                mark done
-              </button>
-            )}
+            {/* No "mark done". Saying you did something is not doing it, and
+                the runner records each step as it actually finishes. */}
           </div>
         </div>
       )}
