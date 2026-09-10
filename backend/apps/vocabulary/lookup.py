@@ -28,13 +28,16 @@ from __future__ import annotations
 
 import logging
 import time
+from urllib.parse import quote
 
 import requests
 from django.db import IntegrityError
 
 from .dictionary import (
     candidate_forms,
+    candidate_phrases,
     clean_text,
+    normalize_phrase,
     normalize_word,
     parse_entries,
     parse_wiktionary,
@@ -99,7 +102,10 @@ def _get_json(url: str, word: str) -> object:
     """Fetch and decode, mapping every transport problem onto Unreachable."""
     try:
         response = requests.get(
-            url.format(word=word),
+            # Wiktionary paths use underscores for spaces; dictionaryapi.dev
+            # tolerates them in the same position, so one substitution serves
+            # both rather than each source needing its own URL builder.
+            url.format(word=quote(word.replace(" ", "_"))),
             timeout=FETCH_TIMEOUT,
             headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
         )
@@ -201,9 +207,12 @@ def look_up(raw_word: str) -> dict:
     Always returns the same shape, so the caller never has to branch on
     whether the word was found.
     """
-    word = normalize_word(raw_word)
+    # A phrase if it has a space, a word otherwise. Both end up in the same
+    # cache, so an expression looked up here is free on the next lesson too.
+    word = normalize_word(raw_word) or normalize_phrase(raw_word)
     if not word or len(word) > 64:
         return _miss(raw_word)
+    is_phrase = " " in word
 
     own = _from_expression(word)
     if own is not None:
@@ -222,7 +231,7 @@ def look_up(raw_word: str) -> dict:
     # the first try; the rest are what makes "commuting" work.
     entries: list[dict] = []
     matched = word
-    for candidate in candidate_forms(word):
+    for candidate in (candidate_phrases(word) if is_phrase else candidate_forms(word)):
         try:
             found = _fetch(candidate)
         except Unreachable:

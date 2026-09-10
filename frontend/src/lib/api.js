@@ -94,6 +94,13 @@ export const api = {
     ).toString();
     return request(`/vocabulary/${query ? `?${query}` : ""}`);
   },
+  speakingSupport: ({ prompt = "", expressions = [] } = {}) => {
+    const query = new URLSearchParams();
+    if (prompt) query.set("prompt", prompt);
+    // Repeated key, not a joined string: an expression can contain a comma.
+    expressions.forEach((value) => value && query.append("expression", value));
+    return request(`/skills/speaking-support/?${query.toString()}`);
+  },
   shadowingGuide: (params = {}) => {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, value]) => value != null && value !== ""),

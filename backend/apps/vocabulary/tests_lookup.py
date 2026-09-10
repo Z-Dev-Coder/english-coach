@@ -13,6 +13,8 @@ from apps.vocabulary import lookup
 from apps.vocabulary.dictionary import (
     candidate_forms,
     clean_text,
+    candidate_phrases,
+    normalize_phrase,
     normalize_word,
     parse_entries,
     parse_wiktionary,
@@ -512,3 +514,49 @@ class SourceCooldownTests(TestCase):
         self.assertTrue(lookup._recently_failed(lookup.WIKTIONARY_URL))
         lookup._note_success(lookup.WIKTIONARY_URL)
         self.assertFalse(lookup._recently_failed(lookup.WIKTIONARY_URL))
+
+
+class PhraseLookupTests(TestCase):
+    """Expressions, not only single words.
+
+    The speaking step lists phrases a lesson wants used -- "without fail",
+    "to unwind" -- and they came back with no meaning at all, because
+    normalize_word rejects anything with a space. That rejection is right for
+    the click-a-word popover it was written for and wrong as a general rule.
+    """
+
+    def setUp(self):
+        lookup._last_failure.clear()
+        lookup._consecutive_failures.clear()
+
+    def test_a_phrase_survives_normalisation(self):
+        self.assertEqual(normalize_phrase("Without fail!"), "without fail")
+        self.assertEqual(normalize_phrase("  I'd  make a point  "), "id make a point")
+
+    def test_a_sentence_is_rejected(self):
+        # No dictionary has it, and sending it would waste a request and cache
+        # a permanent miss under a nonsense key.
+        self.assertEqual(normalize_phrase("this is a whole sentence about things"), "")
+
+    def test_it_drops_a_leading_to(self):
+        # A lesson writes "to unwind"; a dictionary files it under "unwind".
+        self.assertIn("unwind", candidate_phrases("to unwind"))
+
+    def test_it_drops_a_trailing_preposition(self):
+        # A lesson writes "make a point of" because that is how it appears in
+        # a sentence; the headword is "make a point".
+        self.assertIn("make a point", candidate_phrases("make a point of"))
+
+    def test_a_phrase_reaches_the_fetcher(self):
+        entries = [{"word": "without fail", "phonetic": "", "senses": [{"definition": "Certainly."}]}]
+        with mock.patch("apps.vocabulary.lookup._fetch", return_value=entries) as fetch:
+            result = lookup.look_up("without fail")
+        fetch.assert_called()
+        self.assertTrue(result["found"])
+
+    def test_a_phrase_is_cached_like_a_word(self):
+        entries = [{"word": "without fail", "phonetic": "", "senses": [{"definition": "Certainly."}]}]
+        with mock.patch("apps.vocabulary.lookup._fetch", return_value=entries) as fetch:
+            lookup.look_up("without fail")
+            lookup.look_up("Without fail.")
+        self.assertEqual(fetch.call_count, 1)

@@ -91,6 +91,72 @@ def normalize_word(raw: str) -> str:
     return word.strip("-")
 
 
+# Longer than this is a sentence, not an expression, and no dictionary will
+# have it. Bounds what a caller can send us looking for.
+MAX_PHRASE_WORDS = 5
+
+# Words that end a phrase in running text but not in a dictionary headword.
+TRAILING_PARTICLES = {"of", "to", "with", "for", "about", "on", "in", "at", "from"}
+
+
+def normalize_phrase(raw: str) -> str:
+    """Reduce an expression to a dictionary-lookup key, spaces allowed.
+
+    The multi-word sibling of `normalize_word`, which rejects spaces on
+    purpose: it answers "which word was clicked", where whitespace means the
+    caller made a mistake. This one answers "what does this expression mean",
+    where whitespace is the normal case.
+    """
+    if not isinstance(raw, str):
+        return ""
+    text = unicodedata.normalize("NFKC", raw).strip().lower()
+    text = _APOSTROPHE.sub("'", text)
+    text = re.sub(r"'s\b", "", text)
+    text = text.replace("'", "")
+    # Keep letters, spaces and internal hyphens; drop everything else.
+    text = re.sub(r"[^a-z\s-]", " ", text)
+    text = _WHITESPACE.sub(" ", text).strip(" -")
+    if not text:
+        return ""
+    words = text.split()
+    if len(words) > MAX_PHRASE_WORDS:
+        return ""
+    return " ".join(words)
+
+
+def candidate_phrases(phrase: str) -> list[str]:
+    """The phrase, then the forms a dictionary is more likely to file it under.
+
+    Mainly: drop a leading "to". A lesson writes "to unwind"; Wiktionary files
+    it as "unwind".
+    """
+    if not phrase:
+        return []
+    forms = [phrase]
+    words = phrase.split()
+    if len(words) > 1 and words[0] in {"to", "a", "an", "the"}:
+        candidate = " ".join(words[1:])
+        if candidate and candidate not in forms:
+            forms.append(candidate)
+    # Drop a trailing preposition or particle. A lesson writes "make a point
+    # of" because that is how it appears in a sentence; a dictionary files it
+    # as "make a point".
+    for form in list(forms):
+        parts = form.split()
+        if len(parts) > 2 and parts[-1] in TRAILING_PARTICLES:
+            candidate = " ".join(parts[:-1])
+            if candidate not in forms:
+                forms.append(candidate)
+
+    # A single word after trimming can use the inflection rules as well.
+    tail = forms[-1]
+    if " " not in tail:
+        for form in candidate_forms(tail):
+            if form not in forms:
+                forms.append(form)
+    return forms
+
+
 def candidate_forms(word: str) -> list[str]:
     """The word, then plausible base forms, in the order worth trying.
 

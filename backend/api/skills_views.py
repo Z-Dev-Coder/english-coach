@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.profiles.constants import CEFR
-from apps.skills import services, shadowing
+from apps.skills import services, shadowing, speaking_support
 from apps.skills.models import ActivityType, Passage, SkillAttempt
 
 
@@ -136,6 +136,100 @@ class DictationView(APIView):
             duration_ms=data["duration_ms"],
         )
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
+
+
+class SpeakingSupportView(APIView):
+    """What to say and in what order, before the learner has to say it.
+
+    GET: it is a pure function of the prompt and the level, and nothing is
+    recorded by asking how to approach a question.
+
+    The target expressions come back with their meanings attached rather than
+    as bare chips. A chip reading "after that" tells a learner nothing they
+    could not guess; what they need is what it means, and a sentence using it.
+    """
+
+    def get(self, request):
+        prompt = request.query_params.get("prompt", "")
+        expressions = [
+            value
+            for value in request.query_params.getlist("expression")
+            if value and len(value) < 200
+        ][:8]
+
+        level = request.query_params.get("level") or ""
+        if not level:
+            progress = request.user.skill_progress.filter(skill="speaking").first()
+            level = progress.level if progress else request.user.learner_profile.overall_level
+
+        support = speaking_support.build_support(
+            prompt=prompt, level=level, expressions=expressions
+        )
+        support["target_expressions"] = _resolve_expressions(expressions)
+        return Response(support)
+
+
+def _resolve_expressions(texts):
+    """Attach our own meaning and example to each expression we know.
+
+    One query for all of them, not one each: this runs on every speaking step,
+    and eight round trips for eight chips is how a page quietly gets slow.
+
+    An expression we do not teach still comes back, just without a meaning.
+    The lesson generator writes these freely, so an unknown one is the normal
+    case rather than an error -- and a chip with no meaning is still better
+    than dropping the phrase the lesson asked the learner to practise.
+    """
+    from apps.vocabulary.models import Expression, normalize
+
+    if not texts:
+        return []
+
+    wanted = {normalize(text): text for text in texts}
+    known = {
+        expression.normalized: expression
+        for expression in Expression.objects.filter(
+            normalized__in=list(wanted)
+        ).prefetch_related("examples")
+    }
+
+    from apps.vocabulary import lookup as dictionary_lookup
+
+    resolved = []
+    for key, original in wanted.items():
+        expression = known.get(key)
+        if expression is None:
+            # Not one we teach. The lesson generator writes these freely, so
+            # this is the common case -- fall through to the dictionary rather
+            # than showing a bare phrase nobody has explained.
+            found = dictionary_lookup.look_up(original)
+            senses = (found.get("entries") or [{}])[0].get("senses") or [{}]
+            # "to unwind" is a verb by construction, but a dictionary lists
+            # the noun first and the learner is shown "any mechanism that
+            # unwinds something" -- true, and not what the lesson meant.
+            wants_verb = original.strip().lower().startswith("to ")
+            sense = next(
+                (s for s in senses if wants_verb and s.get("part_of_speech") == "verb"),
+                senses[0],
+            )
+            resolved.append(
+                {
+                    "text": original,
+                    "meaning": sense.get("definition", ""),
+                    "example": sense.get("example", ""),
+                }
+            )
+            continue
+        example = expression.examples.all()[:1]
+        resolved.append(
+            {
+                "text": expression.text,
+                "meaning": expression.meaning,
+                "example": example[0].text if example else "",
+                "register": expression.register,
+            }
+        )
+    return resolved
 
 
 class ShadowingGuideView(APIView):

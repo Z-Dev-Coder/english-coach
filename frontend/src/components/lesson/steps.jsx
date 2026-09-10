@@ -318,8 +318,24 @@ function WritingStep({ activity, onDone }) {
 function SpeakingStep({ activity, onDone }) {
   const [spoken, setSpoken] = useState("");
   const [recording, setRecording] = useState(false);
+  const [support, setSupport] = useState(null);
+  // Prepare first. The record button being on screen while the learner is
+  // still reading is the pressure that makes people skip preparing.
+  const [ready, setReady] = useState(false);
   const recognition = useRef(null);
   const recorder = useRecorder();
+
+  useEffect(() => {
+    api
+      .speakingSupport({
+        prompt: activity.prompt || activity.instructions,
+        expressions: activity.target_expressions ?? [],
+      })
+      .then(setSupport)
+      // Scaffolding is help, not a prerequisite: if it fails to load the
+      // learner can still do the exercise.
+      .catch(() => setSupport(null));
+  }, [activity]);
 
   const toggle = async () => {
     if (recording) {
@@ -344,20 +360,121 @@ function SpeakingStep({ activity, onDone }) {
     }
   };
 
+  const frame = support?.frame ?? [];
+  const expressions = support?.target_expressions ?? [];
+
+  if (!ready) {
+    return (
+      <div>
+        <Instructions activity={activity} />
+        {activity.prompt && (
+          <Glossed as="p" className="mt-3 text-[17px] font-medium">
+            {activity.prompt}
+          </Glossed>
+        )}
+
+        {expressions.length > 0 && (
+          <section className="mt-5">
+            <h3 className="micro">words and expressions for this</h3>
+            <ul className="mt-2 space-y-2">
+              {expressions.map((item) => (
+                <li
+                  key={item.text}
+                  className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]"
+                >
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-semibold">{item.text}</span>
+                    {item.register && item.register !== "neutral" && (
+                      <span className="micro">{item.register}</span>
+                    )}
+                  </div>
+                  {/* The meaning is the point. A chip reading "after that"
+                      tells a learner nothing they could not already guess. */}
+                  {item.meaning && (
+                    <Glossed as="p" className="mt-0.5 text-[14px] text-ink-2 dark:text-white/70">
+                      {item.meaning}
+                    </Glossed>
+                  )}
+                  {item.example && (
+                    <p className="mt-1 border-l-2 border-[color:var(--color-line)] pl-2.5 text-[13px] italic text-ink-3">
+                      {item.example}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {frame.length > 0 && (
+          <section className="mt-6">
+            <h3 className="micro">how to structure your answer</h3>
+            <ol className="mt-2 space-y-3">
+              {frame.map((step, index) => (
+                <li key={step.move} className="flex gap-3">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-semibold text-white dark:bg-white dark:text-black">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium">{step.move}</p>
+                    <p className="text-[13px] text-ink-2 dark:text-white/60">{step.hint}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {step.phrases.map((phrase) => (
+                        <Pill key={phrase}>{phrase}</Pill>
+                      ))}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {support?.stalling_phrases?.length > 0 && (
+          <section className="mt-5">
+            <h3 className="micro">if you get stuck mid-sentence</h3>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {support.stalling_phrases.map((phrase) => (
+                <Pill key={phrase}>{phrase}</Pill>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[13px] text-ink-3">
+              Say one of these out loud rather than going silent — that&rsquo;s what fluent
+              speakers do.
+            </p>
+          </section>
+        )}
+
+        <StepFooter onDone={() => setReady(true)} label="I'm ready — let me speak" />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <Instructions activity={activity} />
       {activity.prompt && (
-        <Glossed as="p" className="mt-3 text-[17px] font-medium">
+        <Glossed as="p" className="text-[17px] font-medium">
           {activity.prompt}
         </Glossed>
       )}
 
-      {activity.target_expressions?.length > 0 && (
+      {/* The frame stays up while they speak. Scaffolding that disappears the
+          moment it is needed is decoration. */}
+      {frame.length > 0 && (
+        <ol className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          {frame.map((step, index) => (
+            <li key={step.move} className="micro">
+              {index + 1}. {step.move}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {expressions.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="micro">try to use</span>
-          {activity.target_expressions.map((expression) => (
-            <Pill key={expression}>{expression}</Pill>
+          {expressions.map((item) => (
+            <Pill key={item.text}>{item.text}</Pill>
           ))}
         </div>
       )}
@@ -389,7 +506,11 @@ function SpeakingStep({ activity, onDone }) {
         </p>
       )}
 
-      <StepFooter onDone={onDone} label="Finish this step" />
+      <StepFooter onDone={onDone} label="Finish this step">
+        <button onClick={() => setReady(false)} className="micro hover:text-ink">
+          back to the notes
+        </button>
+      </StepFooter>
     </div>
   );
 }

@@ -33,6 +33,11 @@ urlpatterns = [
     path("review/stats/", review_views.ReviewStatsView.as_view(), name="review-stats"),
     path("review/history/", review_views.ReviewHistoryView.as_view(), name="review-history"),
     path("skills/dictation/", skills_views.DictationView.as_view(), name="dictation"),
+    path(
+        "skills/speaking-support/",
+        skills_views.SpeakingSupportView.as_view(),
+        name="speaking-support",
+    ),
     path("skills/shadowing/", skills_views.ShadowingView.as_view(), name="shadowing"),
     path(
         "skills/shadowing/guide/",
