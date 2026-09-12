@@ -583,6 +583,16 @@ RULES
 - Label every line either "Partner" or "You". "You" is the learner.
 - Every "You" line must be one this learner could actually say at {level}.
   A line above their level teaches them they cannot do it.
+- At least THREE of the "You" turns must be extended answers of 40 to 80 words:
+  several sentences that develop a point, give a reason and add a detail. Being
+  able to hold the floor is the skill that does not arrive on its own, and a
+  script of one-line replies rehearses the opposite of it.
+- To earn those long turns, the Partner must ask open questions -- "what's it
+  actually like?", "how did you handle that?" -- not questions answerable with
+  yes or a single fact. Padding a short answer sounds wrong; being asked
+  something open does not.
+- Keep some short turns too. A conversation of nothing but speeches is not a
+  conversation.
 - Real spoken English: contractions, short answers, the odd hesitation. Not
   written dialogue and not a textbook exchange where both sides speak in full
   correct sentences nobody uses.

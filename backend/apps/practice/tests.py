@@ -201,6 +201,19 @@ class FullScriptTests(TestCase):
                 self.assertGreaterEqual(len(mine), 4)
                 self.assertTrue(all(text.strip() for text in mine))
 
+                # And it has to train extended turns. Every script once
+                # consisted entirely of six-to-seventeen word replies, which
+                # passed this suite happily -- holding the floor is the skill
+                # that does not arrive on its own, so it is asserted.
+                extended = [text for text in mine if len(text.split()) >= 30]
+                self.assertGreaterEqual(
+                    len(extended), 3, "a script of one-line replies trains one-line replies"
+                )
+
+                # But not only long turns: that is a speech, not a conversation.
+                short = [text for text in mine if len(text.split()) < 20]
+                self.assertTrue(short, "no short turns left to carry the rhythm")
+
     def test_the_script_alternates(self):
         from apps.practice.scripts import TEMPLATES
 
