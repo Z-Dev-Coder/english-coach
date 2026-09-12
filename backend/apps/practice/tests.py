@@ -229,3 +229,81 @@ class FullScriptTests(TestCase):
         with mock.patch("apps.practice.services._full_dialogue") as dialogue:
             services.create_speaking_script(self.user, scenario="casual", level="B1")
         dialogue.assert_not_called()
+
+
+class ScriptLineNormalisationTests(TestCase):
+    """A model's `lines` are held to the same bar the templates are.
+
+    They used to be stored verbatim, so a model returning a single opening
+    line produced a "script" with one speaker and nothing to practise -- which
+    is what shipped, and what migration 0002 had to go back and repair.
+    """
+
+    def test_a_one_sided_reply_is_rejected(self):
+        from apps.practice.scripts import normalize_lines
+
+        one_sided = [{"speaker": "Partner", "text": f"Line {i}."} for i in range(6)]
+        self.assertEqual(normalize_lines(one_sided), [], "one speaker is not a script")
+
+    def test_too_few_lines_is_rejected(self):
+        from apps.practice.scripts import normalize_lines
+
+        short = [
+            {"speaker": "Partner", "text": "Hello."},
+            {"speaker": "You", "text": "Hi."},
+        ]
+        self.assertEqual(normalize_lines(short), [], "an opening is not a script")
+
+    def test_unexpected_speaker_labels_map_to_the_two_roles(self):
+        from apps.practice.scripts import normalize_lines
+
+        raw = [
+            {"speaker": "Interviewer", "text": "Tell me about yourself."},
+            {"speaker": "Me", "text": "I've worked here three years."},
+            {"speaker": "Interviewer", "text": "And why apply?"},
+            {"speaker": "Candidate", "text": "More responsibility."},
+        ]
+        # Two labels in a two-person script are the two roles, whatever the
+        # model called them, and the one that speaks first is the partner.
+        lines = normalize_lines(raw)
+        self.assertEqual(
+            [line["speaker"] for line in lines],
+            ["Partner", "You", "Partner", "You"],
+        )
+
+    def test_rubbish_is_rejected_rather_than_raising(self):
+        from apps.practice.scripts import normalize_lines
+
+        for raw in [None, {}, "text", [None], [{"speaker": "You"}], [{"text": ""}]]:
+            with self.subTest(raw=raw):
+                self.assertEqual(normalize_lines(raw), [])
+
+    def test_a_model_returning_a_fragment_falls_back_to_the_written_script(self):
+        from apps.practice.scripts import generate_ai_script
+
+        class Fragment(AIProvider):
+            name = "fragment"
+
+            def generate_json(self, prompt, **kwargs):
+                return {
+                    "title": "A chat",
+                    "setting": "You bump into a friend.",
+                    "goal": "Catch up.",
+                    "target_expressions": ["how have you been"],
+                    "lines": [{"speaker": "Partner", "text": "Hey!"}],
+                    "follow_up_questions": [],
+                }
+
+            def generate(self, prompt, **kwargs):
+                return AIResult(text="{}", model="stub", tier="medium", duration_ms=1)
+
+            def chat(self, messages, **kwargs):
+                return self.generate("")
+
+            def health(self):
+                return {"reachable": True}
+
+        data = generate_ai_script(Fragment(), scenario="casual", level="B1")
+        speakers = {line["speaker"] for line in data["lines"]}
+        self.assertGreaterEqual(len(data["lines"]), 4)
+        self.assertEqual(speakers, {"Partner", "You"})

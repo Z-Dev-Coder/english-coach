@@ -322,6 +322,59 @@ STYLE
 Begin now with your first line, in character."""
 
 
+# Below this it is an opening, not something to read aloud as a script.
+MIN_SCRIPT_LINES = 4
+
+
+def normalize_lines(raw) -> list[dict]:
+    """Coerce a model's idea of a script into ours, or reject it.
+
+    Returns an empty list when what came back cannot be practised -- too few
+    lines, or only one person speaking. The caller substitutes a written
+    script rather than storing a fragment.
+    """
+    if not isinstance(raw, list):
+        return []
+
+    collected: list[tuple[str, str]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        text = str(item.get("text") or "").strip()
+        if not text:
+            continue
+        collected.append((str(item.get("speaker") or "").strip().lower(), text[:400]))
+
+    if not collected:
+        return []
+
+    labels = [label for label, _ in collected]
+    explicit = any(label.startswith("partner") for label in labels) and any(
+        label in {"you", "learner", "me"} for label in labels
+    )
+
+    if explicit:
+        role = lambda label: "Partner" if label.startswith("partner") else "You"  # noqa: E731
+    else:
+        # Two labels in a two-person script are the two roles, whatever the
+        # model decided to call them. The one that speaks first is the partner,
+        # because every script here opens with them.
+        order: list[str] = []
+        for label in labels:
+            if label not in order:
+                order.append(label)
+        first = order[0] if order else ""
+        role = lambda label: "Partner" if label == first else "You"  # noqa: E731
+
+    lines = [{"speaker": role(label), "text": text} for label, text in collected]
+
+    if len(lines) < MIN_SCRIPT_LINES:
+        return []
+    if len({line["speaker"] for line in lines}) < 2:
+        return []
+    return lines
+
+
 def generate_template_script(*, scenario: str | None, level: str, rng: random.Random | None = None) -> dict:
     """Build a script from the built-in templates. Never fails, never needs AI."""
     rng = rng or random.Random()
@@ -409,6 +462,16 @@ Return JSON with:
 
     expressions = [str(e) for e in data.get("target_expressions", [])]
     questions = [str(q) for q in data.get("follow_up_questions", [])]
+    lines = normalize_lines(data.get("lines"))
+    if not lines:
+        # Whatever came back is not something the learner can practise. Their
+        # own hand-written exchange for this situation is better than a
+        # one-sided fragment, so borrow it.
+        template = next((item for item in TEMPLATES if item.scenario == scenario), None)
+        if template and template.sample_exchange:
+            lines = [
+                {"speaker": who, "text": text} for who, text in template.sample_exchange
+            ]
     return {
         "scenario": scenario,
         "level": level,
@@ -416,7 +479,7 @@ Return JSON with:
         "setting": data["setting"],
         "goal": data["goal"],
         "target_expressions": expressions,
-        "lines": data["lines"],
+        "lines": lines,
         "follow_up_questions": questions,
         "portable_prompt": build_portable_prompt(
             title=data["title"],
@@ -425,6 +488,7 @@ Return JSON with:
             level=level,
             expressions=expressions,
             questions=questions,
+            sample_exchange=[(line["speaker"], line["text"]) for line in lines],
         ),
         "source": "ai",
     }
