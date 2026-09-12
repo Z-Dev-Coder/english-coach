@@ -91,9 +91,15 @@ function ScriptView({ script, onPracticed }) {
 
       {script.lines?.length > 0 && (
         <Card>
-          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-ink-3">
-            How it starts
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+            Your script
           </h3>
+          {/* Said plainly, because a learner who does not know the script is
+              theirs to read will treat it as a transcript to skim. */}
+          <p className="mb-4 mt-1 text-[13px] text-ink-2 dark:text-white/60">
+            Read it out loud, both parts. Then read it again taking only the
+            &ldquo;You&rdquo; lines. Once it feels easy, go off script.
+          </p>
           <div className="space-y-3">
             {script.lines.map((line, index) => (
               <div
@@ -101,7 +107,7 @@ function ScriptView({ script, onPracticed }) {
                 className={cx(
                   "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                   line.speaker === "You"
-                    ? "ml-auto rounded-br-md bg-ink text-white"
+                    ? "ml-auto rounded-br-md bg-ink text-white dark:bg-white dark:text-black"
                     : "rounded-bl-md bg-sunken text-ink-2 dark:bg-white/[0.05] dark:text-white/85",
                 )}
               >

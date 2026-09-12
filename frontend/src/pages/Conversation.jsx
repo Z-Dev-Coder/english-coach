@@ -33,7 +33,7 @@ function Bubble({ message, onSpeak }) {
         className={cx(
           "group max-w-[80%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm",
           isLearner
-            ? "rounded-br-md bg-ink text-white"
+            ? "rounded-br-md bg-ink text-white dark:bg-white dark:text-black"
             : "rounded-bl-md bg-surface text-ink ring-1 ring-[color:var(--color-line)] dark:bg-white/[0.06] dark:text-white/85 dark:ring-white/10",
         )}
       >

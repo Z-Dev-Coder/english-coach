@@ -457,7 +457,7 @@ export default function RealWorld() {
               className={cx(
                 "rounded-full px-3 py-1.5 text-sm transition",
                 !topic
-                  ? "bg-ink text-white"
+                  ? "bg-ink text-white dark:bg-white dark:text-black"
                   : "bg-sunken text-ink-2 dark:bg-white/[0.05]",
               )}
             >
@@ -470,7 +470,7 @@ export default function RealWorld() {
                 className={cx(
                   "rounded-full px-3 py-1.5 text-sm transition",
                   topic === item
-                    ? "bg-ink text-white"
+                    ? "bg-ink text-white dark:bg-white dark:text-black"
                     : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05]",
                 )}
               >

@@ -83,6 +83,14 @@ TEMPLATES: list[ScriptTemplate] = [
             ("You", "Not much, actually. Just work mostly. What about you?"),
             ("Partner", "Same here, honestly. Still at the same place?"),
             ("You", "Yeah, still there. It's been busy, but I can't complain."),
+            ("Partner", "That's good. Are you still living over by the park?"),
+            ("You", "No, we moved in the summer. We're a bit further out now."),
+            ("Partner", "Oh nice, how's that? Bit quieter?"),
+            ("You", "Much quieter, yeah. The commute's longer, but it's worth it."),
+            ("Partner", "I can imagine. We should catch up properly sometime."),
+            ("You", "Definitely. Are you free next weekend at all?"),
+            ("Partner", "Saturday could work. I'll message you."),
+            ("You", "Great, do that. It was really good to see you."),
         ],
         questions=[
             "What has changed in your life in the last six months?",
@@ -103,8 +111,16 @@ TEMPLATES: list[ScriptTemplate] = [
         sample_exchange=[
             ("Partner", "Thanks for coming in. So, tell me a bit about yourself."),
             ("You", "Thanks for having me. I've been working in this field for about three years."),
-            ("Partner", "And what made you apply for this role?"),
-            ("You", "I'm looking for something with more responsibility, and this role looked like a good fit."),
+            ("Partner", "And what does your current role involve?"),
+            ("You", "I'm responsible for the day-to-day side of things, and I manage a small team."),
+            ("Partner", "What made you apply for this role?"),
+            ("You", "I'm looking for something with more responsibility, and this looked like a good fit."),
+            ("Partner", "What would you say your main strength is?"),
+            ("You", "I'd say I'm good at staying calm when things go wrong. That comes up a lot."),
+            ("Partner", "Can you give me an example?"),
+            ("You", "Sure. We lost a supplier last year, and I sorted out a replacement in a week."),
+            ("Partner", "That's useful to hear. Do you have any questions for me?"),
+            ("You", "Yes — could you tell me what the first few months would look like?"),
         ],
         questions=[
             "What is a problem you solved at work recently?",
@@ -127,6 +143,14 @@ TEMPLATES: list[ScriptTemplate] = [
             ("You", "Yeah, we ran into a problem this morning. The build keeps failing."),
             ("Partner", "Do we know why?"),
             ("You", "Not yet. I'm still looking into it, but I'll let you know as soon as I do."),
+            ("Partner", "Okay. How long do you think it'll take?"),
+            ("You", "Hard to say. Give me a couple of hours and I'll have a better idea."),
+            ("Partner", "Is it going to affect the release on Friday?"),
+            ("You", "It might, to be honest. I'd rather flag that now than promise you otherwise."),
+            ("Partner", "Appreciate that. Anything you need from me?"),
+            ("You", "If you could let the client know there may be a delay, that would help."),
+            ("Partner", "Will do. Keep me posted."),
+            ("You", "Of course. I'll message you this afternoon either way."),
         ],
         questions=["What would you do differently next time?", "Who else needs to know about this?"],
     ),
@@ -146,6 +170,14 @@ TEMPLATES: list[ScriptTemplate] = [
             ("You", "I think we're ready, thanks. Could I have the chicken, please?"),
             ("Partner", "Of course. And anything to drink with that?"),
             ("You", "Just some water, please. Sorry — is the chicken spicy at all?"),
+            ("Partner", "It has a bit of a kick, yes. I can ask them to go easy on it."),
+            ("You", "That would be great, thank you."),
+            ("Partner", "No problem. I'll get that ordered for you."),
+            ("You", "Sorry, one more thing — does it come with anything on the side?"),
+            ("Partner", "It comes with rice, but I can swap that for salad if you'd prefer."),
+            ("You", "Salad would be lovely, actually. Thanks for sorting that."),
+            ("Partner", "Not at all. It shouldn't be more than fifteen minutes."),
+            ("You", "That's fine, we're not in a rush."),
         ],
         questions=["How do you complain politely in your own language?", "What would you order here?"],
     ),
@@ -165,6 +197,14 @@ TEMPLATES: list[ScriptTemplate] = [
             ("You", "Hi Sam. I'm calling about my last bill — I think there's been a mistake."),
             ("Partner", "I'm sorry to hear that. Can I take your account number?"),
             ("You", "Sure, one second. Sorry, could you say that again? The line isn't great."),
+            ("Partner", "No problem — your account number, whenever you're ready."),
+            ("You", "Right, it's 4-4-0-2-1-9. Shall I read that back?"),
+            ("Partner", "That's got it, thank you. I can see the bill here. What seems to be wrong?"),
+            ("You", "I've been charged twice for the same month, as far as I can tell."),
+            ("Partner", "You're right, actually. I'll get that refunded for you."),
+            ("You", "That's a relief. How long does the refund usually take?"),
+            ("Partner", "Three to five working days."),
+            ("You", "Perfect. Thanks very much for your help, Sam."),
         ],
         questions=["What is hardest about English phone calls?", "How would you ask someone to slow down?"],
     ),
@@ -184,6 +224,14 @@ TEMPLATES: list[ScriptTemplate] = [
             ("You", "Morning! Yeah, it's been pretty full on. How about you?"),
             ("Partner", "Same, honestly. Did you get anywhere nice at the weekend?"),
             ("You", "Not really, I just stayed home. It was quite nice, actually."),
+            ("Partner", "Sometimes that's exactly what you need."),
+            ("You", "That's what I thought. Did you do anything?"),
+            ("Partner", "We took the kids out on Sunday. Cost me a fortune, mind."),
+            ("You", "Ha, I can imagine. Were they happy though?"),
+            ("Partner", "Worth it for that, yeah. Anyway — have you seen the agenda for this?"),
+            ("You", "I had a quick look. It's mostly the budget, isn't it?"),
+            ("Partner", "That's the one. Should be short, hopefully."),
+            ("You", "Fingers crossed. Shall we go in?"),
         ],
         questions=["What small talk topics are safe at work?", "How do you end small talk politely?"],
     ),
@@ -227,8 +275,10 @@ def build_portable_prompt(
     # to someone who is practising precisely because that is hard.
     if sample_exchange:
         script_block = "\n".join(f"{who}: {text}" for who, text in sample_exchange)
-        script_section = f"""HOW IT MIGHT OPEN
-This is a model, not a script to recite. I may say something different.
+        script_section = f"""THE SCRIPT I HAVE PRACTISED
+I have read this through out loud, both parts. Start us here, then let the
+conversation go its own way -- do not stick to it once we are past the opening,
+and do not read my lines for me.
 
 {script_block}
 

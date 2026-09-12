@@ -1,9 +1,11 @@
 import random
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from apps.ai.providers.base import AIProvider, AIResult, AIUnavailable
+from apps.practice import services
 from apps.practice.models import SpeakingScript
 from apps.practice.scripts import (
     TEMPLATES,
@@ -167,3 +169,63 @@ class SpeakingScriptServiceTests(TestCase):
         script = SpeakingScript.objects.get(user=self.user)
         self.assertEqual(script.scenario, "restaurant")
         self.assertEqual(script.times_practiced, 0)
+
+
+class FullScriptTests(TestCase):
+    """Every template carries a whole script, not an opening.
+
+    A four-line opening is a situation and an invitation to improvise, which is
+    precisely what a learner who came here cannot do. And the portable prompt
+    used to carry instructions to the assistant without ever showing the
+    learner a line of their own.
+    """
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="fullscript", password="fullscript12345"
+        )
+
+    def test_every_template_has_a_usable_script(self):
+        from apps.practice.scripts import TEMPLATES
+
+        for template in TEMPLATES:
+            with self.subTest(scenario=template.scenario):
+                exchange = template.sample_exchange
+                self.assertGreaterEqual(len(exchange), 8, "too short to practise")
+
+                speakers = {who for who, _ in exchange}
+                self.assertEqual(speakers, {"Partner", "You"}, "a script needs both sides")
+
+                # The learner's half is the half that was missing.
+                mine = [text for who, text in exchange if who == "You"]
+                self.assertGreaterEqual(len(mine), 4)
+                self.assertTrue(all(text.strip() for text in mine))
+
+    def test_the_script_alternates(self):
+        from apps.practice.scripts import TEMPLATES
+
+        for template in TEMPLATES:
+            with self.subTest(scenario=template.scenario):
+                speakers = [who for who, _ in template.sample_exchange]
+                self.assertEqual(speakers[0], "Partner", "the partner opens")
+                for earlier, later in zip(speakers, speakers[1:]):
+                    self.assertNotEqual(earlier, later, "the same speaker twice in a row")
+
+    def test_the_portable_prompt_contains_the_learners_lines(self):
+        # The whole complaint: pasted into a chatbot, the prompt told the AI
+        # how to behave and left the learner with nothing to say.
+        script = services.create_speaking_script(self.user, scenario="job_interview", level="B1")
+        prompt = script.portable_prompt
+
+        mine = [line["text"] for line in script.lines if line["speaker"] == "You"]
+        self.assertTrue(mine)
+        for text in mine[:3]:
+            self.assertIn(text, prompt, "a learner line missing from the portable prompt")
+
+    def test_the_default_path_makes_no_network_call(self):
+        # Generated dialogue is for the custom-scenario toggle only. Making
+        # every script wait on a model took the suite from 1s to 18s, which is
+        # what the learner would have felt as a slow page.
+        with mock.patch("apps.practice.services._full_dialogue") as dialogue:
+            services.create_speaking_script(self.user, scenario="casual", level="B1")
+        dialogue.assert_not_called()

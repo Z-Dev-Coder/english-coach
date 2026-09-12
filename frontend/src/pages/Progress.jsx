@@ -264,7 +264,7 @@ export default function Progress() {
               className={cx(
                 "rounded-full px-3 py-1.5 text-sm transition",
                 filter === value
-                  ? "bg-ink text-white"
+                  ? "bg-ink text-white dark:bg-white dark:text-black"
                   : "bg-sunken text-ink-2 hover:bg-[color:var(--color-line)] dark:bg-white/[0.05]",
               )}
             >

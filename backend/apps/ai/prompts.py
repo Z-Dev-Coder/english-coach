@@ -534,3 +534,67 @@ Return JSON:
   sense: asked about "to unwind" it explains separating a ball of yarn, which
   is correct and useless here. Gloss the sense you actually used.
 """
+
+
+# --- Speaking roleplay script ----------------------------------------------
+
+ROLEPLAY_SCRIPT_SCHEMA = {
+    "type": "object",
+    "required": ["lines"],
+    "properties": {
+        "lines": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["speaker", "text"],
+                "properties": {
+                    "speaker": {"type": "string"},
+                    "text": {"type": "string"},
+                    "note": {"type": "string"},
+                },
+            },
+        },
+    },
+}
+
+
+def speaking_dialogue(*, title: str, setting: str, goal: str, level: str, expressions: list[str]) -> str:
+    """Ask for a complete two-person script the learner can read aloud.
+
+    Every "You" line has to be a line they could actually say. A model answer
+    written above their level demonstrates failure rather than teaching
+    anything, and a script they cannot read aloud is not a script.
+    """
+    expression_list = "\n".join(f"- {e}" for e in expressions) or "- (none specified)"
+
+    return f"""Write a complete roleplay script for an English learner at CEFR {level} to practise out loud.
+
+THE SITUATION
+{setting}
+
+THE LEARNER'S GOAL
+{goal}
+
+EXPRESSIONS TO WORK IN NATURALLY
+{expression_list}
+
+RULES
+- 10 to 14 lines, alternating, starting with Partner.
+- Label every line either "Partner" or "You". "You" is the learner.
+- Every "You" line must be one this learner could actually say at {level}.
+  A line above their level teaches them they cannot do it.
+- Real spoken English: contractions, short answers, the odd hesitation. Not
+  written dialogue and not a textbook exchange where both sides speak in full
+  correct sentences nobody uses.
+- The conversation must actually reach the learner's goal by the end, not
+  stop halfway.
+- Work the expressions into the "You" lines, where they genuinely fit.
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON:
+- lines: the script in order, each with `speaker` ("Partner" or "You"), `text`,
+  and optionally `note` -- one short phrase on what that line is *doing*
+  (deflecting, buying time, asking for repetition). Put a note only on the two
+  or three lines where the technique is worth naming.
+"""
