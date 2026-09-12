@@ -52,6 +52,7 @@ export default function Shadowing() {
   const recorder = useRecorder();
   const stopRef = useRef(null);
   const activeRef = useRef(null);
+  const textRef = useRef(null);
 
   const load = useCallback(
     (id) => {
@@ -86,9 +87,37 @@ export default function Shadowing() {
     offset < 0 ? -1 : chunks.findIndex((chunk) => offset >= chunk.start && offset < chunk.end);
   const current = activeIndex === -1 && offset >= 0 ? chunks.length - 1 : activeIndex;
 
-  // Keep the spoken line on screen without yanking the page around.
+  // Keep the spoken line in view, moving the text box and nothing else.
+  //
+  // Deliberately not scrollIntoView: that scrolls every scrollable ancestor,
+  // so it moved the window too and the whole page jumped on every phrase.
+  // Scrolling only when the line has left a comfortable band turns twenty-odd
+  // scrolls per passage into one per line -- the text should move when you
+  // reach the bottom of it, not each time a phrase ends.
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const container = textRef.current;
+    const active = activeRef.current;
+    if (!container || !active) return;
+
+    // Measured from rects rather than offsetTop. offsetTop is relative to the
+    // nearest positioned ancestor, which may or may not be this container
+    // depending on how the box is styled -- rects do not care.
+    const containerBox = container.getBoundingClientRect();
+    const activeBox = active.getBoundingClientRect();
+    const top = activeBox.top - containerBox.top + container.scrollTop;
+    const bottom = top + activeBox.height;
+    const viewTop = container.scrollTop;
+    const viewBottom = viewTop + container.clientHeight;
+    // A margin of roughly a line, so the next phrase is already visible before
+    // the one being spoken reaches the edge.
+    const margin = activeBox.height * 1.5;
+
+    if (top >= viewTop + margin && bottom <= viewBottom - margin) return;
+
+    container.scrollTo({
+      top: Math.max(0, top - container.clientHeight / 2),
+      behavior: "smooth",
+    });
   }, [current]);
 
   const stop = useCallback(() => {
@@ -186,7 +215,10 @@ export default function Shadowing() {
           {/* The passage, whole, with the spoken phrase lit. Reading the text
               as continuous prose is deliberate: chopping it into cards is what
               made the last version a drill. */}
-          <div className="max-h-[46vh] overflow-y-auto rounded-xl bg-sunken p-5 text-[19px] leading-[1.9] dark:bg-white/[0.04]">
+          <div
+            ref={textRef}
+            className="relative max-h-[46vh] overflow-y-auto rounded-xl bg-sunken p-5 text-[19px] leading-[1.9] dark:bg-white/[0.04]"
+          >
             {chunks.map((chunk, index) => {
               const spoken = current > index;
               const active = current === index;
