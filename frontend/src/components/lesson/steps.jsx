@@ -582,6 +582,19 @@ function SpeakingStep({ activity, voice, onDone }) {
 
 /* ----------------------------------------------------------------- review */
 
+/** The task the lesson wrote into this step's prompt, if any. */
+function LessonTask({ activity }) {
+  if (!activity.prompt) return null;
+  return (
+    <Glossed
+      as="p"
+      className="mt-3 whitespace-pre-line border-l-2 border-[color:var(--color-line)] pl-3 text-[15px] italic text-ink-2 dark:border-white/15 dark:text-white/70"
+    >
+      {activity.prompt.replace(/\s(\d+\.)\s/g, "\n$1 ")}
+    </Glossed>
+  );
+}
+
 function ReviewStep({ activity, onDone }) {
   const [queue, setQueue] = useState(null);
   const [position, setPosition] = useState(0);
@@ -602,6 +615,7 @@ function ReviewStep({ activity, onDone }) {
     return (
       <div>
         <Instructions activity={activity} />
+        <LessonTask activity={activity} />
         <p className="mt-4 text-[15px] text-ink-2 dark:text-white/70">
           Nothing is due right now — that&rsquo;s a good sign, not a gap.
         </p>
@@ -629,6 +643,14 @@ function ReviewStep({ activity, onDone }) {
 
   return (
     <div>
+      {/* The card on the home page shows the lesson's own exercise for this
+          step; the runner used to skip straight to flashcards and hide it. */}
+      {activity.prompt && (
+        <div className="mb-5">
+          <Instructions activity={activity} />
+          <LessonTask activity={activity} />
+        </div>
+      )}
       <p className="micro">
         card {position + 1} of {queue.length}
       </p>

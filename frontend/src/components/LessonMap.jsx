@@ -253,7 +253,9 @@ export default function LessonMap({ lesson, onChange }) {
 
           <div className="mt-3.5 flex flex-wrap items-center gap-3">
             <Link
-              to="/lesson"
+              // A finished step opens that step; otherwise the lesson resumes
+              // where it really is.
+              to={open.is_complete ? `/lesson?step=${openIndex}` : "/lesson"}
               className={cx(
                 "rounded-full px-4 py-1.5 text-[13px] font-medium transition",
                 open.is_complete
@@ -261,7 +263,7 @@ export default function LessonMap({ lesson, onChange }) {
                   : "bg-ink text-white hover:opacity-90 dark:bg-white dark:text-black",
               )}
             >
-              {open.is_complete ? "Done" : "Start the lesson"}
+              {open.is_complete ? "Go back to this step" : "Start the lesson"}
             </Link>
             {/* No "mark done". Saying you did something is not doing it, and
                 the runner records each step as it actually finishes. */}

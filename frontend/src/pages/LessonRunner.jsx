@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import LessonStep from "../components/lesson/steps";
 import { api } from "../lib/api";
@@ -86,6 +86,9 @@ function Finished({ lesson, onNext, busy }) {
           >
             {busy ? "Building it…" : "Start the next lesson"}
           </button>
+          <Link to={`/lesson/${lesson.id}`} className="micro hover:text-ink dark:hover:text-white">
+            go back through this lesson
+          </Link>
           <Link to="/" className="micro hover:text-ink dark:hover:text-white">
             back to home
           </Link>
@@ -109,6 +112,17 @@ export default function LessonRunner() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const navigate = useNavigate();
   const { id } = useParams();
+  const [search] = useSearchParams();
+  // In the live lesson, a finished step being looked back at. null means
+  // "wherever the lesson actually is" -- the first unfinished step.
+  const [viewIndex, setViewIndex] = useState(() => {
+    // Only an explicit ?step= means "go back". Number(null) is 0, so without
+    // this check every visit silently reopened step 1 instead of resuming.
+    const raw = search.get("step");
+    if (raw === null || raw === "") return null;
+    const step = Number(raw);
+    return Number.isInteger(step) && step >= 0 ? step : null;
+  });
 
   const load = useCallback(() => {
     setError(null);
@@ -141,13 +155,27 @@ export default function LessonRunner() {
   // The first unfinished step. Not a stored cursor: the server already knows
   // which steps are complete, so deriving it means closing the tab and coming
   // back lands in exactly the right place.
-  const currentIndex = review
-    ? reviewIndex
-    : activities.findIndex((activity) => !activity.is_complete);
+  const firstOpen = activities.findIndex((activity) => !activity.is_complete);
+  // Going back is only ever to finished steps; an unfinished one ahead stays
+  // locked, so a requested step past the lesson's position is ignored.
+  const lookingBack =
+    !review &&
+    viewIndex !== null &&
+    viewIndex < (firstOpen === -1 ? activities.length : firstOpen) &&
+    activities[viewIndex]?.is_complete;
+  const currentIndex = review ? reviewIndex : lookingBack ? viewIndex : firstOpen;
   const activity = activities[currentIndex];
 
   const complete = async () => {
     stopSpeaking();
+    if (lookingBack) {
+      // Already done: moving on from it records nothing, and returns to where
+      // the lesson really is once the finished steps run out.
+      const next = currentIndex + 1;
+      const end = firstOpen === -1 ? activities.length : firstOpen;
+      setViewIndex(next < end ? next : null);
+      return;
+    }
     if (review) {
       // The lesson itself is untouched. Exercises that score an answer still
       // record the attempt -- redoing one is real practice, and pretending
@@ -225,6 +253,7 @@ export default function LessonRunner() {
       <div className="mt-4">
         <div className="flex flex-wrap items-center gap-2">
           {review && <span className="micro">reviewing · lesson progress isn&rsquo;t changed</span>}
+          {lookingBack && <span className="micro">going back · already done</span>}
           <span className="micro text-[color:var(--color-accent)]">
             step {currentIndex + 1}
           </span>
@@ -243,16 +272,29 @@ export default function LessonRunner() {
         <LessonStep activity={activity} voice={voice} onDone={complete} />
       </div>
 
-      {review && currentIndex > 0 && (
-        <button
-          onClick={() => {
-            stopSpeaking();
-            setReviewIndex((index) => Math.max(0, index - 1));
-          }}
-          className="micro mt-4 hover:text-ink dark:hover:text-white"
-        >
-          ← previous step
-        </button>
+      {(currentIndex > 0 || lookingBack || review) && (
+        <div className="mt-4 flex items-center gap-4">
+          {currentIndex > 0 && (
+            <button
+              onClick={() => {
+                stopSpeaking();
+                if (review) setReviewIndex((index) => Math.max(0, index - 1));
+                else setViewIndex(Math.max(0, currentIndex - 1));
+              }}
+              className="micro hover:text-ink dark:hover:text-white"
+            >
+              ← previous step
+            </button>
+          )}
+          {/* Looking back should not mean redoing an exercise to get past it:
+              a finished dictation would otherwise demand a fresh answer
+              before letting you return to where the lesson really is. */}
+          {(lookingBack || review) && (
+            <button onClick={complete} className="micro hover:text-ink dark:hover:text-white">
+              next step →
+            </button>
+          )}
+        </div>
       )}
 
       {busy && (
