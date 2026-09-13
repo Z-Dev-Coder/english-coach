@@ -174,7 +174,9 @@ function Listening({ passages, voice, assignedId, level }) {
             onClick={() => {
               beginTiming();
               // The real speaker saying this sentence, cut from the recording.
-              if (passage.audio_url) playSegment(passage.audio_url, passage.text, sentence);
+              if (passage.audio_url) {
+                playSegment(passage.audio_url, passage.text, sentence, { timings: passage.word_timings });
+              }
               else speak(sentence, { voice });
             }}
             disabled={!canSpeak && !passage.audio_url}
@@ -185,7 +187,12 @@ function Listening({ passages, voice, assignedId, level }) {
             variant="secondary"
             onClick={() => {
               beginTiming();
-              if (passage.audio_url) playSegment(passage.audio_url, passage.text, sentence, { rate: 0.75 });
+              if (passage.audio_url) {
+                playSegment(passage.audio_url, passage.text, sentence, {
+                  rate: 0.75,
+                  timings: passage.word_timings,
+                });
+              }
               else speak(sentence, { rate: 0.65, voice });
             }}
             disabled={!canSpeak && !passage.audio_url}

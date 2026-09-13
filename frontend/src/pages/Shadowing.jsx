@@ -141,7 +141,7 @@ export default function Shadowing() {
     // delivery against the model rather than one phrase at a time.
     if (recorder.supported) recorder.start();
     const player = guide.audio_url
-      ? (text, options) => playTracked(guide.audio_url, text, options)
+      ? (text, options) => playTracked(guide.audio_url, text, { ...options, timings: guide.timings })
       : speakTracked;
     stopRef.current = player(guide.text, {
       rate,
@@ -232,7 +232,9 @@ export default function Shadowing() {
               made the last version a drill. */}
           <div
             ref={textRef}
-            className="relative max-h-[46vh] overflow-y-auto rounded-xl bg-sunken p-5 text-[19px] leading-[1.9] dark:bg-white/[0.04]"
+            // overflow-x-hidden: a highlighted phrase's padding could push past the edge and
+            // show a horizontal bar; dark:[color-scheme:dark] keeps the scrollbar from being white.
+            className="relative max-h-[46vh] overflow-y-auto overflow-x-hidden rounded-xl bg-sunken p-5 text-[19px] leading-[1.9] break-words dark:bg-white/[0.04] dark:[color-scheme:dark]"
           >
             {chunks.map((chunk, index) => {
               const spoken = current > index;

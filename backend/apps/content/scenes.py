@@ -148,6 +148,9 @@ def next_scene(user, *, use_ai: bool = True) -> Scene | None:
 
         real = lle.import_next(level)
         if real:
+            from apps.skills.alignment import align_in_background
+
+            align_in_background(real)
             return real
         created = generate_scene(user, level)
         if created:

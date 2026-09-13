@@ -182,14 +182,22 @@ class SceneSummarySerializer(serializers.ModelSerializer):
 
 
 class SceneSerializer(serializers.ModelSerializer):
+    word_timings = serializers.SerializerMethodField()
+
     class Meta:
         from apps.content.models import Scene
 
         model = Scene
         fields = [
             "id", "slug", "title", "genre", "level", "setting", "lines",
-            "expressions", "questions", "source", "audio_url", "audio_credit",
+            "expressions", "questions", "source", "audio_url", "audio_credit", "word_timings",
         ]
+
+    def get_word_timings(self, scene) -> list:
+        """[[char_offset, seconds]] into the lines joined by single spaces."""
+        from apps.skills.alignment import char_timings, scene_text
+
+        return char_timings(scene_text(scene), scene.word_timings)
 
 
 class SceneViewSet(viewsets.ReadOnlyModelViewSet):

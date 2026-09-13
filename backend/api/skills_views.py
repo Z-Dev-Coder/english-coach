@@ -16,17 +16,24 @@ from apps.skills.models import ActivityType, Passage, SkillAttempt
 class PassageSerializer(serializers.ModelSerializer):
     sentences = serializers.SerializerMethodField()
     is_mine = serializers.SerializerMethodField()
+    word_timings = serializers.SerializerMethodField()
 
     class Meta:
         model = Passage
         fields = [
             "id", "title", "text", "level", "topic", "source", "source_url",
-            "audio_url", "audio_credit", "word_count", "reading_ease", "sentences", "is_mine", "created_at",
+            "audio_url", "audio_credit", "word_timings", "word_count", "reading_ease", "sentences", "is_mine", "created_at",
         ]
         read_only_fields = fields
 
     def get_sentences(self, passage) -> list[str]:
         return passage.sentences()
+
+    def get_word_timings(self, passage) -> list:
+        """[[char_offset, seconds]] into `text`: when each word is spoken in the recording."""
+        from apps.skills.alignment import char_timings
+
+        return char_timings(passage.text, passage.word_timings)
 
     def get_is_mine(self, passage) -> bool:
         return passage.owner_id is not None
@@ -344,8 +351,11 @@ class ShadowingGuideView(APIView):
             guide["passage"] = {"id": passage.id, "title": passage.title}
             # Only a recording of this exact text: with custom `text` the audio would not match.
             if passage.audio_url and not request.query_params.get("text"):
+                from apps.skills.alignment import char_timings
+
                 guide["audio_url"] = passage.audio_url
                 guide["audio_credit"] = passage.audio_credit
+                guide["timings"] = char_timings(guide.get("text", passage.text), passage.word_timings)
         return Response(guide)
 
 

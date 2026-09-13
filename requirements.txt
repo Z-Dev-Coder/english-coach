@@ -5,5 +5,9 @@ dj-database-url>=2.2
 python-dotenv>=1.0
 requests>=2.32
 
+# Word timings for real recordings (read-along highlight follows the voice).
+# Optional: without it, the highlight falls back to an estimate. Runs locally on CPU, free.
+faster-whisper>=1.2
+
 # Uncomment when switching DATABASE_URL to PostgreSQL:
 # psycopg[binary]>=3.2

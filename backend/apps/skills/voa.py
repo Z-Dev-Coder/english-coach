@@ -79,11 +79,14 @@ def top_up_passages(level: str, *, want: int = 3) -> int:
     for url, parsed, topic, stored_level in new_articles(level, known, want=want):
         if Passage.objects.filter(source_url=url).exists():
             continue  # imported meanwhile by another request
-        Passage.objects.create(
+        passage = Passage.objects.create(
             title=parsed["title"], text=parsed["text"], level=stored_level, topic=topic,
             source=Passage.Source.FEED, source_url=url,
             audio_url=parsed["audio_url"], audio_credit=CREDIT,
         )
+        from .alignment import align_in_background
+
+        align_in_background(passage)  # real word timings, so the highlight follows the voice
         added += 1
     return added
 

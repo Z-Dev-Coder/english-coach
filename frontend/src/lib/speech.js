@@ -165,7 +165,24 @@ export function speakTracked(text, { rate = 1, voice = null, onProgress, onEnd, 
  * played applied to the transcript's length. Presenters read at an even pace,
  * so the highlight stays within a phrase or so -- and the voice is real.
  */
-export function playTracked(url, text, { rate = 1, onProgress, onEnd, onError } = {}) {
+/** The character offset being spoken at `seconds`, from [[offset, start]] word timings. */
+function offsetAt(timings, seconds) {
+  let lo = 0;
+  let hi = timings.length - 1;
+  let found = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (timings[mid][1] <= seconds) {
+      found = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return found < 0 ? -1 : timings[found][0];
+}
+
+export function playTracked(url, text, { rate = 1, timings = null, onProgress, onEnd, onError } = {}) {
   stopSpeaking();
   const audio = new Audio(url);
   audio.playbackRate = rate;
@@ -174,6 +191,13 @@ export function playTracked(url, text, { rate = 1, onProgress, onEnd, onError } 
   // VOA presenters read at roughly 120-130 words a minute, about 11 characters a second.
   const CHARS_PER_SECOND = 11;
   audio.ontimeupdate = () => {
+    if (timings?.length) {
+      // Real word timings: the highlight follows the voice, including any intro
+      // or music the transcript doesn't contain (nothing is lit until speech starts).
+      const offset = offsetAt(timings, audio.currentTime);
+      if (offset >= 0) onProgress?.(offset);
+      return;
+    }
     const duration = audio.duration;
     // Streamed mp3s can report NaN or Infinity until fully loaded. Dividing by that kept
     // the offset at 0 and the highlight stuck on the first word, so fall back to pace.
@@ -216,7 +240,7 @@ function silence(audio) {
  * Its place is estimated from where the sentence sits in the transcript, with
  * a little padding either side so the first and last words aren't clipped.
  */
-export function playSegment(url, text, sentence, { rate = 1, onEnd, onError } = {}) {
+export function playSegment(url, text, sentence, { rate = 1, timings = null, onEnd, onError } = {}) {
   stopSpeaking();
   const at = text.indexOf(sentence);
   const startShare = at < 0 ? 0 : at / text.length;
@@ -227,8 +251,17 @@ export function playSegment(url, text, sentence, { rate = 1, onEnd, onError } = 
   const PAD = 0.6;
   let end = Infinity;
   audio.onloadedmetadata = () => {
-    audio.currentTime = Math.max(0, startShare * audio.duration - PAD);
-    end = Math.min(audio.duration, endShare * audio.duration + PAD);
+    const sentenceEnd = at < 0 ? text.length : at + sentence.length;
+    const first = timings?.length && at >= 0 ? timings.find(([offset]) => offset >= at) : null;
+    const after = timings?.length && at >= 0 ? timings.find(([offset]) => offset >= sentenceEnd) : null;
+    if (first && first[0] < sentenceEnd) {
+      // Real timings: from this sentence's first word to the next sentence's first word.
+      audio.currentTime = Math.max(0, first[1] - 0.25);
+      end = after ? after[1] : audio.duration;
+    } else {
+      audio.currentTime = Math.max(0, startShare * audio.duration - PAD);
+      end = Math.min(audio.duration, endShare * audio.duration + PAD);
+    }
     audio.playbackRate = rate;
     audio.play().catch((err) => {
       if (err?.name !== "AbortError") onError?.(err);

@@ -130,6 +130,7 @@ export default function MoviesTV({ voice, AddToReview }) {
       }, 0);
       setStopper(() =>
         playTracked(scene.audio_url, joined, {
+          timings: scene.word_timings,
           onProgress: (offset) => setActiveLine(ends.findIndex((end) => offset < end)),
           onEnd: () => {
             setPlaying(false);

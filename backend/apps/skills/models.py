@@ -26,6 +26,9 @@ class Passage(models.Model):
     source_url = models.URLField(blank=True)
     audio_url = models.URLField(blank=True, max_length=500, help_text="A real human recording of this text.")
     audio_credit = models.CharField(blank=True, max_length=120)
+    word_timings = models.JSONField(
+        default=list, blank=True, help_text="[[word_index, seconds]] from the recording (apps.skills.alignment)."
+    )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

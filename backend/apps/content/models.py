@@ -140,6 +140,9 @@ class Scene(models.Model):
     audio_url = models.URLField(blank=True, max_length=500, help_text="Real human recording of the scene.")
     audio_credit = models.CharField(blank=True, max_length=120)
     source_url = models.URLField(blank=True, max_length=500, help_text="Page the scene came from.")
+    word_timings = models.JSONField(
+        default=list, blank=True, help_text="[[word_index, seconds]] over the lines joined by spaces."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
