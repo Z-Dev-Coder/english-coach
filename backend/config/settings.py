@@ -184,3 +184,7 @@ if not DEBUG:
 # Tests do not need slow password hashing; this cuts the suite runtime by ~10x.
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+# Fetch the next real recordings from VOA as learners use up what is stored.
+# Never during tests: the suite must not depend on the network.
+LIVE_CONTENT_FETCH = env_bool("LIVE_CONTENT_FETCH", "test" not in sys.argv)

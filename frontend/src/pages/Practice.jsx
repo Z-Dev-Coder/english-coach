@@ -8,7 +8,7 @@ import TopicLanguage from "../components/TopicLanguage";
 import WritingLesson from "../components/WritingLesson";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
-import { canSpeak, pickVoice, speak, stopSpeaking } from "../lib/speech";
+import { canSpeak, pickVoice, playSegment, speak, stopSpeaking } from "../lib/speech";
 import {
   Button,
   Card,
@@ -169,13 +169,15 @@ function Listening({ passages, voice, assignedId, level }) {
           stays hidden until you check.
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button
             onClick={() => {
               beginTiming();
-              speak(sentence, { voice });
+              // The real speaker saying this sentence, cut from the recording.
+              if (passage.audio_url) playSegment(passage.audio_url, passage.text, sentence);
+              else speak(sentence, { voice });
             }}
-            disabled={!canSpeak}
+            disabled={!canSpeak && !passage.audio_url}
           >
             <Icon name="play" size={13} /> Play
           </Button>
@@ -183,9 +185,10 @@ function Listening({ passages, voice, assignedId, level }) {
             variant="secondary"
             onClick={() => {
               beginTiming();
-              speak(sentence, { rate: 0.65, voice });
+              if (passage.audio_url) playSegment(passage.audio_url, passage.text, sentence, { rate: 0.75 });
+              else speak(sentence, { rate: 0.65, voice });
             }}
-            disabled={!canSpeak}
+            disabled={!canSpeak && !passage.audio_url}
           >
             <Icon name="slow" size={13} /> Slowly
           </Button>

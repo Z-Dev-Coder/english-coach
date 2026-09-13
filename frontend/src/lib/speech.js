@@ -187,6 +187,41 @@ export function playTracked(url, text, { rate = 1, onProgress, onEnd, onError } 
 }
 
 /**
+ * Play only the part of a real recording where `sentence` is said.
+ *
+ * Its place is estimated from where the sentence sits in the transcript, with
+ * a little padding either side so the first and last words aren't clipped.
+ */
+export function playSegment(url, text, sentence, { rate = 1, onEnd, onError } = {}) {
+  stopSpeaking();
+  const at = text.indexOf(sentence);
+  const startShare = at < 0 ? 0 : at / text.length;
+  const endShare = at < 0 ? 1 : (at + sentence.length) / text.length;
+  const audio = new Audio(url);
+  audio.playbackRate = rate;
+  audio.preservesPitch = true;
+  const PAD = 0.6;
+  let end = Infinity;
+  audio.onloadedmetadata = () => {
+    audio.currentTime = Math.max(0, startShare * audio.duration - PAD);
+    end = Math.min(audio.duration, endShare * audio.duration + PAD);
+    audio.playbackRate = rate;
+    audio.play().catch((err) => onError?.(err));
+  };
+  audio.ontimeupdate = () => {
+    if (audio.currentTime >= end) {
+      audio.pause();
+      onEnd?.();
+    }
+  };
+  audio.onerror = () => onError?.(new Error("The recording couldn't be loaded."));
+  return () => {
+    audio.pause();
+    audio.src = "";
+  };
+}
+
+/**
  * Listen to the microphone and resolve with a transcript.
  *
  * Returns { promise, stop }. The caller stops it explicitly rather than relying

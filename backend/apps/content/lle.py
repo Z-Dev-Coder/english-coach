@@ -91,7 +91,9 @@ def import_next(level: str, *, use_ai: bool = True):
 
     series = next((item for item in SERIES if item[1] == level), None)
     if series is None:
-        return None
+        # Above A2 the acted series runs out; a real recorded story at the
+        # learner's level is used instead of a machine-voiced scene.
+        return import_story(level, use_ai=use_ai)
     start_url, _, level_number = series
     last = (
         Scene.objects.filter(slug__startswith=f"lle-{level_number}-")
@@ -137,6 +139,60 @@ def import_next(level: str, *, use_ai: bool = True):
             url = next_lesson_url(page, level_number, lesson)
             lesson += 1
     except Exception:  # offline or VOA changed its pages: fall back to other sources
+        return None
+    return None
+
+
+def story_lines(text: str, presenter: str = "Presenter") -> list[dict]:
+    """A read story as scene lines: one or two sentences per line, so read-along
+    highlighting moves at a followable pace."""
+    from apps.skills.similarity import split_sentences
+
+    sentences = [s.strip() for s in split_sentences(text) if s.strip()]
+    lines, buffer = [], []
+    for sentence in sentences:
+        buffer.append(sentence)
+        if len(" ".join(buffer)) > 110 or len(buffer) == 2:
+            lines.append({"speaker": presenter, "text": " ".join(buffer)})
+            buffer = []
+    if buffer:
+        lines.append({"speaker": presenter, "text": " ".join(buffer)})
+    return lines
+
+
+def import_story(level: str, *, use_ai: bool = True):
+    """The next real recorded VOA story at this level, as a scene; None if none."""
+    from apps.skills import voa
+
+    from .models import Scene
+
+    known = set(Scene.objects.exclude(source_url="").values_list("source_url", flat=True))
+    try:
+        for url, parsed, topic, _ in voa.new_articles(level, known, want=1):
+            lines = story_lines(parsed["text"])
+            if len(lines) < 6:
+                continue
+            study = (
+                study_material(level, lines)
+                if use_ai
+                else {"setting": "", "expressions": [], "questions": []}
+            )
+            article_id = re.search(r"/(\d+)\.html$", url)
+            return Scene.objects.create(
+                slug=f"voa-{level.lower()}-{article_id.group(1) if article_id else abs(hash(url))}",
+                title=parsed["title"],
+                genre="Real story" if topic == "stories" else "Real report",
+                level=level,
+                setting=study["setting"],
+                lines=lines,
+                expressions=study["expressions"],
+                questions=study["questions"],
+                source=Scene.Source.VOA,
+                audio_url=parsed["audio_url"],
+                audio_credit=voa.CREDIT,
+                source_url=url,
+            )
+    except Exception:
         return None
     return None
 

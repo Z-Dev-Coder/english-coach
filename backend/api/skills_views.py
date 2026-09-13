@@ -74,6 +74,11 @@ class PassageViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(topic=topic)
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        # Opening the passages is also when an empty or used-up level gets filled.
+        _top_up_real_audio(request.user, "listening")
+        return super().list(request, *args, **kwargs)
+
     @action(detail=True, methods=["get"])
     def lesson(self, request, pk=None):
         """Words, expressions and gist questions to learn before listening to this passage."""
@@ -99,6 +104,15 @@ class DictationSerializer(serializers.Serializer):
     written = serializers.CharField(allow_blank=True)
     passage_id = serializers.IntegerField(required=False, allow_null=True)
     duration_ms = serializers.IntegerField(required=False, default=0, min_value=0)
+
+
+def _top_up_real_audio(user, skill: str) -> None:
+    """Fetch more real recordings in the background if this learner is running out."""
+    from apps.skills import voa
+
+    progress = user.skill_progress.filter(skill=skill).first()
+    level = progress.level if progress else user.learner_profile.overall_level
+    voa.top_up_if_needed(user, level)
 
 
 class ShadowingSerializer(serializers.Serializer):
@@ -152,6 +166,7 @@ class DictationView(APIView):
             passage=_passage_for(request, data.get("passage_id")),
             duration_ms=data["duration_ms"],
         )
+        _top_up_real_audio(request.user, "listening")
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
 
 
@@ -346,6 +361,7 @@ class ShadowingView(APIView):
             passage=_passage_for(request, data.get("passage_id")),
             duration_ms=data["duration_ms"],
         )
+        _top_up_real_audio(request.user, "speaking")
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
 
 

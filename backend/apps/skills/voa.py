@@ -27,7 +27,98 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     "3521": ("news", "B1"),       # As It Is
     "1579": ("science", "B2"),    # Science & Technology
     "986": ("culture", "B2"),     # Arts & Culture
+    "1581": ("stories", "C1"),    # American Stories: full literature readings
 }
+
+# Levels with no programme of their own borrow the nearest one.
+LEVEL_FALLBACK = {"C2": "C1"}
+
+
+def categories_for(level: str) -> list[tuple[str, str, str]]:
+    """(category id, topic, stored level) for programmes pitched at this level."""
+    level = LEVEL_FALLBACK.get(level, level)
+    return [(cid, topic, lvl) for cid, (topic, lvl) in CATEGORIES.items() if lvl == level]
+
+
+def new_articles(level: str, known_urls: set[str], *, want: int = 3, max_pages: int = 8):
+    """Yield (url, parsed, topic, level) for articles not yet imported, newest first.
+
+    Walks each programme's listing page by page, so there is always more:
+    VOA has years of back catalogue behind page 1.
+    """
+    found = 0
+    for category, topic, stored_level in categories_for(level):
+        for page in range(1, max_pages + 1):
+            try:
+                links = article_links(fetch(f"{BASE}/z/{category}?p={page}", timeout=15))
+            except Exception:
+                break
+            if not links:
+                break
+            for url in links:
+                if url in known_urls:
+                    continue
+                known_urls.add(url)
+                try:
+                    parsed = parse_article(fetch(url, timeout=15))
+                except Exception:
+                    continue
+                if parsed:
+                    yield url, parsed, topic, stored_level
+                    found += 1
+                    if found >= want:
+                        return
+
+
+def top_up_passages(level: str, *, want: int = 3) -> int:
+    """Import the next real-voice passages for a level. Returns how many."""
+    from .models import Passage
+
+    known = set(Passage.objects.exclude(source_url="").values_list("source_url", flat=True))
+    added = 0
+    for url, parsed, topic, stored_level in new_articles(level, known, want=want):
+        Passage.objects.create(
+            title=parsed["title"], text=parsed["text"], level=stored_level, topic=topic,
+            source=Passage.Source.FEED, source_url=url,
+            audio_url=parsed["audio_url"], audio_credit=CREDIT,
+        )
+        added += 1
+    return added
+
+
+def top_up_if_needed(user, level: str, *, minimum: int = 2) -> None:
+    """When a learner has few unstudied real recordings left, fetch more in the background.
+
+    Content is never a fixed set: as learners work through the recordings at
+    their level, the next ones are pulled from VOA's back catalogue.
+    """
+    import threading
+
+    from django.conf import settings
+    from django.db import close_old_connections
+
+    from .models import Passage
+
+    if not getattr(settings, "LIVE_CONTENT_FETCH", True) or not categories_for(level):
+        return
+    stored = LEVEL_FALLBACK.get(level, level)
+    unstudied = (
+        Passage.objects.filter(owner__isnull=True, level=stored)
+        .exclude(audio_url="")
+        .exclude(attempts__user=user)
+        .distinct()
+        .count()
+    )
+    if unstudied >= minimum:
+        return
+
+    def work():
+        try:
+            top_up_passages(level)
+        finally:
+            close_old_connections()
+
+    threading.Thread(target=work, daemon=True).start()
 
 CREDIT = "VOA Learning English (public domain)"
 
