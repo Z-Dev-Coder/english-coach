@@ -154,6 +154,16 @@ function Listening({ passages, voice, assignedId, level }) {
           </Field>
         )}
 
+        {passage?.audio_url && (
+          <div className="mt-4 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+            <p className="micro">real recording · {passage.audio_credit}</p>
+            <p className="mt-1 text-[13px] text-ink-2 dark:text-white/60">
+              Listen to the whole thing first for the gist — real speakers, real rhythm.
+            </p>
+            <audio src={passage.audio_url} controls preload="none" className="mt-2 w-full" />
+          </div>
+        )}
+
         <p className="mt-4 text-sm text-ink-2 dark:text-white/55">
           Sentence {index + 1} of {sentences.length}. Listen, then type what you hear — the text
           stays hidden until you check.
@@ -283,10 +293,18 @@ function Reading({ passages, assignedId, onAdded }) {
             <Button onClick={finish} disabled={saved}>
               {saved ? "Recorded" : "I've finished reading"}
             </Button>
-            <Button variant="secondary" onClick={() => speak(reading.text)} disabled={!canSpeak}>
-              <Icon name="play" size={13} /> Read it aloud
-            </Button>
+            {!reading.audio_url && (
+              <Button variant="secondary" onClick={() => speak(reading.text)} disabled={!canSpeak}>
+                <Icon name="play" size={13} /> Read it aloud
+              </Button>
+            )}
           </div>
+          {reading.audio_url && (
+            <div className="mt-4">
+              <p className="micro">read along with the real recording · {reading.audio_credit}</p>
+              <audio src={reading.audio_url} controls preload="none" className="mt-2 w-full" />
+            </div>
+          )}
           <p className="mt-3 text-xs text-ink-3">
             Reading time is recorded, but it doesn't move your reading score on its own — speed
             isn't comprehension.

@@ -6,7 +6,7 @@ import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
 import { useRecorder } from "../lib/recorder";
-import { pickVoice, speakTracked, stopSpeaking } from "../lib/speech";
+import { pickVoice, playTracked, speakTracked, stopSpeaking } from "../lib/speech";
 import { Button, Card, CardSkeleton, ErrorNote, HowTo, Pill } from "../lib/ui";
 
 /**
@@ -60,6 +60,9 @@ export default function Shadowing() {
       api
         .passages()
         .then((list) => {
+          setPassages(list);
+          // Real recordings first: those are what shadowing should be done with.
+          list = [...list].sort((a, b) => Boolean(b.audio_url) - Boolean(a.audio_url));
           setPassages(list);
           const chosen = id || (list[0] && String(list[0].id)) || "";
           setPassageId(chosen);
@@ -135,7 +138,10 @@ export default function Shadowing() {
     // Recording runs for the whole pass, so the learner can hear their own
     // delivery against the model rather than one phrase at a time.
     if (recorder.supported) recorder.start();
-    stopRef.current = speakTracked(guide.text, {
+    const player = guide.audio_url
+      ? (text, options) => playTracked(guide.audio_url, text, options)
+      : speakTracked;
+    stopRef.current = player(guide.text, {
       rate,
       voice,
       onProgress: setOffset,
@@ -192,6 +198,11 @@ export default function Shadowing() {
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="brand">{guide.level}</Pill>
               {guide.passage && <span className="micro">{guide.passage.title}</span>}
+              {guide.audio_url ? (
+                <Pill tone="good">real voice · {guide.audio_credit}</Pill>
+              ) : (
+                <span className="micro">computer voice — pick a real-voice passage below</span>
+              )}
             </div>
             <div className="flex items-center gap-1.5">
               <span className="micro">speed</span>

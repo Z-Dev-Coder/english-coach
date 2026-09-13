@@ -158,6 +158,33 @@ export function speakTracked(text, { rate = 1, voice = null, onProgress, onEnd, 
   };
 }
 
+/**
+ * Play a real human recording of `text`, reporting progress like speakTracked.
+ *
+ * A recording carries no word timings, so the offset is the share of the audio
+ * played applied to the transcript's length. Presenters read at an even pace,
+ * so the highlight stays within a phrase or so -- and the voice is real.
+ */
+export function playTracked(url, text, { rate = 1, onProgress, onEnd, onError } = {}) {
+  stopSpeaking();
+  const audio = new Audio(url);
+  audio.playbackRate = rate;
+  audio.preservesPitch = true;
+  const length = text?.length ?? 0;
+  audio.ontimeupdate = () => {
+    if (audio.duration) onProgress?.(Math.round((audio.currentTime / audio.duration) * length));
+  };
+  audio.onended = () => {
+    onProgress?.(length);
+    onEnd?.();
+  };
+  audio.onerror = () => onError?.(new Error("The recording couldn't be loaded."));
+  audio.play().catch((err) => onError?.(err));
+  return () => {
+    audio.pause();
+    audio.src = "";
+  };
+}
 
 /**
  * Listen to the microphone and resolve with a transcript.

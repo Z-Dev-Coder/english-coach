@@ -21,7 +21,7 @@ class PassageSerializer(serializers.ModelSerializer):
         model = Passage
         fields = [
             "id", "title", "text", "level", "topic", "source", "source_url",
-            "word_count", "reading_ease", "sentences", "is_mine", "created_at",
+            "audio_url", "audio_credit", "word_count", "reading_ease", "sentences", "is_mine", "created_at",
         ]
         read_only_fields = fields
 
@@ -64,6 +64,8 @@ class PassageViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = Passage.objects.filter(Q(owner__isnull=True) | Q(owner=self.request.user))
+        if self.request.query_params.get("real_voice") == "1":
+            queryset = queryset.exclude(audio_url="")
         level = self.request.query_params.get("level")
         if level:
             queryset = queryset.filter(level=level)
@@ -325,6 +327,10 @@ class ShadowingGuideView(APIView):
         guide = shadowing.build_guide(text, level=level)
         if passage is not None:
             guide["passage"] = {"id": passage.id, "title": passage.title}
+            # Only a recording of this exact text: with custom `text` the audio would not match.
+            if passage.audio_url and not request.query_params.get("text"):
+                guide["audio_url"] = passage.audio_url
+                guide["audio_credit"] = passage.audio_credit
         return Response(guide)
 
 

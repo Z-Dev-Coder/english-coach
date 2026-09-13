@@ -24,6 +24,8 @@ class Passage(models.Model):
     topic = models.CharField(max_length=40, blank=True)
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.SEED)
     source_url = models.URLField(blank=True)
+    audio_url = models.URLField(blank=True, max_length=500, help_text="A real human recording of this text.")
+    audio_credit = models.CharField(blank=True, max_length=120)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
