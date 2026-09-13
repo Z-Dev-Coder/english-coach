@@ -524,8 +524,12 @@ EXPRESSIONS TO WORK IN NATURALLY
 RULES
 - Write it as one person speaking out loud, not as an essay. Contractions,
   false starts and everyday phrasing are right; formal written English is not.
-- 6 to 10 sentences. Long enough to model a real answer, short enough to say
-  in a minute.
+- 10 to 14 sentences: a detailed spoken paragraph with a part for each move
+  above (line break between parts). The learner is practising long turns, so
+  model one properly.
+- Join ideas with a range of conjunctions and linkers suited to {level}
+  (and, but, so, because, when, while, although, before, after, which,
+  that's why ...), not a string of short separate sentences.
 - Pitch the vocabulary and grammar at {level}. An answer the learner cannot
   produce is a demonstration of failure, not a model.
 - Invent ordinary, unremarkable specifics. A model answer full of drama is
@@ -537,9 +541,10 @@ RULES
 
 Return JSON:
 - answer: the full answer as one string, with line breaks between the moves
-- notes: 2-4 objects, each with `quote` (a short phrase lifted verbatim from
-  your answer) and `why` (one sentence on what that phrase is doing -- the
-  move it performs or the effect it has). These teach the learner what to
+- notes: 5-8 objects, each with `quote` (a short phrase lifted verbatim from
+  your answer) and `why` (one or two sentences on what that phrase is doing --
+  the move it performs, what a linker joins and why it fits, and when a
+  speaker would use it). At least three must be conjunctions or linkers. These teach the learner what to
   copy, so point at technique, not at vocabulary they can already see.
 - expressions: one object per expression above, each with `text` (exactly as
   given), `meaning` (what it means *in the sense this lesson is using*, in one
@@ -858,4 +863,40 @@ Return JSON: answers -- one object per item, in the same order, with
 - explanation: two short sentences for the learner. First, what the correct
   expression means and why it fits here. Second, why the other option(s) don't
   work in this sentence. Plain words, no grammar jargon.
+"""
+
+
+MATCHING_KEY_SCHEMA = {
+    "type": "object",
+    "required": ["answers"],
+    "properties": {
+        "answers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["letter", "explanation"],
+                "properties": {"letter": {"type": "string"}, "explanation": {"type": "string"}},
+            },
+        },
+    },
+}
+
+
+def matching_answer_key(parsed: dict) -> str:
+    """Ask which lettered meaning goes with each phrase, with a reason."""
+    phrases = "\n".join(f"{i + 1}. {phrase}" for i, phrase in enumerate(parsed["phrases"]))
+    meanings = "\n".join(f"{m['letter']}) {m['text']}" for m in parsed["meanings"])
+    return f"""Match each English phrase to its meaning. Each meaning is used exactly once.
+
+PHRASES
+{phrases}
+
+MEANINGS
+{meanings}
+
+Return JSON: answers -- one object per phrase, in the same order, with
+- letter: the letter of the matching meaning (just the letter)
+- explanation: one or two short sentences for the learner with a natural
+  example of the phrase in use, and, if the phrase is easy to confuse with
+  another in the list, how they differ. Plain words, no grammar jargon.
 """

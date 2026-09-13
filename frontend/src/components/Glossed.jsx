@@ -31,6 +31,8 @@ import { wordAtPoint } from "../lib/wordAtPoint";
  */
 
 const HOVER_DELAY = 450;
+// Long enough to move the pointer from a word onto its panel.
+const CLOSE_DELAY = 700;
 const PANEL_WIDTH = 320;
 const GAP = 10;
 // Below this the panel is not worth showing in place; above it, a
@@ -108,7 +110,7 @@ function position(rect) {
   };
 }
 
-function Panel({ target, onClose, pinned }) {
+function Panel({ target, onClose, pinned, onHover }) {
   const { status, data } = useDefinition(target.word);
   const [saving, setSaving] = useState(false);
   const { left, top, bottom, maxHeight } = position(target.rect);
@@ -142,9 +144,11 @@ function Panel({ target, onClose, pinned }) {
       aria-label={`Definition of ${target.word}`}
       className="fixed z-50 animate-rise"
       style={{ left, top, bottom, width: PANEL_WIDTH }}
-      // The panel sits inside the same pointer world as the text; without this
-      // a hover-opened panel closes the moment you move onto it to read it.
-      onPointerEnter={(event) => event.stopPropagation()}
+      // The panel is portalled outside the text, so leaving the text to read
+      // it must not close it: entering cancels the pending close, leaving
+      // schedules one.
+      onPointerEnter={() => onHover?.(true)}
+      onPointerLeave={() => onHover?.(false)}
     >
       <div
         className="flex flex-col overflow-hidden rounded-xl bg-surface shadow-lift ring-1 ring-[color:var(--color-line)] dark:bg-[#141414] dark:ring-white/12"
@@ -227,6 +231,7 @@ export default function Glossed({ children, className = "", as: Tag = "div" }) {
   const [target, setTarget] = useState(null);
   const [pinned, setPinned] = useState(false);
   const timer = useRef(null);
+  const closeTimer = useRef(null);
   const container = useRef(null);
 
   const clear = useCallback(() => {
@@ -234,18 +239,36 @@ export default function Glossed({ children, className = "", as: Tag = "div" }) {
     timer.current = null;
   }, []);
 
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  }, []);
+
   const close = useCallback(() => {
     clear();
+    cancelClose();
     setTarget(null);
     setPinned(false);
-  }, [clear]);
+  }, [clear, cancelClose]);
+
+  // Closing on hover is delayed, so the pointer can cross the gap between a
+  // word and its panel -- or drift between words -- without losing it. It
+  // closed instantly before, which made it vanish while being read.
+  const closeSoon = useCallback(() => {
+    cancelClose();
+    closeTimer.current = setTimeout(close, CLOSE_DELAY);
+  }, [cancelClose, close]);
 
   // A pinned panel is dismissed the way every other transient surface is.
   useEffect(() => {
     if (!pinned) return undefined;
     const onKey = (event) => event.key === "Escape" && close();
     const onDown = (event) => {
-      if (!container.current?.contains(event.target)) close();
+      // The panel is portalled outside the container, so a press inside it --
+      // on "add to my words" -- must not count as a press outside.
+      if (container.current?.contains(event.target)) return;
+      if (event.target.closest?.('[role="dialog"]')) return;
+      close();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
@@ -259,14 +282,19 @@ export default function Glossed({ children, className = "", as: Tag = "div" }) {
     };
   }, [pinned, close]);
 
-  useEffect(() => clear, [clear]);
+  useEffect(() => () => {
+    clear();
+    cancelClose();
+  }, [clear, cancelClose]);
 
   const lookUpAt = (x, y, { pin }) => {
     const found = wordAtPoint(x, y);
     if (!found) {
-      if (!pin) close();
+      // Between words, or on punctuation: keep what is showing rather than
+      // closing on the smallest drift of the pointer.
       return;
     }
+    cancelClose();
     setTarget(found);
     if (pin) setPinned(true);
   };
@@ -285,7 +313,11 @@ export default function Glossed({ children, className = "", as: Tag = "div" }) {
       ref={container}
       className={className}
       onPointerMove={onPointerMove}
-      onPointerLeave={() => !pinned && close()}
+      onPointerEnter={cancelClose}
+      onPointerLeave={() => {
+        clear();
+        if (!pinned) closeSoon();
+      }}
       onClick={(event) => {
         // Never hijack a link or button inside glossed content.
         if (event.target.closest("a, button, input, textarea, select")) return;
@@ -293,7 +325,17 @@ export default function Glossed({ children, className = "", as: Tag = "div" }) {
       }}
     >
       {children}
-      {target && <Panel target={target} pinned={pinned} onClose={close} />}
+      {target && (
+        <Panel
+          target={target}
+          pinned={pinned}
+          onClose={close}
+          onHover={(inside) => {
+            if (inside) cancelClose();
+            else if (!pinned) closeSoon();
+          }}
+        />
+      )}
     </Tag>
   );
 }

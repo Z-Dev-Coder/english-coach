@@ -85,6 +85,8 @@ function Item({ number, item, checkable, chosen, onChoose }) {
   );
 }
 
+import MatchExercise from "./MatchExercise";
+
 export default function ChoiceExercise({ lessonId, activityId, fallback }) {
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -105,6 +107,7 @@ export default function ChoiceExercise({ lessonId, activityId, fallback }) {
     };
   }, [lessonId, activityId]);
 
+  if (data?.type === "matching" && data.pairs?.length) return <MatchExercise data={data} />;
   if (failed || (data && !data.items?.length)) return fallback ?? null;
   if (!data) {
     return (

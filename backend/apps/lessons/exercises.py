@@ -117,3 +117,82 @@ def answer_key(prompt: str) -> list[dict]:
     except AIError:
         return []
     return apply_key(items, key)
+
+
+# --- Matching: phrases to lettered meanings ---------------------------------
+
+_PHRASES = re.compile(r"(?:phrases|expressions|words|verbs)\s*:\s*(?P<list>.+?)(?:\.\s|\n|meanings\s*:)", re.I | re.S)
+_MEANINGS = re.compile(r"meanings\s*:\s*(?P<list>.+)$", re.I | re.S)
+_LETTERED = re.compile(r"(?:^|[;\s])([a-h])\)\s*(.+?)(?=(?:;\s*|\s+)[a-h]\)\s|$)", re.S)
+
+
+def parse_matching(prompt: str) -> dict:
+    """"Phrases: a, b, c. Meanings: a) ...; b) ..." into phrases and meanings.
+
+    Returns {} unless there are at least three of each and the counts agree;
+    a lopsided list can't be matched one-to-one, so it stays as text.
+    """
+    text = (prompt or "").strip()
+    phrases_match = _PHRASES.search(text)
+    meanings_match = _MEANINGS.search(text)
+    if not phrases_match or not meanings_match:
+        return {}
+    phrases = [item.strip(" .;") for item in phrases_match.group("list").split(",") if item.strip(" .;")]
+    meanings = [
+        {"letter": letter, "text": body.strip(" .;")}
+        for letter, body in _LETTERED.findall(meanings_match.group("list").strip())
+        if body.strip(" .;")
+    ]
+    if len(phrases) < 3 or len(phrases) != len(meanings):
+        return {}
+    return {"phrases": phrases, "meanings": meanings}
+
+
+def apply_matching_key(parsed: dict, key: object) -> dict:
+    """Attach each phrase's correct letter; any unknown letter or repeat voids the key."""
+    answers = key.get("answers") if isinstance(key, dict) else None
+    if not parsed or not isinstance(answers, list) or len(answers) != len(parsed["phrases"]):
+        return {}
+    letters = {meaning["letter"] for meaning in parsed["meanings"]}
+    pairs = []
+    for phrase, answer in zip(parsed["phrases"], answers):
+        if not isinstance(answer, dict):
+            return {}
+        letter = str(answer.get("letter") or "").strip().lower().strip(")")
+        if letter not in letters:
+            return {}
+        pairs.append({
+            "phrase": phrase,
+            "answer": letter,
+            "explanation": _trim(str(answer.get("explanation") or "").strip()),
+        })
+    if len({pair["answer"] for pair in pairs}) != len(pairs):
+        # One meaning matched to two phrases can't be a correct key.
+        return {}
+    return {"meanings": parsed["meanings"], "pairs": pairs}
+
+
+def matching_key(prompt: str) -> dict:
+    """Parsed matching exercise with its key, from the model; {} if not possible."""
+    from apps.ai import prompts
+    from apps.ai.providers.base import TIER_MEDIUM, AIError
+    from apps.ai.registry import get_ai_provider
+    from apps.ai.services import cached
+
+    parsed = parse_matching(prompt)
+    if not parsed:
+        return {}
+    try:
+        key = cached(
+            "matching_answer_key",
+            parsed,
+            lambda: get_ai_provider().generate_json(
+                prompts.matching_answer_key(parsed),
+                schema=prompts.MATCHING_KEY_SCHEMA,
+                tier=TIER_MEDIUM,
+                temperature=0.0,
+            ),
+        )
+    except AIError:
+        return {}
+    return apply_matching_key(parsed, key)

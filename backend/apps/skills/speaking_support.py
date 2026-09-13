@@ -115,6 +115,177 @@ FRAMES: dict[str, list[dict]] = {
     ],
 }
 
+# Where a learner actually meets each pattern, so the frame is tied to a real
+# moment rather than to an exercise.
+SITUATIONS: dict[str, str] = {
+    "describe": "Use this pattern when someone asks what something is like — your job, your routine, "
+                "your town — at work small talk, in an interview, or meeting new people.",
+    "narrate": "Use this pattern when you tell someone what happened — a weekend, a problem at work, "
+               "a trip — the most common long turn in everyday conversation.",
+    "opinion": "Use this pattern when someone asks what you think — in meetings, discussions with "
+               "friends, or speaking exams. Say your view first, then support it.",
+    "compare": "Use this pattern when you weigh two options — choosing a place, a product, a way of "
+               "doing things — and need to explain which you'd pick.",
+    "explain": "Use this pattern when you tell someone how something works or how to do it — giving "
+               "directions, training a colleague, explaining a process.",
+}
+
+# How and when to use each functional phrase, in plain words.
+PHRASE_NOTES: dict[str, str] = {
+    "Well, ...": "A soft start that gives you a second to think. Very natural before any answer.",
+    "For me, ...": "Shows you're giving your own experience, not a fact about everyone.",
+    "I'd say ...": "A relaxed way to give an answer or estimate without sounding too certain.",
+    "Off the top of my head, ...": "Means 'without thinking carefully first' — good for quick, honest answers.",
+    "The main thing is ...": "Puts the most important point first, so the listener knows what matters.",
+    "To be honest, ...": "Signals a sincere or slightly surprising answer. Don't use it in every sentence.",
+    "I suppose the honest answer is ...": "Thoughtful opening before an answer that isn't simple.",
+    "It depends, but broadly ...": "Admits there are exceptions, then gives the general answer.",
+    "First, ...": "Starts the first step. Pause slightly after it.",
+    "Then ...": "Moves to the next step. Unstressed and quick in speech.",
+    "After that, ...": "Like 'then', but gives you a moment to think of the next step.",
+    "Finally, ...": "Tells the listener this is the last step.",
+    "To start with, ...": "A more natural spoken 'first' — for the beginning of a sequence or story.",
+    "Once that's done, ...": "Means 'after finishing that step' — great for routines and processes.",
+    "By the end, ...": "Jumps to the result or last part of a story or day.",
+    "Early on, ...": "Refers to the beginning of a period or story.",
+    "From there, ...": "Moves the story or process forward from the last point.",
+    "Eventually, ...": "After a long time or several steps — often with a result.",
+    "For example, ...": "Introduces one specific case that proves your point.",
+    "Like when ...": "Casual way to start a short example from your life.",
+    "A good example is ...": "Introduces a clear, chosen example.",
+    "Say, for instance, ...": "Offers an example as a possibility — 'imagine this case'.",
+    "A case in point would be ...": "A precise example that proves exactly what you said.",
+    "To give you a sense of it, ...": "Introduces a detail that helps the listener picture it.",
+    "because ...": "Gives the reason. Keep the part after it short when speaking.",
+    "so ...": "Gives the result: cause, so result.",
+    "The reason is ...": "Puts the reason in focus — say it, pause, then explain.",
+    "which means ...": "Adds the consequence of what you just said, in one breath.",
+    "largely because ...": "The main reason, while suggesting there are others.",
+    "which is partly why ...": "Links a fact to one of the reasons for a result.",
+    "But ...": "Introduces a contrast. Simple and completely natural in speech.",
+    "On the other hand, ...": "Presents the opposite side of the same question.",
+    "That said, ...": "Means 'even so' — adds a point that limits what you just said.",
+    "Whereas ...": "Directly contrasts two things in one sentence.",
+    "Having said that, ...": "Like 'that said', slightly more careful and formal.",
+    "If anything, ...": "Suggests the truth is actually the opposite, or even stronger.",
+    "So that's about it.": "Clearly tells the listener you've finished.",
+    "That's my day, really.": "Casual ending for describing a routine.",
+    "So on the whole, ...": "Sums up everything into one general conclusion.",
+    "That's roughly how it goes.": "Ends a description of a routine or process.",
+    "So all things considered, ...": "Conclusion after weighing different points.",
+    "That's the short version, anyway.": "Ends a long answer and admits there's more to say.",
+}
+
+# Conjunctions and linkers that join ideas into longer turns, per task and level.
+_C = lambda word, use, example: {"word": word, "use": use, "example": example}  # noqa: E731
+CONNECTORS: dict[str, dict[str, list[dict]]] = {
+    "describe": {
+        "low": [
+            _C("and", "adds another fact to the same sentence", "I get up at seven and I have a quick breakfast."),
+            _C("but", "adds a contrast", "It's a small town, but it has a great market."),
+            _C("because", "gives a reason", "I take the bus because it's cheaper."),
+            _C("when", "says at what time something happens", "When I get home, I cook dinner."),
+        ],
+        "mid": [
+            _C("while", "two things happening at the same time", "I listen to podcasts while I'm cooking."),
+            _C("which", "adds information about the thing you just mentioned", "I work in an office, which is ten minutes from home."),
+            _C("although", "a contrast inside one sentence", "Although it's busy, I really enjoy it."),
+            _C("so", "a result", "The traffic is bad, so I usually leave early."),
+            _C("as soon as", "immediately after", "As soon as I arrive, I check my emails."),
+        ],
+        "high": [
+            _C("whereas", "contrasts two parts of the description", "Mornings are hectic, whereas evenings are fairly calm."),
+            _C("which is why", "links a fact to its result", "It's near the station, which is why I chose it."),
+            _C("even though", "strong contrast", "Even though it's small, it never feels crowded."),
+            _C("not to mention", "adds an extra, stronger point", "It's convenient, not to mention cheap."),
+        ],
+    },
+    "narrate": {
+        "low": [
+            _C("and then", "moves the story to the next event", "I missed the bus, and then it started to rain."),
+            _C("when", "the moment something happened", "When I got there, the shop was closed."),
+            _C("so", "the result of an event", "I was late, so I took a taxi."),
+            _C("because", "why something happened", "I was tired because I didn't sleep well."),
+        ],
+        "mid": [
+            _C("while", "something happened during another action", "While I was waiting, my phone died."),
+            _C("as soon as", "immediately after", "As soon as I saw her, I knew something was wrong."),
+            _C("before / after", "the order of two events", "Before I left, I checked the address twice."),
+            _C("although", "a surprising contrast", "Although we were late, they still let us in."),
+            _C("in the end", "the final result after a problem", "In the end, we found a different place."),
+        ],
+        "high": [
+            _C("by the time", "one event was already finished when another happened", "By the time we arrived, everyone had left."),
+            _C("which meant (that)", "the consequence of an event", "The train was cancelled, which meant I had to drive."),
+            _C("no sooner ... than", "one thing happened right after another", "No sooner had I sat down than the phone rang."),
+            _C("it turned out (that)", "a surprising discovery", "It turned out that I'd gone to the wrong station."),
+        ],
+    },
+    "opinion": {
+        "low": [
+            _C("because", "gives the reason for your view", "I prefer trains because they're relaxing."),
+            _C("but", "the other side", "It's expensive, but it's worth it."),
+            _C("so", "your conclusion", "It saves time, so I think it's better."),
+            _C("also", "adds another reason", "It's also better for the environment."),
+        ],
+        "mid": [
+            _C("although", "admits a point against your view", "Although it costs more, I think it's worth it."),
+            _C("as long as", "a condition for your view", "It's fine as long as you don't do it every day."),
+            _C("on top of that", "adds a second reason", "On top of that, it's much quicker."),
+            _C("that's why", "links reasons to your opinion", "That's why I'd always choose it."),
+            _C("whereas", "contrasts two views or options", "Some people love it, whereas I find it stressful."),
+        ],
+        "high": [
+            _C("even if", "your view stays true in a difficult case", "Even if it were cheaper, I wouldn't choose it."),
+            _C("provided that", "a formal condition", "It works well, provided that people follow the rules."),
+            _C("given that", "a known fact supporting your view", "Given that most people work from home, it makes sense."),
+            _C("which is not to say", "limits your point to avoid overstatement", "Which is not to say it's perfect."),
+        ],
+    },
+    "compare": {
+        "low": [
+            _C("but", "a difference", "The city is exciting, but the country is quiet."),
+            _C("and", "a similarity", "Both are cheap and easy to find."),
+            _C("more ... than", "comparing one quality", "The train is more comfortable than the bus."),
+            _C("because", "why you prefer one", "I like the first one because it's closer."),
+        ],
+        "mid": [
+            _C("whereas", "contrasts the two directly", "Cafés are noisy, whereas libraries are quiet."),
+            _C("while", "contrast (like whereas)", "While one is cheap, the other is faster."),
+            _C("both ... and", "what they share", "Both the gym and the park are close by."),
+            _C("unlike", "a difference with a noun", "Unlike the bus, the train is always on time."),
+            _C("so overall", "your final choice", "So overall, I'd go for the train."),
+        ],
+        "high": [
+            _C("in contrast", "a strong difference at the start of a sentence", "In contrast, the second option is flexible."),
+            _C("by comparison", "shows how one looks next to the other", "By comparison, the old system was slow."),
+            _C("the former / the latter", "refers back to the first / second option", "The latter is cheaper, but the former lasts longer."),
+            _C("on balance", "the conclusion after weighing both", "On balance, I'd choose the first."),
+        ],
+    },
+    "explain": {
+        "low": [
+            _C("first / then", "the order of steps", "First you open the app, then you choose a seat."),
+            _C("and", "joins two actions in one step", "You press the button and wait."),
+            _C("if", "a condition", "If it doesn't work, try again."),
+            _C("so", "the result of a step", "It saves your card, so it's quicker next time."),
+        ],
+        "mid": [
+            _C("once", "after completing a step", "Once you've paid, you'll get a code."),
+            _C("unless", "except if", "It won't start unless you plug it in."),
+            _C("so that", "the purpose of a step", "Save it first so that you don't lose it."),
+            _C("which", "adds information about a step", "You get a code, which you show at the door."),
+            _C("otherwise", "what happens if you don't", "Keep the receipt, otherwise you can't return it."),
+        ],
+        "high": [
+            _C("the idea being that", "the purpose behind a design", "It checks twice, the idea being that errors are caught early."),
+            _C("in which case", "what to do in a specific situation", "It might freeze, in which case just restart it."),
+            _C("as a result", "the effect of the process", "As a result, the whole thing takes minutes."),
+            _C("assuming (that)", "a condition you expect is true", "Assuming you have the app, it's very simple."),
+        ],
+    },
+}
+
 LOW_LEVELS = {"A1", "A2"}
 HIGH_LEVELS = {"C1", "C2"}
 
@@ -166,10 +337,18 @@ def build_support(*, prompt: str, level: str = "B1", expressions: list[str] | No
         for step in FRAMES[task]
     ]
 
+    for step in frame:
+        step["phrase_notes"] = [
+            {"phrase": phrase, "use": PHRASE_NOTES.get(phrase, "")} for phrase in step["phrases"]
+        ]
+
     return {
         "task": task,
         "level": (level or "B1").upper(),
+        "situation": SITUATIONS[task],
+        "pattern": " → ".join(step["move"] for step in FRAMES[task]),
         "frame": frame,
+        "connectors": CONNECTORS[task][band],
         # Always offered: running out of words mid-answer is the moment a
         # learner gives up, and the fix is a phrase, not more vocabulary.
         "stalling_phrases": PHRASES["buy_time"][band],

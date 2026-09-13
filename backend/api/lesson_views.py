@@ -84,23 +84,48 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         The key is generated once and stored on the activity, so the learner can
         check answers every time they come back without another model call.
         """
-        from apps.lessons.exercises import answer_key, parse_choice_items
+        from apps.lessons.exercises import (
+            answer_key,
+            matching_key,
+            parse_choice_items,
+            parse_matching,
+        )
 
         lesson = self.get_object()
         activity = get_object_or_404(lesson.activities, pk=activity_id)
-        stored = (activity.params or {}).get("exercise")
-        if stored:
-            return Response({"items": stored, "checkable": True})
+        params = dict(activity.params or {})
+
+        if params.get("exercise"):
+            return Response({"type": "choice", "items": params["exercise"], "checkable": True})
+        if params.get("matching"):
+            return Response({"type": "matching", **params["matching"], "checkable": True})
 
         keyed = answer_key(activity.prompt)
         if keyed:
-            params = dict(activity.params or {})
             params["exercise"] = keyed
             activity.params = params
             activity.save(update_fields=["params"])
-            return Response({"items": keyed, "checkable": True})
+            return Response({"type": "choice", "items": keyed, "checkable": True})
 
-        return Response({"items": parse_choice_items(activity.prompt), "checkable": False})
+        matched = matching_key(activity.prompt)
+        if matched:
+            params["matching"] = matched
+            activity.params = params
+            activity.save(update_fields=["params"])
+            return Response({"type": "matching", **matched, "checkable": True})
+
+        items = parse_choice_items(activity.prompt)
+        if items:
+            return Response({"type": "choice", "items": items, "checkable": False})
+        parsed = parse_matching(activity.prompt)
+        if parsed:
+            return Response({
+                "type": "matching",
+                "meanings": parsed["meanings"],
+                "pairs": [{"phrase": phrase, "answer": "", "explanation": ""} for phrase in parsed["phrases"]],
+                "checkable": False,
+            })
+        return Response({"type": "none", "items": [], "checkable": False})
 
     @action(detail=True, methods=["post"], url_path="activities/(?P<activity_id>[^/.]+)/complete")
     def complete_activity(self, request, pk=None, activity_id=None):

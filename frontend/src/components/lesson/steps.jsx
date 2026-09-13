@@ -293,7 +293,7 @@ function SpeakingStep({ activity, voice, onDone }) {
   // Prepare first. The record button being on screen while the learner is
   // still reading is the pressure that makes people skip preparing.
   const [ready, setReady] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(true);
   const recognition = useRef(null);
   const recorder = useRecorder();
 
@@ -381,7 +381,7 @@ function SpeakingStep({ activity, voice, onDone }) {
 
         {support?.model_answer?.answer && (
           <section className="mt-6">
-            <h3 className="micro">an example answer</h3>
+            <h3 className="micro">sample answer — study how it&rsquo;s built, then say your own</h3>
             {!showAnswer ? (
               <button
                 onClick={() => setShowAnswer(true)}
@@ -416,6 +416,7 @@ function SpeakingStep({ activity, voice, onDone }) {
 
                 {support.model_answer.notes?.length > 0 && (
                   <ul className="mt-4 space-y-2 border-t border-[color:var(--color-line)] pt-3 dark:border-white/10">
+                    <li className="micro">why these phrases work</li>
                     {support.model_answer.notes.map((note) => (
                       <li key={note.quote} className="text-[13px]">
                         <span className="font-medium">&ldquo;{note.quote}&rdquo;</span>{" "}
@@ -431,8 +432,18 @@ function SpeakingStep({ activity, voice, onDone }) {
 
         {frame.length > 0 && (
           <section className="mt-6">
-            <h3 className="micro">how it was built</h3>
-            <ol className="mt-2 space-y-3">
+            <h3 className="micro">the speaking pattern</h3>
+            {support?.situation && (
+              <Glossed as="p" className="mt-2 text-[14px] text-ink-2 dark:text-white/70">
+                {support.situation}
+              </Glossed>
+            )}
+            {support?.pattern && (
+              <p className="mt-2 rounded-lg bg-sunken px-3 py-2 text-[14px] font-medium dark:bg-white/[0.04]">
+                {support.pattern}
+              </p>
+            )}
+            <ol className="mt-3 space-y-4">
               {frame.map((step, index) => (
                 <li key={step.move} className="flex gap-3">
                   <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-semibold text-white dark:bg-white dark:text-black">
@@ -441,15 +452,44 @@ function SpeakingStep({ activity, voice, onDone }) {
                   <div className="min-w-0">
                     <p className="text-[15px] font-medium">{step.move}</p>
                     <p className="text-[13px] text-ink-2 dark:text-white/60">{step.hint}</p>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {step.phrases.map((phrase) => (
-                        <Pill key={phrase}>{phrase}</Pill>
-                      ))}
-                    </div>
+                    <ul className="mt-1.5 space-y-1">
+                      {(step.phrase_notes ?? step.phrases.map((phrase) => ({ phrase, use: "" }))).map(
+                        (note) => (
+                          <li key={note.phrase} className="text-[13px]">
+                            <span className="font-semibold">{note.phrase}</span>
+                            {note.use && (
+                              <span className="text-ink-2 dark:text-white/60"> — {note.use}</span>
+                            )}
+                          </li>
+                        ),
+                      )}
+                    </ul>
                   </div>
                 </li>
               ))}
             </ol>
+          </section>
+        )}
+
+        {support?.connectors?.length > 0 && (
+          <section className="mt-6">
+            <h3 className="micro">conjunctions to join your ideas</h3>
+            <p className="mt-1 text-[13px] text-ink-3">
+              Long answers come from joining ideas, not from more short sentences.
+            </p>
+            <ul className="mt-2 space-y-2">
+              {support.connectors.map((item) => (
+                <li key={item.word} className="rounded-xl bg-sunken p-3 dark:bg-white/[0.04]">
+                  <p>
+                    <span className="font-semibold">{item.word}</span>
+                    <span className="text-[14px] text-ink-2 dark:text-white/70"> — {item.use}</span>
+                  </p>
+                  <p className="mt-1 border-l-2 border-[color:var(--color-line)] pl-2.5 text-[13px] italic text-ink-3">
+                    {item.example}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
@@ -555,7 +595,9 @@ function LessonTask({ activity, lessonId }) {
       {activity.prompt.replace(/\s(\d+\.)\s/g, "\n$1 ")}
     </Glossed>
   );
-  if (!/\([^()]*\/[^()]*\)/.test(activity.prompt)) return text;
+  const choice = /\([^()]*\/[^()]*\)/.test(activity.prompt);
+  const matching = /meanings\s*:/i.test(activity.prompt) && /\b[a-h]\)/.test(activity.prompt);
+  if (!choice && !matching) return text;
   return <ChoiceExercise lessonId={lessonId} activityId={activity.id} fallback={text} />;
 }
 
@@ -580,9 +622,11 @@ function ReviewStep({ activity, lessonId, onDone }) {
       <div>
         <Instructions activity={activity} />
         <LessonTask activity={activity} lessonId={lessonId} />
-        <p className="mt-4 text-[15px] text-ink-2 dark:text-white/70">
-          Nothing is due right now — that&rsquo;s a good sign, not a gap.
-        </p>
+        {!activity.prompt && (
+          <p className="mt-4 text-[15px] text-ink-2 dark:text-white/70">
+            Nothing is due right now — that&rsquo;s a good sign, not a gap.
+          </p>
+        )}
         <StepFooter onDone={onDone} label="Finish this step" />
       </div>
     );

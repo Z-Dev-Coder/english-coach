@@ -444,7 +444,8 @@ def speaking_model_answer(*, prompt: str, level: str, expressions: list[str], mo
     try:
         provider = get_ai_provider()
         data = cached(
-            "speaking_model_answer",
+            # v2: detailed 10-14 sentence answers with notes on linkers.
+            "speaking_model_answer_v2",
             {"prompt": prompt, "level": level, "expressions": sorted(expressions)},
             lambda: provider.generate_json(
                 ai_prompts.speaking_model_answer(
@@ -469,7 +470,7 @@ def speaking_model_answer(*, prompt: str, level: str, expressions: list[str], mo
         quote = str(note.get("quote") or "").strip()
         why = str(note.get("why") or "").strip()
         if quote and why:
-            notes.append({"quote": quote[:120], "why": why[:240]})
+            notes.append({"quote": quote[:120], "why": why[:400]})
 
     glossed = []
     for item in data.get("expressions") or []:
