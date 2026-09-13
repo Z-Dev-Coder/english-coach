@@ -187,3 +187,32 @@ class EnrichmentCacheTests(TestCase):
 
         self.assertEqual(len(seen), 2)
         self.assertNotEqual(seen[0], seen[1], "both lessons shared one cache key")
+
+
+class LessonHistoryEndpointTests(TestCase):
+    """The history list: every lesson, newest first, only the learner's own."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+
+        self.user = get_user_model().objects.create_user(username="hist", password="history12345")
+        self.other = get_user_model().objects.create_user(username="other", password="history12345")
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_lists_finished_and_current_lessons_newest_first(self):
+        first = services.generate_lesson(self.user, use_ai=False)
+        for activity in first.activities.all():
+            activity.complete()
+        second = services.generate_lesson(self.user, use_ai=False)
+
+        response = self.client.get("/api/lessons/")
+        self.assertEqual(response.status_code, 200)
+        ids = [item["id"] for item in response.data]
+        # Same date, so the id tiebreak is what makes this deterministic.
+        self.assertEqual(ids, [second.id, first.id])
+
+    def test_never_shows_another_learners_lessons(self):
+        theirs = services.generate_lesson(self.other, use_ai=False)
+        self.assertNotIn(theirs.id, [item["id"] for item in self.client.get("/api/lessons/").data])
+        self.assertEqual(self.client.get(f"/api/lessons/{theirs.id}/").status_code, 404)

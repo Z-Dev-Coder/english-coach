@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import LessonStep from "../components/lesson/steps";
 import { api } from "../lib/api";
@@ -104,12 +104,16 @@ export default function LessonRunner() {
   const [error, setError] = useState(null);
   const [voice, setVoice] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Review mode's own cursor. The live lesson derives its step from the
+  // server; a past lesson has no unfinished step to derive one from.
+  const [reviewIndex, setReviewIndex] = useState(0);
   const navigate = useNavigate();
+  const { id } = useParams();
 
   const load = useCallback(() => {
     setError(null);
-    api.todayLesson().then(setLesson).catch(setError);
-  }, []);
+    (id ? api.lesson(id) : api.todayLesson()).then(setLesson).catch(setError);
+  }, [id]);
 
   useEffect(() => {
     load();
@@ -124,15 +128,33 @@ export default function LessonRunner() {
   if (!lesson) return <CardSkeleton lines={6} />;
 
   const activities = lesson.activities ?? [];
-  const done = activities.filter((activity) => activity.is_complete).length;
+  const live = lesson.status === "ready" || lesson.status === "in_progress";
+
+  // The live lesson opened by id: there must be one way to progress it, and
+  // that is the ordinary runner.
+  if (id && live) return <Navigate to="/lesson" replace />;
+
+  const review = Boolean(id) && !live;
+  const done = review
+    ? reviewIndex
+    : activities.filter((activity) => activity.is_complete).length;
   // The first unfinished step. Not a stored cursor: the server already knows
   // which steps are complete, so deriving it means closing the tab and coming
   // back lands in exactly the right place.
-  const currentIndex = activities.findIndex((activity) => !activity.is_complete);
+  const currentIndex = review
+    ? reviewIndex
+    : activities.findIndex((activity) => !activity.is_complete);
   const activity = activities[currentIndex];
 
   const complete = async () => {
     stopSpeaking();
+    if (review) {
+      // The lesson itself is untouched. Exercises that score an answer still
+      // record the attempt -- redoing one is real practice, and pretending
+      // otherwise would hide it from the skill scores.
+      setReviewIndex((index) => index + 1);
+      return;
+    }
     setBusy(true);
     try {
       setLesson(await api.completeActivity(lesson.id, activity.id));
@@ -156,7 +178,31 @@ export default function LessonRunner() {
     }
   };
 
-  if (!activity) return <Finished lesson={lesson} onNext={startNext} busy={busy} />;
+  if (!activity) {
+    if (review) {
+      return (
+        <div className="mx-auto max-w-xl py-10 text-center">
+          <h1 className="display text-[30px]">End of review</h1>
+          <p className="mt-2 text-ink-2 dark:text-white/60">{lesson.title}</p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button
+              onClick={() => setReviewIndex(0)}
+              className="rounded-full px-5 py-2 ring-1 ring-[color:var(--color-line)] dark:ring-white/15"
+            >
+              Start again
+            </button>
+            <Link
+              to="/history"
+              className="rounded-full bg-ink px-5 py-2 font-medium text-white dark:bg-white dark:text-black"
+            >
+              Back to history
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    return <Finished lesson={lesson} onNext={startNext} busy={busy} />;
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -164,8 +210,8 @@ export default function LessonRunner() {
           never require scrolling to find. */}
       <div className="sticky top-0 z-10 -mx-4 flex items-center gap-4 bg-paper/90 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6">
         <button
-          onClick={() => navigate("/")}
-          aria-label="Leave the lesson"
+          onClick={() => navigate(review ? "/history" : "/")}
+          aria-label={review ? "Leave the review" : "Leave the lesson"}
           className="text-ink-3 transition hover:text-ink dark:hover:text-white"
         >
           <Icon name="close" size={18} />
@@ -178,6 +224,7 @@ export default function LessonRunner() {
 
       <div className="mt-4">
         <div className="flex flex-wrap items-center gap-2">
+          {review && <span className="micro">reviewing · lesson progress isn&rsquo;t changed</span>}
           <span className="micro text-[color:var(--color-accent)]">
             step {currentIndex + 1}
           </span>
@@ -195,6 +242,18 @@ export default function LessonRunner() {
       >
         <LessonStep activity={activity} voice={voice} onDone={complete} />
       </div>
+
+      {review && currentIndex > 0 && (
+        <button
+          onClick={() => {
+            stopSpeaking();
+            setReviewIndex((index) => Math.max(0, index - 1));
+          }}
+          className="micro mt-4 hover:text-ink dark:hover:text-white"
+        >
+          ← previous step
+        </button>
+      )}
 
       {busy && (
         <p className="mt-4 flex items-center gap-2 text-[13px] text-ink-3">

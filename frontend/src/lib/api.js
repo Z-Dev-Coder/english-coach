@@ -137,6 +137,8 @@ export const api = {
 
   // --- Lessons ---
   todayLesson: () => request("/lessons/today/"),
+  lessons: () => request("/lessons/"),
+  lesson: (id) => request(`/lessons/${id}/`),
   regenerateLesson: (body = {}) =>
     request("/lessons/regenerate/", { method: "POST", body }),
   completeActivity: (lessonId, activityId) =>

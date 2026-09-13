@@ -49,7 +49,13 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LessonSerializer
 
     def get_queryset(self):
-        return Lesson.objects.filter(user=self.request.user).prefetch_related("activities")
+        # Newest first, with id as the tiebreak: lessons renew on completion,
+        # so several can share a date and date alone gives an unstable order.
+        return (
+            Lesson.objects.filter(user=self.request.user)
+            .order_by("-date", "-id")
+            .prefetch_related("activities")
+        )
 
     @action(detail=False, methods=["get", "post"])
     def today(self, request):

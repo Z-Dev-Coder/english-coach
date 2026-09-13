@@ -20,6 +20,7 @@ import Drill from "./pages/Drill";
 import SpeakingStudio from "./pages/SpeakingStudio";
 import LessonRunner from "./pages/LessonRunner";
 import Shadowing from "./pages/Shadowing";
+import History from "./pages/History";
 
 // Six entries, not eight. Speaking and Conversation were separate top-level
 // items called "Speaking" and "Talk" — two names for the same idea. They now
@@ -29,6 +30,7 @@ const NAV = [
   { to: "/review", label: "Review", icon: "review" },
   { to: "/practice", label: "Practice", icon: "practice", family: ["/speaking", "/conversation", "/drill", "/shadowing"] },
   { to: "/real-world", label: "Real World", icon: "world" },
+  { to: "/history", label: "History", icon: "history" },
   { to: "/progress", label: "Progress", icon: "progress" },
   { to: "/profile", label: "Profile", icon: "profile" },
 ];
@@ -232,6 +234,8 @@ export default function App() {
           <Route path="/drill" element={<Drill />} />
           <Route path="/shadowing" element={<Shadowing />} />
           <Route path="/lesson" element={<LessonRunner />} />
+          <Route path="/lesson/:id" element={<LessonRunner />} />
+          <Route path="/history" element={<History />} />
           <Route path="/real-world" element={<RealWorld />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/conversation" element={<Conversation />} />
