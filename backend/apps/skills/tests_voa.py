@@ -42,6 +42,47 @@ class ParseArticleTests(SimpleTestCase):
         page = PAGE.replace("<p>I'm Jill", "<p>The Associated Press reported this story.</p><p>I'm Jill")
         self.assertEqual(voa.parse_article(page), {})
 
+    def test_underline_between_introduction_and_story_does_not_end_the_transcript(self):
+        # American Stories: intro, a line of underscores, then the whole story.
+        page = PAGE.replace(
+            f"<p>{SENTENCE * 3}</p>",
+            "<p>________________</p><p>The whole story continues here after the break.</p>" + f"<p>{SENTENCE * 3}</p>",
+        )
+        text = voa.parse_article(page)["text"]
+        self.assertIn("The whole story continues here", text)
+        self.assertNotIn("____", text)
+        self.assertNotIn("land used for farming", text)
+
+    def test_american_stories_layout_keeps_story_and_drops_quiz_teachers_and_glossary(self):
+        page = f"""
+<h1>American Stories: How the Animals Lost Their Tails</h1>
+<a href="https://voa-audio.voanews.eu/vle/2023/story.mp3">mp3</a>
+<div class="wsw">
+<p>Introduction:</p><p>{SENTENCE * 2}</p>
+<p>________________________________________________</p>
+<p>{SENTENCE * 5}</p><p>The animals got their tails back in the end.</p>
+<p>Mario Ritter, Jr. adapted this public domain story by Carl Sandburg for VOA Learning English.</p>
+<h2>Quiz - How the Animals Lost Their Tails</h2>
+<h2>For Teachers</h2><p>Download the document below for lesson ideas.</p>
+<h2>Words in This Story</h2><p>gavel - n. a small hammer</p>
+<p>We want to hear from you.</p>
+</div>"""
+        text = voa.parse_article(page)["text"]
+        self.assertIn("got their tails back in the end", text)
+        for dropped in ("Mario Ritter", "lesson ideas", "small hammer", "hear from you", "____"):
+            self.assertNotIn(dropped, text)
+
+    def test_editors_note_mentioning_voa_at_the_top_does_not_end_the_transcript(self):
+        page = PAGE.replace(
+            "<p>No media source currently available</p>",
+            "<p>No media source currently available</p>"
+            "<p>Editor's Note: We are pleased to share this holiday story, adapted for VOA Learning English.</p>",
+        )
+        parsed = voa.parse_article(page)
+        self.assertTrue(parsed)
+        self.assertIn("good farmland", parsed["text"])
+        self.assertNotIn("Editor's Note", parsed["text"])
+
     def test_page_without_audio_is_skipped(self):
         self.assertEqual(voa.parse_article(PAGE.replace(".mp3", ".txt")), {})
 

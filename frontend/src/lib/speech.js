@@ -171,19 +171,43 @@ export function playTracked(url, text, { rate = 1, onProgress, onEnd, onError } 
   audio.playbackRate = rate;
   audio.preservesPitch = true;
   const length = text?.length ?? 0;
+  // VOA presenters read at roughly 120-130 words a minute, about 11 characters a second.
+  const CHARS_PER_SECOND = 11;
   audio.ontimeupdate = () => {
-    if (audio.duration) onProgress?.(Math.round((audio.currentTime / audio.duration) * length));
+    const duration = audio.duration;
+    // Streamed mp3s can report NaN or Infinity until fully loaded. Dividing by that kept
+    // the offset at 0 and the highlight stuck on the first word, so fall back to pace.
+    const known = Number.isFinite(duration) && duration > 0;
+    const share = known ? audio.currentTime / duration : (audio.currentTime * CHARS_PER_SECOND) / length;
+    onProgress?.(Math.min(length, Math.round(share * length)));
   };
   audio.onended = () => {
     onProgress?.(length);
     onEnd?.();
   };
   audio.onerror = () => onError?.(new Error("The recording couldn't be loaded."));
-  audio.play().catch((err) => onError?.(err));
-  return () => {
-    audio.pause();
-    audio.src = "";
-  };
+  audio.play().catch((err) => {
+    // pause() during loading rejects play() with AbortError: that's a stop, not a failure.
+    if (err?.name !== "AbortError") onError?.(err);
+  });
+  return () => silence(audio);
+}
+
+/**
+ * Stop a recording without it reporting an error.
+ *
+ * Clearing `src` makes the browser fire `error` ("empty src"), so the handlers
+ * come off first -- otherwise every Stop, passage change or page leave showed
+ * "The recording couldn't be loaded."
+ */
+function silence(audio) {
+  audio.onerror = null;
+  audio.onended = null;
+  audio.ontimeupdate = null;
+  audio.onloadedmetadata = null;
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
 }
 
 /**
@@ -206,7 +230,9 @@ export function playSegment(url, text, sentence, { rate = 1, onEnd, onError } = 
     audio.currentTime = Math.max(0, startShare * audio.duration - PAD);
     end = Math.min(audio.duration, endShare * audio.duration + PAD);
     audio.playbackRate = rate;
-    audio.play().catch((err) => onError?.(err));
+    audio.play().catch((err) => {
+      if (err?.name !== "AbortError") onError?.(err);
+    });
   };
   audio.ontimeupdate = () => {
     if (audio.currentTime >= end) {
@@ -215,10 +241,7 @@ export function playSegment(url, text, sentence, { rate = 1, onEnd, onError } = 
     }
   };
   audio.onerror = () => onError?.(new Error("The recording couldn't be loaded."));
-  return () => {
-    audio.pause();
-    audio.src = "";
-  };
+  return () => silence(audio);
 }
 
 /**

@@ -49,6 +49,7 @@ export default function Shadowing() {
   const [rate, setRate] = useState(0.75);
   const [offset, setOffset] = useState(-1);
   const [playing, setPlaying] = useState(false);
+  const [playError, setPlayError] = useState(null);
   const recorder = useRecorder();
   const stopRef = useRef(null);
   const activeRef = useRef(null);
@@ -132,6 +133,7 @@ export default function Shadowing() {
 
   const play = () => {
     if (!guide?.text) return;
+    setPlayError(null);
     setOffset(0);
     setPlaying(true);
     recorder.clear();
@@ -150,8 +152,10 @@ export default function Shadowing() {
         if (recorder.recording) recorder.stop();
       },
       onError: (err) => {
-        setError(err);
+        // A playback problem belongs next to the Play button, not in place of the page.
+        setPlayError(err.message || "Playback failed.");
         setPlaying(false);
+        if (recorder.recording) recorder.stop();
       },
     });
   };
@@ -283,6 +287,11 @@ export default function Shadowing() {
             )}
             {recorder.recording && (
               <span className="micro text-[color:var(--color-accent)]">recording you</span>
+            )}
+            {playError && (
+              <span className="text-[13px] text-[color:var(--color-accent)]">
+                {playError} Check your connection and press Play again.
+              </span>
             )}
           </div>
 

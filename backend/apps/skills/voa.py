@@ -77,6 +77,8 @@ def top_up_passages(level: str, *, want: int = 3) -> int:
     known = set(Passage.objects.exclude(source_url="").values_list("source_url", flat=True))
     added = 0
     for url, parsed, topic, stored_level in new_articles(level, known, want=want):
+        if Passage.objects.filter(source_url=url).exists():
+            continue  # imported meanwhile by another request
         Passage.objects.create(
             title=parsed["title"], text=parsed["text"], level=stored_level, topic=topic,
             source=Passage.Source.FEED, source_url=url,
@@ -95,6 +97,7 @@ def top_up_if_needed(user, level: str, *, minimum: int = 2) -> None:
     import threading
 
     from django.conf import settings
+    from django.core.cache import cache
     from django.db import close_old_connections
 
     from .models import Passage
@@ -112,10 +115,17 @@ def top_up_if_needed(user, level: str, *, minimum: int = 2) -> None:
     if unstudied >= minimum:
         return
 
+    # Opening the list and finishing an exercise can both ask at once; two fetches
+    # running together imported every story twice. One fetch per level at a time.
+    lock = f"voa-top-up:{stored}"
+    if not cache.add(lock, True, timeout=300):
+        return
+
     def work():
         try:
             top_up_passages(level)
         finally:
+            cache.delete(lock)
             close_old_connections()
 
     threading.Thread(target=work, daemon=True).start()
@@ -125,7 +135,12 @@ CREDIT = "VOA Learning English (public domain)"
 _ARTICLE_LINK = re.compile(r'href="(/a/[^"]+\.html)"')
 _MP3 = re.compile(r"https://voa-audio[^\"'&\s]+?\.mp3")
 _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
-_PARAGRAPH = re.compile(r"<p[^>]*>(.*?)</p>", re.S)
+# Paragraphs and headings, in page order. Headings matter only as endings: the
+# quiz, teacher notes and glossary after a story are introduced by <h2>s.
+_PARAGRAPH = re.compile(r"<(p|h[2-6])(?:\s[^>]*)?>(.*?)</\1>", re.S)
+_END_HEADING = re.compile(r"^(quiz\b|for teachers|words in (this|the) story|related|share|follow us)", re.I)
+# The credit line closes the transcript ("X adapted this story for VOA Learning English").
+_CREDIT_LINE = re.compile(r"\b(adapted|wrote|reported|produced)\b.*\b(for|with)\b.*\bVOA\b", re.I)
 
 # Lines on the page that are player chrome or credits, not the transcript.
 _NOISE = re.compile(
@@ -173,12 +188,28 @@ def parse_article(page_html: str) -> dict:
 
     body = re.sub(r"<script.*?</script>", "", page_html[start:], flags=re.S)
     paragraphs = []
-    for raw in _PARAGRAPH.findall(body):
+    for tag, raw in _PARAGRAPH.findall(body):
         line = _clean(raw)
         if not line:
             continue
-        if re.match(r"^_{3,}|^words in this story", line, re.I):
+        # An underline is not an ending: American Stories put one between the
+        # introduction and the story itself, and stopping there kept 83 words of a
+        # 12-minute recording, so the highlight barely moved. What does end the
+        # transcript is the credit line or the quiz / teachers / glossary heading.
+        if re.match(r"^_{3,}$", line):
+            continue
+        if tag.startswith("h"):
+            if _END_HEADING.match(line) or re.match(r"^words in (this|the) story", line, re.I):
+                break
+            continue
+        if re.match(r"^words in (this|the) story", line, re.I):
             break
+        if _CREDIT_LINE.search(line):
+            # A credit line closes the transcript -- but only once there is one. An
+            # "Editor's Note" at the top can mention VOA too, and ending there kept nothing.
+            if sum(len(p.split()) for p in paragraphs) >= 60:
+                break
+            continue
         if _NOISE.match(line) or len(line) < 3:
             continue
         paragraphs.append(line)
