@@ -185,7 +185,15 @@ def basic_writing_checks(text: str, *, minimum_words: int = 30) -> list[dict]:
     return issues
 
 
-def evaluate_writing(user, *, text: str, task: str = "", level: str = "", duration_ms: int = 0) -> SkillAttempt:
+def evaluate_writing(
+    user,
+    *,
+    text: str,
+    task: str = "",
+    level: str = "",
+    duration_ms: int = 0,
+    targets: list[str] | None = None,
+) -> SkillAttempt:
     """Evaluate a piece of writing, with AI when available.
 
     Accuracy is intentionally left unscored (None) when only the rule-based path
@@ -196,7 +204,13 @@ def evaluate_writing(user, *, text: str, task: str = "", level: str = "", durati
     from apps.ai.providers.base import AIError
     from apps.ai.registry import get_ai_provider
 
-    level = level or "B1"
+    # The learner's writing level, not a fixed B1: feedback pitched at the
+    # wrong level either drowns a beginner or flatters an advanced writer.
+    if not level:
+        from apps.profiles.models import LearnerProfile, SkillProgress
+
+        progress = SkillProgress.objects.filter(user=user, skill="writing").first()
+        level = progress.level if progress else LearnerProfile.objects.get(user=user).overall_level
     detail: dict = {"source": "rules", "issues": basic_writing_checks(text)}
     accuracy = None
 
@@ -220,6 +234,15 @@ def evaluate_writing(user, *, text: str, task: str = "", level: str = "", durati
         accuracy = max(0.0, min(1.0, 1 - issues_per_100 / 12))
     except AIError as exc:
         detail["ai_unavailable"] = str(exc)
+
+    if targets:
+        from apps.skills.writing_support import used_items
+
+        used = used_items(text, targets)
+        detail["targets"] = {
+            "used": used,
+            "missing": [item for item in targets if item not in used],
+        }
 
     attempt = record(
         user,

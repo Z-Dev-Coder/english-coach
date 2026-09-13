@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import Glossed from "../Glossed";
+import WritingLesson from "../WritingLesson";
 import { api } from "../../lib/api";
 import { cx } from "../../lib/cx";
 import Icon from "../../lib/icons";
@@ -246,83 +247,14 @@ function ReadingStep({ activity, onDone }) {
 /* ---------------------------------------------------------------- writing */
 
 function WritingStep({ activity, onDone }) {
-  const [text, setText] = useState("");
-  const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const startedAt = useRef(0);
-
-  const submit = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setResult(
-        await api.submitWriting({
-          text,
-          task: activity.prompt || activity.instructions,
-          duration_ms: startedAt.current ? Date.now() - startedAt.current : 0,
-        }),
-      );
-    } catch (err) {
-      setError(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-
+  // Taught before it is written: topic language, a plan and a model text, then
+  // a checklist of what was taught while the learner writes.
   return (
-    <div>
-      <Instructions activity={activity} />
-      {activity.prompt && (
-        <Glossed as="p" className="mt-3 text-[17px] font-medium">
-          {activity.prompt}
-        </Glossed>
-      )}
-
-      <textarea
-        value={text}
-        onChange={(event) => {
-          if (!startedAt.current) startedAt.current = Date.now();
-          setText(event.target.value);
-        }}
-        placeholder="Write as much as you can. Mistakes are the point."
-        rows={6}
-        disabled={!!result}
-        className="mt-4 w-full rounded-xl bg-sunken p-4 text-[15px] ring-1 ring-[color:var(--color-line)] focus:outline-none focus:ring-2 focus:ring-ink disabled:opacity-70 dark:bg-white/[0.04] dark:ring-white/10"
-      />
-      <p className="micro mt-1.5">{words} words</p>
-
-      <ErrorNote error={error} />
-
-      {result?.detail && (
-        <Verdict good={(result.score ?? 0) >= 70} title={`${Math.round(result.score ?? 0)}%`}>
-          {result.detail.natural_version && (
-            <p className="text-ink-2 dark:text-white/70">{result.detail.natural_version}</p>
-          )}
-          {result.detail.issues?.length > 0 && (
-            <ul className="mt-2 space-y-1 text-[13px] text-ink-2 dark:text-white/60">
-              {result.detail.issues.slice(0, 3).map((issue, i) => (
-                <li key={i}>· {issue.explanation || issue.correction}</li>
-              ))}
-            </ul>
-          )}
-        </Verdict>
-      )}
-
-      {!result ? (
-        <StepFooter
-          onDone={submit}
-          label={busy ? "Reading it…" : "Get feedback"}
-          disabled={words < 5 || busy}
-        >
-          <span className="micro">at least 5 words</span>
-        </StepFooter>
-      ) : (
-        <StepFooter onDone={onDone} label="Finish this step" />
-      )}
-    </div>
+    <WritingLesson
+      task={activity.prompt || activity.instructions}
+      onFinished={onDone}
+      finishLabel="Finish this step"
+    />
   );
 }
 

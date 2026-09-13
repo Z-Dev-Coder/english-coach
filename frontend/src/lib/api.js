@@ -124,6 +124,8 @@ export const api = {
   submitDictation: (body) => request("/skills/dictation/", { method: "POST", body }),
   submitShadowing: (body) => request("/skills/shadowing/", { method: "POST", body }),
   submitWriting: (body) => request("/skills/writing/", { method: "POST", body }),
+  writingLesson: ({ task = "" } = {}) =>
+    request(`/skills/writing-lesson/?task=${encodeURIComponent(task)}`),
   submitReading: (body) => request("/skills/reading/", { method: "POST", body }),
   drill: () => request("/skills/drill/"),
   submitDrill: (body) => request("/skills/drill/", { method: "POST", body }),

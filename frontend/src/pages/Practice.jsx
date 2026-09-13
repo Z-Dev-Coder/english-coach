@@ -4,9 +4,9 @@ import { useSearchParams } from "react-router-dom";
 import PracticeNav from "../components/PracticeNav";
 import WordDiff from "../components/WordDiff";
 import Glossed from "../components/Glossed";
+import WritingLesson from "../components/WritingLesson";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
-import { cx } from "../lib/cx";
 import { canSpeak, pickVoice, speak, stopSpeaking } from "../lib/speech";
 import {
   Button,
@@ -335,171 +335,17 @@ function Reading({ passages, assignedId, onAdded }) {
 function Writing({ assignedPrompt }) {
   // Today's lesson decides. The fallback is only for arriving here directly.
   const prompt = assignedPrompt || WRITING_PROMPTS[0];
-  const [text, setText] = useState("");
-  const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  // Starts on the first keystroke, so a prompt left open in a tab does not
-  // report an hour of "writing time".
-  const startedAt = useRef(0);
-
-  const onType = (event) => {
-    if (!startedAt.current) startedAt.current = Date.now();
-    setText(event.target.value);
-  };
-
-  const submit = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setResult(
-        await api.submitWriting({
-          text,
-          task: prompt,
-          duration_ms: startedAt.current ? Date.now() - startedAt.current : 0,
-        }),
-      );
-    } catch (err) {
-      setError(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const detail = result?.detail;
+  const [round, setRound] = useState(0);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <SectionHeading
-          title="Writing prompt"
-          action={
-            // Deliberately not a "give me another" button. The plan chose this
-            // one from what the learner is weakest at; shopping for a different
-            // prompt is shopping for an easier one.
-            <span className="micro">from today&rsquo;s plan</span>
-          }
-        />
-        <p className="text-lg">{prompt}</p>
-
-        <textarea
-          value={text}
-          onChange={onType}
-          rows={8}
-          placeholder="Write as much as you can. Don't worry about mistakes — that's the point."
-          className="mt-4 w-full rounded-xl border-0 bg-sunken p-4 leading-relaxed ring-1 ring-[color:var(--color-line)] focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.05] dark:ring-white/10"
-        />
-
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <Button onClick={submit} loading={busy} disabled={!text.trim()}>
-            Get feedback
-          </Button>
-          <span className="text-sm tabular-nums text-ink-3">{words} words</span>
-        </div>
-      </Card>
-
-      <ErrorNote error={error} />
-
-      {detail && (
-        <Card className="animate-rise">
-          <SectionHeading
-            title="Feedback"
-            action={
-              <Pill tone={detail.source === "ai" ? "good" : "default"}>
-                {detail.source === "ai" ? "AI review" : "Basic checks"}
-              </Pill>
-            }
-          />
-
-          {detail.source !== "ai" && (
-            <p className="mb-4 border-t border-[color:var(--color-line)] pt-3 text-[13px] text-ink-2 dark:border-white/10 dark:text-white/55">
-              The local AI isn't running, so these are structural checks only. Start Ollama for
-              full grammar and naturalness feedback — your writing was still saved.
-            </p>
-          )}
-
-          {detail.strengths?.length > 0 && (
-            <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
-                What worked
-              </p>
-              <ul className="space-y-1 text-ink dark:text-white/85">
-                {detail.strengths.map((item, index) => (
-                  <li key={index} className="flex gap-2">
-                    <Icon name="check" size={14} className="mt-1 shrink-0 text-[color:var(--color-good-ink)]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {detail.issues?.length > 0 && (
-            <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
-                Things to fix
-              </p>
-              <ul className="space-y-3">
-                {detail.issues.map((issue, index) => (
-                  <li
-                    key={index}
-                    className="rounded-xl bg-sunken p-3 text-sm dark:bg-white/[0.04]"
-                  >
-                    {issue.original && (
-                      <p>
-                        <span className="text-[color:var(--color-accent)] line-through">
-                          {issue.original}
-                        </span>
-                        {issue.correction && (
-                          <>
-                            {" → "}
-                            <span className="font-medium text-ink dark:text-white">
-                              {issue.correction}
-                            </span>
-                          </>
-                        )}
-                      </p>
-                    )}
-                    <p className={cx("text-ink-2 dark:text-white/70", issue.original && "mt-1")}>
-                      {issue.explanation}
-                    </p>
-                    {issue.category && (
-                      <span className="mt-1.5 inline-block text-xs text-ink-3">
-                        {issue.category.replace(/_/g, " ")}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {detail.natural_version && (
-            <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
-                A natural version
-              </p>
-              <p className="rounded-xl bg-brand-50 p-4 leading-relaxed dark:bg-brand-500/10">
-                {detail.natural_version}
-              </p>
-              <p className="mt-2 text-xs text-ink-3">
-                Compare it with yours — the differences are the lesson.
-              </p>
-            </div>
-          )}
-
-          {detail.practice_prompt && (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
-                Practise this
-              </p>
-              <p className="text-ink dark:text-white/85">{detail.practice_prompt}</p>
-            </div>
-          )}
-        </Card>
-      )}
-    </div>
+    <Card>
+      <WritingLesson
+        key={round}
+        task={prompt}
+        finishLabel="Done — start fresh"
+        onFinished={() => setRound((value) => value + 1)}
+      />
+    </Card>
   );
 }
 
@@ -577,11 +423,11 @@ export default function Practice() {
       {tab === "writing" && (
         <HowTo
           id="writing"
-          title="How writing feedback works"
+          title="How a writing lesson works"
           steps={[
-            "Write 3–4 sentences. Don't avoid words you're unsure of — mistakes are the point.",
-            "Every correction goes into your mistake bank automatically.",
-            "Compare the natural version with yours. The differences are the lesson.",
+            "Learn the language first: topic words, phrasal verbs, expressions and sentence patterns for this task.",
+            "Write using the plan. The checklist ticks as you use what you just learned — aim for the number shown.",
+            "Feedback shows what you used, what to try next time, and a corrected, more natural version.",
           ]}
         />
       )}

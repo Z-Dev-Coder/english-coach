@@ -687,3 +687,87 @@ RULES
 
 Return JSON with: title, genre, setting, lines (speaker, text), expressions, questions.
 """
+
+
+# --- Writing lessons ---------------------------------------------------------
+
+_ITEM = {
+    "type": "object",
+    "required": ["text", "meaning"],
+    "properties": {
+        "text": {"type": "string"},
+        "meaning": {"type": "string"},
+        "example": {"type": "string"},
+    },
+}
+
+WRITING_LESSON_SCHEMA = {
+    "type": "object",
+    "required": ["vocabulary", "expressions", "plan", "model_text"],
+    "properties": {
+        "genre": {"type": "string"},
+        "vocabulary": {"type": "array", "items": _ITEM},
+        "phrasal_verbs": {"type": "array", "items": _ITEM},
+        "expressions": {"type": "array", "items": _ITEM},
+        "sentence_patterns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["pattern", "example"],
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "use": {"type": "string"},
+                    "example": {"type": "string"},
+                },
+            },
+        },
+        "plan": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["part", "what_to_write"],
+                "properties": {
+                    "part": {"type": "string"},
+                    "what_to_write": {"type": "string"},
+                    "starter": {"type": "string"},
+                },
+            },
+        },
+        "model_text": {"type": "string"},
+        "style_tips": {"type": "array", "items": {"type": "string"}},
+        "word_target": {"type": "integer"},
+    },
+}
+
+
+def writing_lesson(*, task: str, level: str) -> str:
+    """Ask for the language and structure a learner needs to write this task."""
+    return f"""You are an English writing mentor. Prepare a lesson so a learner at CEFR {level}
+can write this task well, using language they would not produce on their own.
+
+THE TASK
+{task}
+
+Give the language for THIS topic and THIS kind of text -- not general advice.
+
+RULES
+- vocabulary: 6 topic words or collocations a {level} learner is ready to learn.
+- phrasal_verbs: 3-4 phrasal verbs that fit this topic naturally.
+- expressions: 4-5 fixed phrases or idioms suited to this kind of text and its
+  register (an email to a colleague and a story to a friend need different ones).
+- For each of those three lists give `text`, `meaning` (plain words a {level}
+  learner understands) and `example` (a sentence on this topic).
+- sentence_patterns: 3 structures worth using here, each with `pattern` (e.g.
+  "I was wondering if you could ..."), `use` (when to use it) and `example`.
+- plan: 3-5 parts of the text in order, each with `part`, `what_to_write`
+  (specific to this task) and `starter` (a sentence opening to begin that part).
+- model_text: a model answer at {level}, the right length for the task, that
+  uses at least half of the vocabulary, phrasal verbs and expressions above.
+- style_tips: 2-3 points about tone, register or layout for this kind of text.
+- word_target: a sensible length in words for a {level} learner.
+- genre: the kind of text (email, story, opinion, review, message, ...).
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON with exactly those fields.
+"""

@@ -46,6 +46,7 @@ urlpatterns = [
         name="shadowing-guide",
     ),
     path("skills/writing/", skills_views.WritingView.as_view(), name="writing"),
+    path("skills/writing-lesson/", skills_views.WritingLessonView.as_view(), name="writing-lesson"),
     path("skills/reading/", skills_views.ReadingView.as_view(), name="reading"),
     path("skills/drill/", skills_views.DrillView.as_view(), name="drill"),
     path("skills/attempts/", skills_views.AttemptListView.as_view(), name="attempts"),

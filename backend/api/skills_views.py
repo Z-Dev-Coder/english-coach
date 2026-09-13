@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.profiles.constants import CEFR
-from apps.skills import services, shadowing, speaking_support
+from apps.skills import services, shadowing, speaking_support, writing_support
 from apps.skills.models import ActivityType, Passage, SkillAttempt
 
 
@@ -96,6 +96,9 @@ class ShadowingSerializer(serializers.Serializer):
 
 class WritingSerializer(serializers.Serializer):
     text = serializers.CharField(min_length=1)
+    targets = serializers.ListField(
+        child=serializers.CharField(max_length=120), required=False, default=list, max_length=30
+    )
     task = serializers.CharField(required=False, allow_blank=True, default="")
     level = serializers.CharField(max_length=2, required=False, allow_blank=True, default="")
     duration_ms = serializers.IntegerField(required=False, default=0, min_value=0)
@@ -136,6 +139,18 @@ class DictationView(APIView):
             duration_ms=data["duration_ms"],
         )
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
+
+
+class WritingLessonView(APIView):
+    """The language, plan and model text for a writing task, at the learner's level."""
+
+    def get(self, request):
+        task = request.query_params.get("task", "")[:600]
+        level = request.query_params.get("level") or ""
+        if not level:
+            progress = request.user.skill_progress.filter(skill="writing").first()
+            level = progress.level if progress else request.user.learner_profile.overall_level
+        return Response(writing_support.build_lesson(task=task, level=level))
 
 
 class SpeakingSupportView(APIView):
@@ -327,6 +342,7 @@ class WritingView(APIView):
             task=data["task"],
             level=data["level"],
             duration_ms=data["duration_ms"],
+            targets=data.get("targets") or [],
         )
         return Response(SkillAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
 
