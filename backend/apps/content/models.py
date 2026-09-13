@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -109,3 +110,51 @@ class Article(models.Model):
     def has_material(self) -> bool:
         """Enough to study, even if preparation only partly succeeded."""
         return bool(self.adapted_text or self.vocabulary or self.questions)
+
+
+class Scene(models.Model):
+    """A screen-style dialogue lesson: original writing, not a transcript.
+
+    Real film and TV dialogue is copyrighted, so scenes are written the way
+    people talk on screen -- interruptions, idioms, phrasal verbs, reductions --
+    in the genres learners watch. Shared across learners: a scene is content,
+    and who has finished it lives in SceneProgress.
+    """
+
+    class Source(models.TextChoices):
+        SEED = "seed", "Hand-written"
+        AI = "ai", "Generated"
+
+    slug = models.SlugField(max_length=80, unique=True)
+    title = models.CharField(max_length=200)
+    genre = models.CharField(max_length=40, blank=True)
+    level = models.CharField(max_length=2, choices=CEFR.choices, default=CEFR.B1)
+    setting = models.TextField(blank=True)
+    lines = models.JSONField(default=list, help_text="[{speaker, text}] in order.")
+    expressions = models.JSONField(
+        default=list, help_text="[{expression, meaning, literal_trap, example}]"
+    )
+    questions = models.JSONField(default=list, blank=True)
+    source = models.CharField(max_length=8, choices=Source.choices, default=Source.SEED)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["level", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.level})"
+
+
+class SceneProgress(models.Model):
+    """That a learner finished a scene. One row per learner per scene."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="scene_progress"
+    )
+    scene = models.ForeignKey(Scene, on_delete=models.CASCADE, related_name="progress")
+    completed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "scene"], name="uniq_scene_progress")
+        ]

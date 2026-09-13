@@ -136,9 +136,10 @@ def prepare(article: Article, *, level: str = "B1") -> Article:
         return article
 
     article.adapted_text = str(data.get("adapted_text", ""))
-    article.level = str(data.get("level") or level)[:2].upper() or level
-    if article.level not in dict(CEFR.choices):
-        article.level = level
+    # The level asked for, not the level the model claims it wrote at. Storing
+    # the claim made "already prepared at your level?" unanswerable, so a story
+    # adapted once was shown to every learner whatever their level.
+    article.level = level
     article.vocabulary = [item for item in data.get("vocabulary", []) if isinstance(item, dict)][:8]
     article.phrases = [str(item) for item in data.get("phrases", [])][:5]
     article.questions = [str(item) for item in data.get("questions", [])][:5]
@@ -175,9 +176,11 @@ def today_in_english(user, *, limit: int = 6, prepare_count: int = 0) -> list[Ar
 
     # Preparing material is slow on a local model, so it is opt-in and capped.
     if prepare_count:
-        level = profile.overall_level
+        from .scenes import learner_level
+
+        level = learner_level(user, "reading")
         for article in preferred[:prepare_count]:
-            if not article.is_prepared:
+            if not article.is_prepared or article.level != level:
                 prepare(article, level=level)
 
     return preferred

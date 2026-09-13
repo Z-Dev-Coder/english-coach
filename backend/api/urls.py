@@ -13,6 +13,7 @@ router.register("skills/passages", skills_views.PassageViewSet, basename="passag
 router.register("lessons", lesson_views.LessonViewSet, basename="lesson")
 router.register("conversations", lesson_views.ConversationViewSet, basename="conversation")
 router.register("articles", content_views.ArticleViewSet, basename="article")
+router.register("content/scenes", content_views.SceneViewSet, basename="scene")
 router.register("mistakes", content_views.MistakeViewSet, basename="mistake")
 
 urlpatterns = [

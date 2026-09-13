@@ -624,3 +624,66 @@ Return JSON:
   (deflecting, buying time, asking for repetition). Put a note only on the two
   or three lines where the technique is worth naming.
 """
+
+
+# --- Movies & TV scene lessons ---------------------------------------------
+
+SCENE_SCHEMA = {
+    "type": "object",
+    "required": ["title", "lines", "expressions"],
+    "properties": {
+        "title": {"type": "string"},
+        "genre": {"type": "string"},
+        "setting": {"type": "string"},
+        "lines": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["speaker", "text"],
+                "properties": {"speaker": {"type": "string"}, "text": {"type": "string"}},
+            },
+        },
+        "expressions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["expression", "meaning"],
+                "properties": {
+                    "expression": {"type": "string"},
+                    "meaning": {"type": "string"},
+                    "literal_trap": {"type": "string"},
+                    "example": {"type": "string"},
+                },
+            },
+        },
+        "questions": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+
+def scene_lesson(*, level: str, genre: str, avoid_titles: list[str]) -> str:
+    """Ask for an ORIGINAL screen-style scene -- never a real script."""
+    avoid = "\n".join(f"- {t}" for t in avoid_titles[:20]) or "- (none yet)"
+    return f"""Write an ORIGINAL short scene in the style of a {genre} film or TV show, as a
+listening and vocabulary lesson for an English learner at CEFR {level}.
+
+Do NOT reproduce or imitate the dialogue of any real film or TV show. Invent the
+characters, situation and lines yourself.
+
+RULES
+- 9 to 12 lines between 2 or 3 named characters, with a one-sentence `setting`.
+- Sound like people on screen: interruptions, short replies, idioms, phrasal
+  verbs, and spoken forms learners hear but textbooks avoid.
+- Pitch grammar and general vocabulary at {level}; the expressions are the
+  stretch.
+- Pick 5 to 7 expressions actually used in the lines. For each give `meaning`
+  (plain words a {level} learner understands), `literal_trap` (why the words
+  mislead, or "" if they don't) and `example` (a new sentence, not from the scene).
+- 3 comprehension `questions` about what happens.
+- A title that is different from these:
+{avoid}
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON with: title, genre, setting, lines (speaker, text), expressions, questions.
+"""

@@ -72,10 +72,18 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def prepare(self, request, pk=None):
-        """Generate learning material for one story, on demand."""
+        """Generate learning material for one story, at the learner's reading level.
+
+        It used to default to B1 whenever the page sent no level -- which it
+        never did -- so every story was adapted at B1 regardless of the learner.
+        """
+        from apps.content.scenes import learner_level
+
         article = self.get_object()
-        level = request.data.get("level", "") or ""
-        prepared = content_services.prepare(article, level=level or "B1")
+        level = request.data.get("level") or learner_level(request.user, "reading")
+        if article.is_prepared and article.level == level:
+            return Response(ArticleSerializer(article).data)
+        prepared = content_services.prepare(article, level=level)
         return Response(ArticleSerializer(prepared).data)
 
 
@@ -163,3 +171,75 @@ class MistakeViewSet(viewsets.ReadOnlyModelViewSet):
         if not mistake:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(MistakeSerializer(mistake).data)
+
+
+class SceneSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.content.models import Scene
+
+        model = Scene
+        fields = ["id", "slug", "title", "genre", "level", "setting", "source"]
+
+
+class SceneSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.content.models import Scene
+
+        model = Scene
+        fields = [
+            "id", "slug", "title", "genre", "level", "setting", "lines",
+            "expressions", "questions", "source",
+        ]
+
+
+class SceneViewSet(viewsets.ReadOnlyModelViewSet):
+    """Movies & TV lessons: original scenes at the learner's listening level."""
+
+    serializer_class = SceneSerializer
+
+    def get_queryset(self):
+        from apps.content.models import Scene
+
+        return Scene.objects.all()
+
+    def _with_done(self, scene, done):
+        data = SceneSerializer(scene).data
+        data["done"] = scene.id in done
+        return data
+
+    def list(self, request):
+        from apps.content import scenes
+
+        level, items = scenes.scenes_for(request.user)
+        done = scenes.done_ids(request.user)
+        return Response(
+            {
+                "level": level,
+                "scenes": [
+                    {**SceneSummarySerializer(scene).data, "done": scene.id in done}
+                    for scene in items
+                ],
+            }
+        )
+
+    def retrieve(self, request, pk=None):
+        from apps.content import scenes
+
+        return Response(self._with_done(self.get_object(), scenes.done_ids(request.user)))
+
+    @action(detail=False, methods=["get"])
+    def next(self, request):
+        from apps.content import scenes
+
+        use_ai = str(request.query_params.get("use_ai", "true")).lower() != "false"
+        scene = scenes.next_scene(request.user, use_ai=use_ai)
+        if scene is None:
+            return Response({"detail": "No scenes available."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self._with_done(scene, scenes.done_ids(request.user)))
+
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        from apps.content import scenes
+
+        scenes.complete_scene(request.user, self.get_object())
+        return Response({"done": True})

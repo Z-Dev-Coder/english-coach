@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import Glossed from "../components/Glossed";
+import MoviesTV from "../components/MoviesTV";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
@@ -432,17 +433,23 @@ export default function RealWorld() {
       ) : (
         <HowTo
           id="dialogue"
-          title="Study real spoken English"
+          title="Learn English the way it's spoken on screen"
           steps={[
-            "Paste a few lines from a film, show, or a message someone sent you.",
-            "You get the expressions explained — especially ones whose meaning isn't obvious.",
-            "Add them to review to keep them.",
+            "Each lesson is a short scene at your listening level — listen first with the text hidden.",
+            "Read along, then learn the expressions, especially the ones where the words mislead.",
+            "Answer the questions and add the expressions to review. Finishing gives you the next scene.",
           ]}
         />
       )}
 
       {tab === "dialogue" ? (
-        <DialogueStudio />
+        <div className="space-y-8">
+          <MoviesTV voice={voice} AddToReview={AddToReview} />
+          <section>
+            <h3 className="micro mb-2">or bring your own lines from something you watched</h3>
+            <DialogueStudio />
+          </section>
+        </div>
       ) : !data ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, index) => (

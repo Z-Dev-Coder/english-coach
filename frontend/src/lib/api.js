@@ -170,6 +170,10 @@ export const api = {
     request(`/articles/${id}/prepare/`, { method: "POST", body }),
   ingestContent: (body = {}) => request("/content/ingest/", { method: "POST", body }),
   studyDialogue: (body) => request("/content/dialogue/", { method: "POST", body }),
+  scenes: () => request("/content/scenes/"),
+  scene: (id) => request(`/content/scenes/${id}/`),
+  nextScene: () => request("/content/scenes/next/"),
+  completeScene: (id) => request(`/content/scenes/${id}/complete/`, { method: "POST" }),
 
   // --- Mistake bank ---
   mistakes: (params = {}) => {
