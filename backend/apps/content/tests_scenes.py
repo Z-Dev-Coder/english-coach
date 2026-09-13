@@ -64,10 +64,24 @@ class SceneSelectionTests(TestCase):
             scenes.complete_scene(self.user, scene)
 
         fresh = Scene(slug="ai-a2-test", title="Brand New", level="A2", source=Scene.Source.AI)
-        with mock.patch("apps.content.scenes.generate_scene", return_value=fresh) as generate:
+        with mock.patch("apps.content.lle.import_next", return_value=None), \
+                mock.patch("apps.content.scenes.generate_scene", return_value=fresh) as generate:
             result = scenes.next_scene(self.user, use_ai=True)
         generate.assert_called_once()
         self.assertEqual(result.title, "Brand New")
+
+    def test_when_all_are_done_a_real_recorded_lesson_is_fetched_first(self):
+        self._set_listening("A2")
+        scenes.ensure_seed_scenes()
+        for scene in Scene.objects.filter(level="A2"):
+            scenes.complete_scene(self.user, scene)
+
+        real = Scene(slug="lle-2-9", title="Real One", level="A2", source=Scene.Source.VOA)
+        with mock.patch("apps.content.lle.import_next", return_value=real), \
+                mock.patch("apps.content.scenes.generate_scene") as generate:
+            result = scenes.next_scene(self.user, use_ai=True)
+        generate.assert_not_called()
+        self.assertEqual(result.title, "Real One")
 
     def test_without_a_model_the_oldest_finished_scene_comes_round(self):
         self._set_listening("A2")

@@ -178,7 +178,7 @@ class SceneSummarySerializer(serializers.ModelSerializer):
         from apps.content.models import Scene
 
         model = Scene
-        fields = ["id", "slug", "title", "genre", "level", "setting", "source"]
+        fields = ["id", "slug", "title", "genre", "level", "setting", "source", "audio_url"]
 
 
 class SceneSerializer(serializers.ModelSerializer):
@@ -188,7 +188,7 @@ class SceneSerializer(serializers.ModelSerializer):
         model = Scene
         fields = [
             "id", "slug", "title", "genre", "level", "setting", "lines",
-            "expressions", "questions", "source",
+            "expressions", "questions", "source", "audio_url", "audio_credit",
         ]
 
 

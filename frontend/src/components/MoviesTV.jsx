@@ -4,7 +4,7 @@ import Glossed from "./Glossed";
 import { api } from "../lib/api";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
-import { canSpeak, speak, stopSpeaking } from "../lib/speech";
+import { canSpeak, playTracked, speak, stopSpeaking } from "../lib/speech";
 import { Button, Card, CardSkeleton, ErrorNote, Pill } from "../lib/ui";
 
 /**
@@ -71,6 +71,7 @@ export default function MoviesTV({ voice, AddToReview }) {
   const [library, setLibrary] = useState(null);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [activeLine, setActiveLine] = useState(-1);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [stopper, setStopper] = useState(null);
@@ -118,6 +119,30 @@ export default function MoviesTV({ voice, AddToReview }) {
       return;
     }
     setPlaying(true);
+    if (scene.audio_url) {
+      // The real recording, with the line being spoken estimated from how far
+      // through the audio it is.
+      const joined = scene.lines.map((line) => line.text).join(" ");
+      const ends = [];
+      scene.lines.reduce((total, line) => {
+        ends.push(total + line.text.length + 1);
+        return total + line.text.length + 1;
+      }, 0);
+      setStopper(() =>
+        playTracked(scene.audio_url, joined, {
+          onProgress: (offset) => setActiveLine(ends.findIndex((end) => offset < end)),
+          onEnd: () => {
+            setPlaying(false);
+            setActiveLine(-1);
+          },
+          onError: (err) => {
+            setError(err);
+            setPlaying(false);
+          },
+        }),
+      );
+      return;
+    }
     setStopper(() => speakLines(scene.lines, voice, () => setPlaying(false)));
   };
 
@@ -152,7 +177,13 @@ export default function MoviesTV({ voice, AddToReview }) {
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <Pill tone="brand">{scene.level}</Pill>
               {scene.genre && <Pill>{scene.genre}</Pill>}
+              {scene.audio_url ? (
+                <Pill tone="good">real voices</Pill>
+              ) : (
+                <span className="micro">computer voice</span>
+              )}
             </div>
+            {scene.audio_credit && <p className="micro mt-1">{scene.audio_credit}</p>}
           </div>
         </div>
         {scene.setting && (
@@ -171,7 +202,7 @@ export default function MoviesTV({ voice, AddToReview }) {
             says what and what&rsquo;s going on.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button onClick={togglePlay} disabled={!canSpeak}>
+            <Button onClick={togglePlay} disabled={!canSpeak && !scene.audio_url}>
               <Icon name={playing ? "stop" : "play"} size={13} /> {playing ? "Stop" : "Play the scene"}
             </Button>
             <Button variant="secondary" onClick={() => setStep(1)}>
@@ -186,25 +217,35 @@ export default function MoviesTV({ voice, AddToReview }) {
         <Card>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="micro">the scene · click any word you don&rsquo;t know</h3>
-            <Button variant="secondary" size="sm" onClick={togglePlay} disabled={!canSpeak}>
+            <Button variant="secondary" size="sm" onClick={togglePlay} disabled={!canSpeak && !scene.audio_url}>
               <Icon name={playing ? "stop" : "play"} size={12} /> {playing ? "Stop" : "Play"}
             </Button>
           </div>
           <Glossed className="space-y-2.5">
             {scene.lines.map((line, index) => (
-              <div key={index} className="flex gap-3">
+              <div
+                key={index}
+                className={cx(
+                  "flex gap-3 rounded-lg px-1 transition-colors",
+                  playing && activeLine === index && "bg-[color:var(--color-accent)]/15",
+                )}
+              >
                 <span className="w-16 shrink-0 pt-0.5 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
                   {line.speaker}
                 </span>
                 <p className="flex-1 text-[16px] leading-relaxed">{line.text}</p>
-                <button
-                  onClick={() => speak(line.text, { rate: 0.9, voice })}
-                  aria-label="Play this line"
-                  className="shrink-0 text-ink-3 hover:text-ink dark:hover:text-white"
-                  disabled={!canSpeak}
-                >
-                  <Icon name="volume" size={14} />
-                </button>
+                {/* A recording has no per-line timings, so single-line replay
+                    would have to fall back to the computer voice. Not offered. */}
+                {!scene.audio_url && (
+                  <button
+                    onClick={() => speak(line.text, { rate: 0.9, voice })}
+                    aria-label="Play this line"
+                    className="shrink-0 text-ink-3 hover:text-ink dark:hover:text-white"
+                    disabled={!canSpeak}
+                  >
+                    <Icon name="volume" size={14} />
+                  </button>
+                )}
               </div>
             ))}
           </Glossed>

@@ -124,6 +124,7 @@ class Scene(models.Model):
     class Source(models.TextChoices):
         SEED = "seed", "Hand-written"
         AI = "ai", "Generated"
+        VOA = "voa", "Real recording (VOA)"
 
     slug = models.SlugField(max_length=80, unique=True)
     title = models.CharField(max_length=200)
@@ -136,6 +137,9 @@ class Scene(models.Model):
     )
     questions = models.JSONField(default=list, blank=True)
     source = models.CharField(max_length=8, choices=Source.choices, default=Source.SEED)
+    audio_url = models.URLField(blank=True, max_length=500, help_text="Real human recording of the scene.")
+    audio_credit = models.CharField(blank=True, max_length=120)
+    source_url = models.URLField(blank=True, max_length=500, help_text="Page the scene came from.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

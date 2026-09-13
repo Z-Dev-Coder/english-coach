@@ -63,6 +63,8 @@ def scenes_for(user) -> tuple[str, list[Scene]]:
     level = learner_level(user)
     for candidate in _nearest_levels(level):
         scenes = list(Scene.objects.filter(level=candidate).order_by("id"))
+        # Real recordings first: an ear trained on real speakers is the point.
+        scenes.sort(key=lambda scene: not scene.audio_url)
         if scenes:
             return level, scenes
     return level, []
@@ -141,6 +143,12 @@ def next_scene(user, *, use_ai: bool = True) -> Scene | None:
     if fresh:
         return fresh[0]
     if use_ai:
+        # A real recorded lesson is preferred over a written one.
+        from . import lle
+
+        real = lle.import_next(level)
+        if real:
+            return real
         created = generate_scene(user, level)
         if created:
             return created
