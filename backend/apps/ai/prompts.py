@@ -211,6 +211,14 @@ LESSON_SCHEMA = {
                     "instructions": {"type": "string"},
                     "prompt": {"type": "string"},
                     "target_expressions": {"type": "array", "items": {"type": "string"}},
+                    "passage": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "text": {"type": "string"},
+                        },
+                    },
+                    "questions": {"type": "array", "items": {"type": "string"}},
                 },
             },
         },
@@ -263,6 +271,14 @@ Return JSON:
     instructions (what the learner should actually do, 1-2 sentences),
     prompt (the writing/speaking prompt or discussion question, if the activity needs one),
     target_expressions (up to 4 expressions to work in, or an empty list)
+
+For "reading" and "listening" activities, write an ORIGINAL text for the
+lesson's theme and put it in `passage`: a `title` and a `text` of 120-200 words,
+at the learner's level, using the target expressions naturally. Put 3-5
+comprehension questions in `questions`. Do NOT put the text or the questions in
+`prompt` -- leave `prompt` empty for these two kinds. If both kinds are in the
+plan, write one passage on the reading activity; the listening activity will
+use the same text.
 
 For target_expressions, give language that belongs to THIS topic and that a
 learner at this level would not already produce unprompted: collocations,

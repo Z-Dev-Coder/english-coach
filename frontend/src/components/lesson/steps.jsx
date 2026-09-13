@@ -224,6 +224,19 @@ function ReadingStep({ activity, onDone }) {
         ))}
       </Glossed>
       <p className="micro mt-3">click any word you don&rsquo;t know</p>
+
+      {/* The questions belong with the text they ask about. They used to be
+          glued into the prompt alongside a second copy of a passage. */}
+      {activity.params?.questions?.length > 0 && (
+        <section className="mt-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+          <h3 className="micro">answer out loud, or in your head</h3>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px]">
+            {activity.params.questions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ol>
+        </section>
+      )}
       <ErrorNote error={error} />
       <StepFooter onDone={finish} label="I've read it" />
     </div>

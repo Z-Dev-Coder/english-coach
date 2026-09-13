@@ -325,6 +325,23 @@ def _enrich_with_ai(activities: list[dict], context: dict) -> tuple[list[dict], 
         if isinstance(expressions, list):
             activity["target_expressions"] = [str(e) for e in expressions][:4]
 
+        if activity["kind"] in {"reading", "listening"}:
+            passage = item.get("passage")
+            if isinstance(passage, dict) and str(passage.get("text") or "").strip():
+                # Held on a private key until generate_lesson stores it; the
+                # activity row has no field for it.
+                activity["_passage"] = {
+                    "title": str(passage.get("title") or "").strip()[:200],
+                    "text": str(passage["text"]).strip(),
+                }
+            questions = item.get("questions")
+            if isinstance(questions, list):
+                activity["params"]["questions"] = [str(q) for q in questions if str(q).strip()][:6]
+            # A passage pasted into the prompt is what put two texts on one
+            # step. The prompt is only for questions on these kinds.
+            if "text:" in activity["prompt"].lower():
+                activity["prompt"] = ""
+
     meta = {
         "title": str(data.get("title", ""))[:200],
         "theme": str(data.get("theme", "")),
@@ -346,6 +363,36 @@ def current_lesson(user) -> Lesson | None:
         .order_by("-date", "-id")
         .first()
     )
+
+
+def _store_lesson_passages(user, activities: list[dict], context: dict) -> None:
+    """Save each lesson-written passage and point its steps at it.
+
+    One text per lesson: a listening step without its own passage uses the
+    reading one, so "read it, then hear it" still holds. Steps that got no
+    passage from the model keep the rotated library passage.
+    """
+    from apps.skills.models import Passage
+
+    shared = None
+    for activity in activities:
+        data = activity.pop("_passage", None)
+        if data and shared is None:
+            shared = Passage.objects.create(
+                title=data["title"] or context.get("theme", "")[:80] or "Lesson text",
+                text=data["text"],
+                level=context["overall_level"],
+                topic=str(context.get("theme", ""))[:40],
+                source=Passage.Source.AI,
+                owner=user,
+            )
+    if shared is None:
+        return
+    for activity in activities:
+        if activity["kind"] in {"reading", "listening"}:
+            activity["params"]["passage_id"] = shared.id
+            activity["params"].setdefault("tab", activity["kind"])
+            activity["title"] = activity["title"] or shared.title
 
 
 @transaction.atomic
@@ -371,6 +418,8 @@ def generate_lesson(user, *, date: dt.date | None = None, minutes: int | None = 
     enriched = False
     if use_ai:
         activities, meta, enriched = _enrich_with_ai(activities, context)
+
+    _store_lesson_passages(user, activities, context)
 
     focus = [block["skill"] for block in context["plan"] if block["skill"] != "review"][:2]
     lesson = Lesson.objects.create(
