@@ -150,13 +150,11 @@ class Scene(models.Model):
 
 
 class VideoLesson(models.Model):
-    """A real YouTube video, watched on YouTube, with our study notes around it.
+    """A real YouTube video, watched on YouTube, with our lesson around it.
 
-    The app never plays or copies the video. It links out and adds what a
-    teacher would: what the video is about, the expressions worth catching,
-    what to listen for at which moment, and questions to answer after watching.
-    All of that is our own writing. The video's transcript is read once to write
-    the notes and is not kept.
+    Found from a channel feed when a learner needs a new video, and prepared
+    then. The app never plays or copies the video; everything stored besides
+    the title and the channel's own description is our writing.
     """
 
     video_id = models.CharField(max_length=20, unique=True)
@@ -165,9 +163,10 @@ class VideoLesson(models.Model):
     level = models.CharField(max_length=2, choices=CEFR.choices, default=CEFR.B1)
     kind = models.CharField(max_length=40, blank=True, help_text="Conversation, street interviews, talk…")
     duration_seconds = models.PositiveIntegerField(default=0)
+    description = models.TextField(blank=True, help_text="The channel's own description, from its feed.")
     summary = models.TextField(blank=True)
     expressions = models.JSONField(default=list, blank=True, help_text="[{expression, meaning, example}]")
-    listen_for = models.JSONField(default=list, blank=True, help_text="[{time, note}] moments worth catching.")
+    listen_for = models.JSONField(default=list, blank=True, help_text="Short tasks to do while watching.")
     questions = models.JSONField(default=list, blank=True)
     speaking_prompt = models.TextField(blank=True)
     prepared_at = models.DateTimeField(null=True, blank=True)
@@ -189,13 +188,17 @@ class VideoLesson(models.Model):
 
 
 class VideoProgress(models.Model):
-    """That a learner finished a video lesson."""
+    """A video given to a learner; finished once completed_at is set.
+
+    At most one unfinished row per learner is their current video.
+    """
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="video_progress"
     )
     video = models.ForeignKey(VideoLesson, on_delete=models.CASCADE, related_name="progress")
-    completed_at = models.DateTimeField(default=timezone.now)
+    assigned_at = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

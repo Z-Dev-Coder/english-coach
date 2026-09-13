@@ -9,19 +9,14 @@ import { Button, Card, CardSkeleton, ErrorNote, Pill } from "../lib/ui";
 /**
  * Watch on YouTube.
  *
- * Real videos at the learner's level. The video plays on YouTube itself; the
- * app is the teacher around it:
- *   1. before: what it's about and the expressions to catch
- *   2. watch on YouTube, with moments to listen for
- *   3. after: questions and a speaking prompt, then the next video
+ * One real video at a time, at the learner's level. The video plays on
+ * YouTube itself; the app is the teacher around it:
+ *   1. before: what it's about and the expressions the topic calls for
+ *   2. watch on YouTube, with things to listen for
+ *   3. after: questions and a speaking prompt
+ * Finishing asks the server for the next video, which is found and prepared
+ * only then -- there is no fixed list.
  */
-
-const minutes = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-
-function toSeconds(time) {
-  const [m, s] = String(time).split(":").map(Number);
-  return Number.isFinite(m) && Number.isFinite(s) ? m * 60 + s : 0;
-}
 
 export default function YouTubeLessons({ AddToReview }) {
   const [video, setVideo] = useState(null);
@@ -31,6 +26,7 @@ export default function YouTubeLessons({ AddToReview }) {
 
   const loadNext = useCallback(() => {
     setError(null);
+    setVideo(null);
     api.nextVideo().then(setVideo).catch(setError);
   }, []);
 
@@ -67,7 +63,14 @@ export default function YouTubeLessons({ AddToReview }) {
   };
 
   if (error && !video) return <ErrorNote error={error} onRetry={loadNext} />;
-  if (!video) return <CardSkeleton lines={6} />;
+  if (!video) {
+    return (
+      <div className="space-y-2">
+        <p className="micro">finding your video and preparing the lesson…</p>
+        <CardSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -93,9 +96,7 @@ export default function YouTubeLessons({ AddToReview }) {
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <Pill tone="brand">{video.level}</Pill>
               {video.kind && <Pill>{video.kind}</Pill>}
-              <span className="micro">
-                {video.channel} · {minutes(video.duration_seconds)}
-              </span>
+              <span className="micro">{video.channel}</span>
             </div>
             {video.summary && (
               <Glossed as="p" className="mt-3 text-[15px] text-ink-2 dark:text-white/70">
@@ -109,8 +110,9 @@ export default function YouTubeLessons({ AddToReview }) {
       {!video.prepared && (
         <Card>
           <p className="text-[15px] text-ink-2 dark:text-white/70">
-            Notes for this video are still being written. Watch it on YouTube with English
-            subtitles on, and note three phrases you&rsquo;d like to use yourself.
+            The lesson for this video couldn&rsquo;t be prepared right now. Watch it on YouTube with
+            English subtitles on and note three phrases you&rsquo;d like to use — the lesson will
+            be here next time you open this tab.
           </p>
         </Card>
       )}
@@ -118,7 +120,7 @@ export default function YouTubeLessons({ AddToReview }) {
       {video.expressions?.length > 0 && (
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="micro">1 · before you watch — expressions to catch</h3>
+            <h3 className="micro">1 · before you watch — language for this topic</h3>
             {AddToReview && (
               <AddToReview items={video.expressions} sourceUrl={video.url} label="Add these to review" />
             )}
@@ -143,25 +145,14 @@ export default function YouTubeLessons({ AddToReview }) {
 
       {video.listen_for?.length > 0 && (
         <Card>
-          <h3 className="micro">2 · while you watch — moments to listen for</h3>
+          <h3 className="micro">2 · while you watch — listen for</h3>
           <p className="mt-1 text-[13px] text-ink-3">
-            Tap a time to open the video at that moment. Turn on English subtitles the first time,
-            then watch again without them.
+            Watch once with English subtitles on, then again without them.
           </p>
-          <ul className="mt-3 space-y-2">
-            {video.listen_for.map((moment, index) => (
-              <li key={index} className="flex gap-3">
-                <a
-                  href={`${video.url}&t=${toSeconds(moment.time)}s`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[12px] ring-1 ring-[color:var(--color-line)] hover:bg-sunken dark:ring-white/15"
-                >
-                  {moment.time}
-                </a>
-                <Glossed as="p" className="text-[14px]">
-                  {moment.note}
-                </Glossed>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5">
+            {video.listen_for.map((task) => (
+              <li key={task}>
+                <Glossed className="text-[14px]">{typeof task === "string" ? task : task.note}</Glossed>
               </li>
             ))}
           </ul>
@@ -190,15 +181,21 @@ export default function YouTubeLessons({ AddToReview }) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={finish} disabled={busy}>
-          {video.done ? "Next video" : "I've watched it — next video"} <Icon name="arrowRight" size={13} />
-        </Button>
+        {video.done ? (
+          <Button onClick={loadNext}>
+            Back to my current video <Icon name="arrowRight" size={13} />
+          </Button>
+        ) : (
+          <Button onClick={finish} disabled={busy}>
+            I&rsquo;ve watched it — give me the next one <Icon name="arrowRight" size={13} />
+          </Button>
+        )}
         {error && <span className="text-[13px] text-[color:var(--color-accent)]">{error.message}</span>}
       </div>
 
-      {library?.videos?.length > 1 && (
+      {library?.videos?.length > 0 && (
         <section>
-          <h3 className="micro mb-2">videos at your level</h3>
+          <h3 className="micro mb-2">videos you&rsquo;ve watched — open one to go over it again</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {library.videos.map((item) => (
               <button

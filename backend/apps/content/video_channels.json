@@ -1,0 +1,6 @@
+[
+ {"channel_id": "UCHaHD477h-FeBbVh9Sh7syA", "name": "BBC Learning English", "kind": "Learner English", "levels": ["A1", "A2", "B1"]},
+ {"channel_id": "UCvgLaFuTGGRXl0eyvBRCifA", "name": "Easy English", "kind": "Street interviews", "levels": ["A2", "B1", "B2"]},
+ {"channel_id": "UCsooa4yRKGN_zEE8iknghZA", "name": "TED-Ed", "kind": "Explainer", "levels": ["B2", "C1"]},
+ {"channel_id": "UCAuUUnT6oDeKwE6v1NGQxug", "name": "TED", "kind": "Talk", "levels": ["C1", "C2"]}
+]

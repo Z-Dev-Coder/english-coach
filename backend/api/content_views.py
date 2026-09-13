@@ -274,30 +274,42 @@ class VideoLessonViewSet(viewsets.ReadOnlyModelViewSet):
 
         return VideoLesson.objects.all()
 
-    def list(self, request):
-        from apps.content import videos
+    def get_queryset(self):
+        from apps.content.models import VideoLesson
 
-        level, items = videos.videos_for(request.user)
-        done = videos.done_ids(request.user)
+        # Only videos this learner has been given.
+        return VideoLesson.objects.filter(progress__user=self.request.user).distinct()
+
+    def list(self, request):
+        """This learner's finished videos, newest first."""
+        from apps.content import scenes, videos
+
         return Response({
-            "level": level,
-            "videos": [{**VideoLessonSerializer(v).data, "done": v.id in done} for v in items],
+            "level": scenes.learner_level(request.user),
+            "videos": [
+                {**VideoLessonSerializer(row.video).data, "done": True, "completed_at": row.completed_at}
+                for row in videos.history(request.user)
+            ],
         })
 
     def retrieve(self, request, pk=None):
-        from apps.content import videos
-
         video = self.get_object()
-        return Response({**VideoLessonSerializer(video).data, "done": video.id in videos.done_ids(request.user)})
+        done = video.progress.filter(user=request.user, completed_at__isnull=False).exists()
+        return Response({**VideoLessonSerializer(video).data, "done": done})
 
     @action(detail=False, methods=["get"])
     def next(self, request):
+        """The learner's current video; a new one is found and prepared when they have none."""
         from apps.content import videos
 
-        video = videos.next_video(request.user)
+        use_ai = str(request.query_params.get("use_ai", "true")).lower() != "false"
+        video = videos.next_video(request.user, use_ai=use_ai)
         if video is None:
-            return Response({"detail": "No videos available."}, status=status.HTTP_404_NOT_FOUND)
-        return Response({**VideoLessonSerializer(video).data, "done": video.id in videos.done_ids(request.user)})
+            return Response(
+                {"detail": "Couldn't reach YouTube to find your next video. Try again in a minute."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response({**VideoLessonSerializer(video).data, "done": False})
 
     @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):

@@ -1,16 +1,29 @@
-"""Watch on YouTube: real videos at the learner's level, with a lesson around each.
+"""Watch on YouTube: one real video lesson at a time, found when the learner needs it.
 
-The learner watches on YouTube itself. The app picks the video for their
-level, prepares them before watching (what it's about, expressions to catch,
-moments to listen for) and checks them after (questions, a speaking prompt).
-The list of videos is in video_library.json. The notes for each video are
-written by the model from its transcript, once, by `prepare_videos`.
+Nothing is a fixed list. Each learner has one current video. When they finish
+it, the next is found then: the newest video they haven't had from YouTube
+channels that suit their level (read from YouTube's public channel feeds, free
+and keyless), and the lesson for it is written then by the model. A video
+prepared for one learner is reused for the next who reaches it, so the model
+is asked once per video, not once per learner.
+
+The learner watches on YouTube itself. The app is the teacher around the
+video: what to expect, expressions to catch, what to listen for, questions and
+a speaking prompt afterwards.
+
+YouTube offers no free way for a server to read captions, so lessons are
+written from the title and description. The expressions are what the topic
+naturally calls for, not quotes from the video, and the lesson says so.
 """
 from __future__ import annotations
 
+import html
 import json
+import re
+import urllib.request
 from pathlib import Path
 
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -19,76 +32,142 @@ from apps.profiles.constants import CEFR_ORDER
 from .models import VideoLesson, VideoProgress
 from .scenes import learner_level
 
-LIBRARY = Path(__file__).with_name("video_library.json")
+CHANNELS = Path(__file__).with_name("video_channels.json")
+FEED = "https://www.youtube.com/feeds/videos.xml?channel_id={}"
+FEED_CACHE_SECONDS = 6 * 60 * 60
 
 
-def ensure_library() -> None:
-    """Add any listed video that isn't in the database yet. Safe on every request."""
-    if not LIBRARY.exists():
-        return
-    existing = {video.video_id: video for video in VideoLesson.objects.all()}
-    for entry in json.loads(LIBRARY.read_text(encoding="utf-8")):
-        video = existing.get(entry["video_id"])
-        if video is None:
-            # The page asks for the next video and the list at the same moment, so two
-            # requests can load a new library together; the loser just reads the row.
-            try:
-                with transaction.atomic():
-                    video = VideoLesson.objects.create(
-                        video_id=entry["video_id"],
-                        title=entry["title"][:300],
-                        channel=entry["channel"][:120],
-                        level=entry["level"],
-                        kind=entry.get("kind", "")[:40],
-                        duration_seconds=int(entry.get("duration_seconds") or 0),
-                    )
-            except IntegrityError:
-                video = VideoLesson.objects.get(video_id=entry["video_id"])
-        notes = entry.get("notes")
-        if notes and video.prepared_at is None:
-            # Notes written with the library travel with it, so every install has them.
-            video.summary = notes.get("summary", "")
-            video.expressions = notes.get("expressions", [])
-            video.listen_for = notes.get("listen_for", [])
-            video.questions = notes.get("questions", [])
-            video.speaking_prompt = notes.get("speaking_prompt", "")
-            video.prepared_at = timezone.now()
-            video.save()
-
-
-def videos_for(user) -> tuple[str, list[VideoLesson]]:
-    """Videos at the learner's level, or the nearest level that has some."""
-    ensure_library()
-    level = learner_level(user)
+def channels_for(level: str) -> list[dict]:
+    """Channels pitched at this level, falling back to the nearest level that has some."""
+    channels = json.loads(CHANNELS.read_text(encoding="utf-8"))
     order = list(CEFR_ORDER)
     here = order.index(level) if level in order else order.index("B1")
     for candidate in sorted(order, key=lambda item: (abs(order.index(item) - here), order.index(item))):
-        items = list(VideoLesson.objects.filter(level=candidate).order_by("id"))
-        if items:
-            # Prepared lessons first: a video with notes is a lesson, without is only a link.
-            items.sort(key=lambda video: video.prepared_at is None)
-            return level, items
-    return level, []
+        matching = [channel for channel in channels if candidate in channel["levels"]]
+        if matching:
+            return matching
+    return []
 
 
-def done_ids(user) -> set[int]:
-    return set(VideoProgress.objects.filter(user=user).values_list("video_id", flat=True))
+def _fetch(url: str) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 english-coach"})
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return response.read().decode("utf-8", errors="replace")
 
 
-def next_video(user) -> VideoLesson | None:
-    level, items = videos_for(user)
-    done = done_ids(user)
-    fresh = [video for video in items if video.id not in done]
-    if fresh:
-        return fresh[0]
-    if not items:
-        return None
-    finished = {row.video_id: row.completed_at for row in VideoProgress.objects.filter(user=user, video__in=items)}
-    return min(items, key=lambda video: finished.get(video.id))
+def parse_feed(xml: str) -> list[dict]:
+    """[{video_id, title, description}] newest first, without Shorts."""
+    videos = []
+    for entry in re.findall(r"<entry>(.*?)</entry>", xml, re.S):
+        video_id = re.search(r"<yt:videoId>([^<]+)</yt:videoId>", entry)
+        title = re.search(r"<media:title>(.*?)</media:title>", entry, re.S)
+        description = re.search(r"<media:description>(.*?)</media:description>", entry, re.S)
+        link = re.search(r'<link rel="alternate" href="([^"]+)"', entry)
+        if not video_id or not title:
+            continue
+        title_text = html.unescape(title.group(1)).strip()
+        if "#shorts" in title_text.lower() or (link and "/shorts/" in link.group(1)):
+            continue  # too short to build a lesson around
+        videos.append({
+            "video_id": video_id.group(1).strip(),
+            "title": title_text,
+            "description": html.unescape(description.group(1)).strip() if description else "",
+        })
+    return videos
+
+
+def feed(channel: dict) -> list[dict]:
+    key = f"yt-feed:{channel['channel_id']}"
+    items = cache.get(key)
+    if items is None:
+        try:
+            items = parse_feed(_fetch(FEED.format(channel["channel_id"])))
+        except Exception:
+            items = []
+        cache.set(key, items, FEED_CACHE_SECONDS if items else 300)
+    return items
+
+
+def current(user) -> VideoLesson | None:
+    """The video this learner is on now, if they haven't finished it."""
+    row = (
+        VideoProgress.objects.filter(user=user, completed_at__isnull=True)
+        .select_related("video")
+        .order_by("-assigned_at")
+        .first()
+    )
+    return row.video if row else None
+
+
+def _candidates(level: str, seen: set[str]):
+    """Unseen videos from the level's channels, taking turns across channels, newest first."""
+    lists = [(channel, [item for item in feed(channel) if item["video_id"] not in seen]) for channel in channels_for(level)]
+    depth = max((len(items) for _, items in lists), default=0)
+    for index in range(depth):
+        for channel, items in lists:
+            if index < len(items):
+                yield channel, items[index]
+
+
+def _get_or_create(level: str, channel: dict, item: dict) -> VideoLesson:
+    try:
+        with transaction.atomic():
+            return VideoLesson.objects.create(
+                video_id=item["video_id"],
+                title=item["title"][:300],
+                channel=channel["name"][:120],
+                level=level,
+                kind=channel.get("kind", "")[:40],
+                description=item.get("description", "")[:3000],
+            )
+    except IntegrityError:
+        return VideoLesson.objects.get(video_id=item["video_id"])
+
+
+def next_video(user, *, use_ai: bool = True) -> VideoLesson | None:
+    """The learner's current video, or a new one found and prepared now."""
+    video = current(user)
+    if video is not None:
+        if video.prepared_at is None and use_ai:
+            prepare(video)
+        return video
+
+    level = learner_level(user)
+    seen = set(VideoProgress.objects.filter(user=user).values_list("video__video_id", flat=True))
+    for channel, item in _candidates(level, seen):
+        video = _get_or_create(level, channel, item)
+        if video.prepared_at is None and use_ai and not prepare(video):
+            continue  # try the next video rather than hand over a lesson with nothing in it
+        return assign(user, video)
+
+    # Feeds unreachable: offer a prepared video someone else studied that this learner hasn't.
+    fallback = (
+        VideoLesson.objects.filter(level=level, prepared_at__isnull=False)
+        .exclude(video_id__in=seen)
+        .order_by("-prepared_at")
+        .first()
+    )
+    return assign(user, fallback) if fallback else None
+
+
+def assign(user, video: VideoLesson) -> VideoLesson:
+    VideoProgress.objects.get_or_create(user=user, video=video)
+    return video
 
 
 def complete(user, video: VideoLesson) -> None:
-    VideoProgress.objects.get_or_create(user=user, video=video)
+    progress, _ = VideoProgress.objects.get_or_create(user=user, video=video)
+    if progress.completed_at is None:
+        progress.completed_at = timezone.now()
+        progress.save(update_fields=["completed_at"])
+
+
+def history(user) -> list[VideoProgress]:
+    return list(
+        VideoProgress.objects.filter(user=user, completed_at__isnull=False)
+        .select_related("video")
+        .order_by("-completed_at")[:20]
+    )
 
 
 PREP_SCHEMA = {
@@ -108,49 +187,44 @@ PREP_SCHEMA = {
                 },
             },
         },
-        "listen_for": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": ["time", "note"],
-                "properties": {"time": {"type": "string"}, "note": {"type": "string"}},
-            },
-        },
+        "listen_for": {"type": "array", "items": {"type": "string"}},
         "questions": {"type": "array", "items": {"type": "string"}},
         "speaking_prompt": {"type": "string"},
     },
 }
 
 
-def prep_prompt(video: VideoLesson, transcript: str) -> str:
-    return f"""You are an English teacher preparing a learner at CEFR {video.level} to watch a real
-YouTube video: "{video.title}" ({video.channel}).
+def prep_prompt(video: VideoLesson) -> str:
+    return f"""You are an English teacher. A learner at CEFR {video.level} is about to watch this real
+YouTube video on YouTube:
 
-TIMED TRANSCRIPT (for your reference only; do not reproduce it)
-{transcript[:24000]}
+TITLE: {video.title}
+CHANNEL: {video.channel} ({video.kind})
+DESCRIPTION: {video.description[:1500] or "(none)"}
 
-Return JSON, all in your own words, pitched at {video.level}:
-- summary: 2-3 sentences on what happens in the video, without spoiling the answers.
-- expressions: 6-8 natural expressions, phrasal verbs or idioms the speakers actually
-  use, copied exactly, each with `meaning` (plain words) and `example` (a new everyday
-  sentence, not from the video).
-- listen_for: 4-6 moments, each with `time` ("m:ss" from the transcript) and `note`
-  saying what to catch there, e.g. how a speaker disagrees politely or a reduced form
-  like "gonna". Describe it; don't quote more than a few words.
-- questions: 4-5 questions to answer after watching, about content and how people speak.
-- speaking_prompt: one question that gets the learner talking about the same topic
-  from their own life, for 1-2 minutes.
+You have not seen the video, only the title and description. Don't invent details of what
+people say in it. Prepare the learner for the topic instead. Return JSON, pitched at {video.level}:
+- summary: 1-2 sentences on what the video is about, from the title and description.
+- expressions: 6-8 natural expressions, phrasal verbs or collocations people typically use
+  when talking about this topic, each with `meaning` (plain words) and `example` (an
+  everyday sentence).
+- listen_for: 3-5 short tasks to do while watching, e.g. "Notice how the speakers agree
+  and disagree", "Listen for any of the expressions above", "Write down one opinion".
+- questions: 4-5 questions to answer after watching. Keep them open (what did they say
+  about..., do you agree...) since you don't know the exact content.
+- speaking_prompt: one question that gets the learner talking for 1-2 minutes about the
+  same topic from their own life.
 """
 
 
-def prepare(video: VideoLesson, transcript: str) -> bool:
-    """Write the lesson notes for a video from its transcript. The transcript isn't stored."""
+def prepare(video: VideoLesson) -> bool:
+    """Write the lesson for a video. Returns False if the model couldn't be reached."""
     from apps.ai.providers.base import TIER_MEDIUM, AIError
     from apps.ai.registry import get_ai_provider
 
     try:
         data = get_ai_provider().generate_json(
-            prep_prompt(video, transcript), schema=PREP_SCHEMA, tier=TIER_MEDIUM, temperature=0.3
+            prep_prompt(video), schema=PREP_SCHEMA, tier=TIER_MEDIUM, temperature=0.4
         )
     except AIError:
         return False
@@ -160,32 +234,15 @@ def prepare(video: VideoLesson, transcript: str) -> bool:
         for item in data.get("expressions") or []
         if isinstance(item, dict) and item.get("expression") and item.get("meaning")
     ]
-    listen_for = [
-        {"time": str(item.get("time", "")).strip()[:8], "note": str(item.get("note", "")).strip()}
-        for item in data.get("listen_for") or []
-        if isinstance(item, dict) and item.get("note")
-    ]
     questions = [str(q).strip() for q in data.get("questions") or [] if str(q).strip()]
     if len(expressions) < 3 or len(questions) < 2:
         return False
 
     video.summary = str(data.get("summary") or "").strip()
     video.expressions = expressions[:8]
-    video.listen_for = listen_for[:6]
+    video.listen_for = [str(t).strip() for t in data.get("listen_for") or [] if str(t).strip()][:5]
     video.questions = questions[:5]
     video.speaking_prompt = str(data.get("speaking_prompt") or "").strip()
     video.prepared_at = timezone.now()
     video.save()
     return True
-
-
-def timed_text(fragments: list[dict]) -> str:
-    """Caption fragments as "[m:ss] text" lines, which is what the prompt reads."""
-    lines = []
-    for fragment in fragments:
-        text = str(fragment.get("text", "")).strip()
-        if not text or text.startswith("["):
-            continue
-        seconds = int(float(fragment.get("start_ms", 0)) // 1000)
-        lines.append(f"[{seconds // 60}:{seconds % 60:02d}] {text}")
-    return "\n".join(lines)
