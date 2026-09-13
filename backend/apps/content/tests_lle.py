@@ -40,5 +40,17 @@ class ParseLessonTests(SimpleTestCase):
             f"{lle.BASE}/a/lets-learn-english-level-2-lesson-3/4027340.html",
         )
 
+    def test_older_lessons_with_lines_in_divs_are_parsed(self):
+        old = (
+            '<h1>Lesson 2: Hello, I\'m Anna!</h1><a href="https://voa-audio.voanews.eu/vle/2016/y.mp3"></a>'
+            '<div class="wsw"><p> </p>'
+            + "".join(f"<div>{who}: Line {n}.</div>" for n, who in enumerate(["Jonathan", "Pete", "Anna"] * 3))
+            + '<h2 class="wsw__h2">Listening Quiz</h2><div>Question: Where is Anna from?</div></div>'
+        )
+        parsed = lle.parse_lesson(old)
+        self.assertEqual(len(parsed["lines"]), 9)
+        self.assertEqual(parsed["lines"][0], {"speaker": "Jonathan", "text": "Line 0."})
+        self.assertNotIn("Question", {line["speaker"] for line in parsed["lines"]})
+
     def test_page_without_dialogue_is_skipped(self):
         self.assertEqual(lle.parse_lesson(PAGE.split('<div class="wsw">')[0]), {})

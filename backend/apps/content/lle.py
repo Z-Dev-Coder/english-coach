@@ -26,7 +26,9 @@ SERIES = [
 
 _MP3 = re.compile(r"https://voa-audio[^\"'&\s]+?\.mp3")
 _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
-_PARAGRAPH = re.compile(r"<p[^>]*>(.*?)</p>", re.S)
+# Lines sit in <p> on newer lessons and in plain <div> on the older Level 1
+# ones; headings mark where the dialogue ends. Only innermost blocks count.
+_PARAGRAPH = re.compile(r"<(?:p|div|h2)(?:\s[^>]*)?>((?:(?!<(?:p|div)[\s>]).)*?)</(?:p|div|h2)>", re.S)
 _LINE = re.compile(r"^([A-Z][A-Za-z.' ]{1,24}):\s*(.+)$")
 # The series' animated teacher explains the lesson rather than acting in it.
 _NARRATORS = {"professor bot", "narrator"}
@@ -48,7 +50,7 @@ def parse_lesson(page_html: str) -> dict:
     lines = []
     for raw in _PARAGRAPH.findall(body):
         text = _clean(raw)
-        if re.match(r"^_{3,}|^words in this story|^new words", text, re.I):
+        if re.match(r"^_{3,}|^words in this story|^new words|^listening quiz|^quiz\b", text, re.I):
             break
         match = _LINE.match(text)
         if match:
