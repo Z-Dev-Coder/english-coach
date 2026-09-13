@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import Glossed from "../Glossed";
+import TopicLanguage from "../TopicLanguage";
 import WritingLesson from "../WritingLesson";
 import { api } from "../../lib/api";
 import { cx } from "../../lib/cx";
@@ -98,6 +99,8 @@ function ListeningStep({ activity, voice, onDone }) {
   const [busy, setBusy] = useState(false);
 
   const passageId = activity.params?.passage_id;
+  const [language, setLanguage] = useState(null);
+  const [prepared, setPrepared] = useState(false);
 
   useEffect(() => {
     if (!passageId) return;
@@ -105,6 +108,10 @@ function ListeningStep({ activity, voice, onDone }) {
       .passages()
       .then((list) => setPassage(list.find((item) => String(item.id) === String(passageId))))
       .catch(setError);
+    api
+      .passageLesson(passageId)
+      .then(setLanguage)
+      .catch(() => setLanguage({ vocabulary: [], expressions: [], tips: [], questions: [] }));
   }, [passageId]);
 
   const sentences = passage?.sentences ?? [];
@@ -139,6 +146,24 @@ function ListeningStep({ activity, voice, onDone }) {
   };
 
   if (!passage) return <Spinner />;
+
+  // Learn the words in the text before hearing it: dictation of words you have
+  // never met tests spelling guesses, not listening.
+  if (!prepared) {
+    return (
+      <div>
+        <Instructions activity={activity} />
+        <h3 className="micro mt-4">before you listen</h3>
+        {language ? (
+          <TopicLanguage language={language} questionsTitle="listen for the answers" />
+        ) : (
+          <Spinner />
+        )}
+        <StepFooter onDone={() => setPrepared(true)} label="I'm ready — start listening" />
+      </div>
+    );
+  }
+
   if (!sentence) return <StepFooter onDone={onDone} label="Finish this step" />;
 
   const last = index >= sentences.length - 1;

@@ -149,6 +149,9 @@ export const api = {
 
   // --- Conversation ---
   conversationScenarios: () => request("/conversations/scenarios/"),
+  conversationPrep: (scenario = "") =>
+    request(`/conversations/prep/?scenario=${encodeURIComponent(scenario)}`),
+  passageLesson: (id) => request(`/skills/passages/${id}/lesson/`),
   startConversation: (body) => request("/conversations/start/", { method: "POST", body }),
   sendConversationMessage: (id, body) =>
     request(`/conversations/${id}/say/`, { method: "POST", body }),

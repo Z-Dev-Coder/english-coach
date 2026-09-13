@@ -72,6 +72,18 @@ class PassageViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(topic=topic)
         return queryset
 
+    @action(detail=True, methods=["get"])
+    def lesson(self, request, pk=None):
+        """Words, expressions and gist questions to learn before listening to this passage."""
+        from apps.skills import topic_language
+
+        passage = self.get_object()
+        progress = request.user.skill_progress.filter(skill="listening").first()
+        level = progress.level if progress else request.user.learner_profile.overall_level
+        return Response(
+            topic_language.build(kind="listening", text=passage.text, topic=passage.title, level=level)
+        )
+
     @action(detail=False, methods=["post"])
     def add(self, request):
         payload = AddPassageSerializer(data=request.data)

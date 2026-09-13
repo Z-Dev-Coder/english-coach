@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import PracticeNav from "../components/PracticeNav";
+import TopicLanguage from "../components/TopicLanguage";
 import { api } from "../lib/api";
+import { usedItems } from "../lib/usage";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
 import { canListen, canSpeak, listen, pickVoice, speak, stopSpeaking } from "../lib/speech";
@@ -69,6 +71,31 @@ function Feedback({ feedback }) {
 
   return (
     <Card className="animate-rise">
+      {feedback.targets && (
+        <section className="mb-5 rounded-xl bg-sunken p-4 dark:bg-white/[0.04]">
+          <h3 className="micro">what you used from the lesson</h3>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {feedback.targets.used.map((item) => (
+              <Pill key={item} tone="good">
+                ✓ {item}
+              </Pill>
+            ))}
+            {feedback.targets.used.length === 0 && (
+              <span className="text-[13px] text-ink-3">None this time.</span>
+            )}
+          </div>
+          {feedback.targets.missing.length > 0 && (
+            <>
+              <p className="mt-3 text-[14px] text-ink-2 dark:text-white/70">Next time, try to use:</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {feedback.targets.missing.map((item) => (
+                  <Pill key={item}>{item}</Pill>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
       <SectionHeading
         title="How that went"
         action={
@@ -156,6 +183,7 @@ export default function Conversation() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [prep, setPrep] = useState(null);
   const [ending, setEnding] = useState(false);
   const [recording, setRecording] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -187,6 +215,25 @@ export default function Conversation() {
     [voice],
   );
 
+  // The language for this situation, learned before the conversation starts.
+  useEffect(() => {
+    if (session) return;
+    let live = true;
+    setPrep(null);
+    api
+      .conversationPrep(scenario)
+      .then((data) => live && setPrep(data))
+      .catch(() => live && setPrep(null));
+    return () => {
+      live = false;
+    };
+  }, [scenario, session]);
+
+  const targets = [
+    ...(prep?.vocabulary ?? []).map((item) => item.text),
+    ...(prep?.expressions ?? []).map((item) => item.text),
+  ];
+
   // The situation on screen, so the card can name it before starting.
   const chosen = scenarios.find((item) => item.key === scenario) ?? null;
 
@@ -194,7 +241,7 @@ export default function Conversation() {
     setError(null);
     setSending(true);
     try {
-      const created = await api.startConversation({ scenario });
+      const created = await api.startConversation({ scenario, targets });
       setSession(created);
       if (autoSpeak) say(created.messages.at(-1)?.content);
     } catch (err) {
@@ -319,6 +366,20 @@ export default function Conversation() {
               </Select>
             )}
           </div>
+          {/* Learn first. A situation and a start button test the English the
+              learner already has; the language for the situation is what lets
+              the conversation teach something. */}
+          <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
+            <h3 className="micro">before you start — learn these</h3>
+            {prep ? (
+              <div className="mt-1">
+                <TopicLanguage language={prep} />
+              </div>
+            ) : (
+              <p className="mt-2 text-[13px] text-ink-3">Loading the language for this situation…</p>
+            )}
+          </div>
+
           <div className="mt-5 border-t border-[color:var(--color-line)] pt-4 dark:border-white/5">
             <Switch
               checked={autoSpeak}
@@ -348,6 +409,32 @@ export default function Conversation() {
             )}
             <div ref={bottom} />
           </div>
+
+          {session.targets?.length > 0 && (() => {
+            const said = session.messages
+              .filter((message) => message.role === "learner")
+              .map((message) => `${message.content}`)
+              .join(" ");
+            const used = usedItems(`${said} ${text}`, session.targets);
+            return (
+              <Card>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="micro">try to use what you learned</h3>
+                  <span className="micro">
+                    {used.length} of {session.targets.length} used
+                  </span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {session.targets.map((item) => (
+                    <Pill key={item} tone={used.includes(item) ? "good" : "default"}>
+                      {used.includes(item) ? "✓ " : ""}
+                      {item}
+                    </Pill>
+                  ))}
+                </div>
+              </Card>
+            );
+          })()}
 
           {!ended ? (
             <Card>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import Glossed from "./Glossed";
 import { api } from "../lib/api";
+import { isUsed } from "../lib/usage";
 import { cx } from "../lib/cx";
 import Icon from "../lib/icons";
 import { Button, CardSkeleton, ErrorNote, Pill } from "../lib/ui";
@@ -19,37 +20,6 @@ import { Button, CardSkeleton, ErrorNote, Pill } from "../lib/ui";
  * Used by the lesson runner and by Practice > Writing, so both teach the same
  * way. `onFinished` is called once feedback has been read.
  */
-
-/** Rough client-side mirror of the server's usage check, for live ticks only. */
-function stem(word) {
-  for (const suffix of ["ing", "ied", "ies", "ed", "es", "s"]) {
-    if (word.endsWith(suffix) && word.length - suffix.length >= 3) return word.slice(0, -suffix.length);
-  }
-  return word;
-}
-const DROPPABLE = new Set(["a", "an", "the", "my", "your", "his", "her", "our", "their", "sb", "sth", "someone", "something"]);
-const words = (text) =>
-  text
-    .toLowerCase()
-    .replace(/[’']/g, "")
-    .replace(/\.\.\.|…/g, " ")
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-
-function isUsed(text, item) {
-  const tokens = words(text).map(stem);
-  const keys = words(item).filter((word) => !DROPPABLE.has(word)).map(stem);
-  if (!keys.length) return false;
-  let position = 0;
-  for (let index = 0; index < keys.length; index += 1) {
-    const window = index === 0 ? tokens.slice(position) : tokens.slice(position, position + 4);
-    const offset = window.indexOf(keys[index]);
-    if (offset === -1) return false;
-    position += offset + 1;
-  }
-  return true;
-}
 
 function ItemList({ title, items }) {
   if (!items?.length) return null;

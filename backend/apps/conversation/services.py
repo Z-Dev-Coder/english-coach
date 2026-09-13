@@ -73,7 +73,7 @@ def next_scenario(user) -> str:
     return max(available, key=lambda scenario: recent.index(scenario))
 
 
-def start(user, *, scenario: str = "", level: str = "") -> ConversationSession:
+def start(user, *, scenario: str = "", level: str = "", targets: list[str] | None = None) -> ConversationSession:
     """Open a session and have the partner speak first.
 
     The partner opens deliberately: facing an empty box is the hardest moment
@@ -81,6 +81,7 @@ def start(user, *, scenario: str = "", level: str = "") -> ConversationSession:
     """
     session = ConversationSession.objects.create(
         user=user,
+        targets=[str(t)[:120] for t in (targets or [])][:20],
         scenario=scenario or next_scenario(user),
         level=level or _speaking_level(user),
     )
@@ -178,6 +179,17 @@ def generate_feedback(session: ConversationSession) -> dict:
             "focus_next_time": "",
             "available": False,
             "error": str(exc),
+        }
+
+    # What the learner was taught before starting, checked against what they
+    # actually said -- so the review ties back to the lesson.
+    if session.targets:
+        from apps.skills.writing_support import used_items
+
+        used = used_items(" ".join(turns), session.targets)
+        feedback["targets"] = {
+            "used": used,
+            "missing": [item for item in session.targets if item not in used],
         }
 
     session.feedback = feedback

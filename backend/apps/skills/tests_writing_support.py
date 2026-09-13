@@ -20,6 +20,14 @@ class UsedItemsTests(SimpleTestCase):
         text = "I picked up the report and I've been dealing with the issues."
         self.assertEqual(used_items(text, ["pick up", "deal with"]), ["pick up", "deal with"])
 
+    def test_doubled_consonant_forms_count(self):
+        # "running" and "stopped" double the final consonant; without undoing
+        # that they never matched "run late" or "stop by".
+        self.assertEqual(used_items("I was running late.", ["run late"]), ["run late"])
+        self.assertEqual(used_items("We stopped by the shop.", ["stop by"]), ["stop by"])
+        # ...while genuine double letters stay put.
+        self.assertEqual(used_items("I'm calling to check.", ["call"]), ["call"])
+
     def test_a_pattern_with_a_gap_counts(self):
         text = "I was wondering if you could send me the slides."
         self.assertEqual(

@@ -113,7 +113,7 @@ class ConversationSessionSerializer(serializers.ModelSerializer):
         model = ConversationSession
         fields = [
             "id", "scenario", "level", "status", "started_at", "ended_at",
-            "feedback", "messages", "turn_count",
+            "feedback", "messages", "turn_count", "targets",
         ]
         read_only_fields = fields
 
@@ -123,6 +123,9 @@ class ConversationSessionSerializer(serializers.ModelSerializer):
 
 class StartConversationSerializer(serializers.Serializer):
     scenario = serializers.CharField(max_length=40, required=False, default="casual")
+    targets = serializers.ListField(
+        child=serializers.CharField(max_length=120), required=False, default=list, max_length=20
+    )
     level = serializers.ChoiceField(
         choices=CEFR.choices, required=False, allow_blank=True, default=""
     )
@@ -152,6 +155,21 @@ class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
                 "suggested": conversation_services.next_scenario(request.user),
             }
         )
+
+    @action(detail=False, methods=["get"])
+    def prep(self, request):
+        """The language to learn before this situation, at the learner's speaking level."""
+        from apps.skills import topic_language
+
+        scenario = request.query_params.get("scenario") or conversation_services.next_scenario(request.user)
+        progress = request.user.skill_progress.filter(skill="speaking").first()
+        level = progress.level if progress else request.user.learner_profile.overall_level
+        situation = f"{scenario.replace('_', ' ')}: {SCENARIO_HINTS.get(scenario, '')}"
+        data = topic_language.build(kind="conversation", topic=situation, level=level)
+        if data.get("is_fallback"):
+            data = topic_language._conversation_fallback(scenario, level)
+        data["scenario"] = scenario
+        return Response(data)
 
     @action(detail=False, methods=["post"])
     def start(self, request):

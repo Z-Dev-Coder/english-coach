@@ -24,6 +24,11 @@ class ConversationSession(models.Model):
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True, blank=True)
+    targets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Expressions the learner was taught before starting, to check use against.",
+    )
     feedback = models.JSONField(
         default=dict, blank=True, help_text="Structured review, produced after the conversation ends."
     )

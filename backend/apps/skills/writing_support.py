@@ -146,7 +146,12 @@ _DROPPABLE = {"a", "an", "the", "my", "your", "his", "her", "our", "their", "sb"
 def _stem(word: str) -> str:
     for suffix in ("ing", "ied", "ies", "ed", "es", "s"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
-            return word[: -len(suffix)]
+            base = word[: -len(suffix)]
+            # "running" -> "runn", "stopped" -> "stopp": undo the doubled
+            # consonant, or the -ing/-ed form never matches its base verb.
+            if suffix in ("ing", "ed") and len(base) >= 3 and base[-1] == base[-2] and base[-1] not in "aeiouls":
+                base = base[:-1]
+            return base
     return word
 
 

@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import PracticeNav from "../components/PracticeNav";
 import WordDiff from "../components/WordDiff";
 import Glossed from "../components/Glossed";
+import TopicLanguage from "../components/TopicLanguage";
 import WritingLesson from "../components/WritingLesson";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
@@ -60,6 +61,21 @@ function Listening({ passages, voice, assignedId, level }) {
   const sentences = passage?.sentences ?? [];
   const sentence = sentences[index];
 
+  const [language, setLanguage] = useState(null);
+  const [showLanguage, setShowLanguage] = useState(true);
+  useEffect(() => {
+    if (!passage?.id) return;
+    let live = true;
+    setLanguage(null);
+    api
+      .passageLesson(passage.id)
+      .then((data) => live && setLanguage(data))
+      .catch(() => live && setLanguage(null));
+    return () => {
+      live = false;
+    };
+  }, [passage?.id]);
+
   const check = async () => {
     setBusy(true);
     setError(null);
@@ -99,6 +115,17 @@ function Listening({ passages, voice, assignedId, level }) {
 
   return (
     <div className="space-y-6">
+      {language && (language.vocabulary?.length > 0 || language.expressions?.length > 0) && (
+        <Card>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="micro">before you listen — words from this text</h3>
+            <button onClick={() => setShowLanguage((open) => !open)} className="micro hover:text-ink">
+              {showLanguage ? "hide" : "show"}
+            </button>
+          </div>
+          {showLanguage && <TopicLanguage language={language} questionsTitle="listen for the answers" />}
+        </Card>
+      )}
       <Card>
         {assigned && !browsing ? (
           // Assigned by today's plan. Stated, not offered: the plan already

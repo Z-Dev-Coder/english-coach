@@ -771,3 +771,51 @@ RULES
 
 Return JSON with exactly those fields.
 """
+
+
+# --- Topic language for listening and conversation --------------------------
+
+TOPIC_LANGUAGE_SCHEMA = {
+    "type": "object",
+    "required": ["vocabulary", "expressions"],
+    "properties": {
+        "vocabulary": {"type": "array", "items": _ITEM},
+        "expressions": {"type": "array", "items": _ITEM},
+        "tips": {"type": "array", "items": {"type": "string"}},
+        "questions": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+
+def topic_language(*, kind: str, topic: str, text: str, level: str) -> str:
+    """Ask for the language to learn before listening to a text or holding a conversation."""
+    if kind == "listening":
+        source = f"""THE TEXT THE LEARNER IS ABOUT TO LISTEN TO
+{wrap_untrusted(text)}
+
+- vocabulary: 5-6 words or collocations FROM THIS TEXT that a {level} learner may not know.
+- expressions: 3-4 phrases or phrasal verbs FROM THIS TEXT worth learning.
+- questions: 2-3 gist questions to listen for (not detail questions).
+- tips: 2 tips about how this text will SOUND -- linking, weak forms or stress
+  in specific phrases from it."""
+    else:
+        source = f"""THE CONVERSATION SITUATION
+{topic}
+
+- vocabulary: 5-6 words or collocations the learner will need in this situation.
+- expressions: 5-6 natural phrases, phrasal verbs or fixed expressions to USE
+  in this conversation -- openers, requests, reactions, ways to keep it going.
+- questions: leave empty.
+- tips: 2-3 practical tips for handling this situation in English."""
+
+    return f"""You are an English mentor preparing a CEFR {level} learner for a {kind} exercise.
+
+{source}
+
+For vocabulary and expressions give `text`, `meaning` (plain words a {level}
+learner understands) and `example` (a short sentence in this context).
+
+{NATURAL_ENGLISH_RULES}
+
+Return JSON with: vocabulary, expressions, tips, questions.
+"""
