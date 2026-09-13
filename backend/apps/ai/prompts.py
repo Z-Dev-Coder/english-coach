@@ -819,3 +819,43 @@ learner understands) and `example` (a short sentence in this context).
 
 Return JSON with: vocabulary, expressions, tips, questions.
 """
+
+
+# --- Answer keys for choose-the-answer exercises ------------------------------
+
+CHOICE_KEY_SCHEMA = {
+    "type": "object",
+    "required": ["answers"],
+    "properties": {
+        "answers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["answer", "explanation"],
+                "properties": {
+                    "answer": {"type": "string"},
+                    "explanation": {"type": "string"},
+                },
+            },
+        },
+    },
+}
+
+
+def choice_answer_key(items: list[dict]) -> str:
+    """Ask for the correct option and a learner-facing reason for each item."""
+    lines = "\n".join(
+        f"{index + 1}. {item['sentence']}  OPTIONS: {' / '.join(item['options'])}"
+        for index, item in enumerate(items)
+    )
+    return f"""These are fill-in-the-gap exercise items for an English learner. For each item,
+choose the ONE option that correctly fills the gap in natural English.
+
+{lines}
+
+Return JSON: answers -- one object per item, in the same order, with
+- answer: exactly one of that item's options, copied as written
+- explanation: two short sentences for the learner. First, what the correct
+  expression means and why it fits here. Second, why the other option(s) don't
+  work in this sentence. Plain words, no grammar jargon.
+"""

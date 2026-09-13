@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import Glossed from "../Glossed";
 import TopicLanguage from "../TopicLanguage";
+import ChoiceExercise from "./ChoiceExercise";
 import WritingLesson from "../WritingLesson";
 import { api } from "../../lib/api";
 import { cx } from "../../lib/cx";
@@ -539,10 +540,14 @@ function SpeakingStep({ activity, voice, onDone }) {
 
 /* ----------------------------------------------------------------- review */
 
-/** The task the lesson wrote into this step's prompt, if any. */
-function LessonTask({ activity }) {
+/** The task the lesson wrote into this step's prompt, if any.
+ *
+ *  Choose-the-answer tasks become a checkable exercise with explanations; any
+ *  other prompt is shown as text.
+ */
+function LessonTask({ activity, lessonId }) {
   if (!activity.prompt) return null;
-  return (
+  const text = (
     <Glossed
       as="p"
       className="mt-3 whitespace-pre-line border-l-2 border-[color:var(--color-line)] pl-3 text-[15px] italic text-ink-2 dark:border-white/15 dark:text-white/70"
@@ -550,9 +555,11 @@ function LessonTask({ activity }) {
       {activity.prompt.replace(/\s(\d+\.)\s/g, "\n$1 ")}
     </Glossed>
   );
+  if (!/\([^()]*\/[^()]*\)/.test(activity.prompt)) return text;
+  return <ChoiceExercise lessonId={lessonId} activityId={activity.id} fallback={text} />;
 }
 
-function ReviewStep({ activity, onDone }) {
+function ReviewStep({ activity, lessonId, onDone }) {
   const [queue, setQueue] = useState(null);
   const [position, setPosition] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -572,7 +579,7 @@ function ReviewStep({ activity, onDone }) {
     return (
       <div>
         <Instructions activity={activity} />
-        <LessonTask activity={activity} />
+        <LessonTask activity={activity} lessonId={lessonId} />
         <p className="mt-4 text-[15px] text-ink-2 dark:text-white/70">
           Nothing is due right now — that&rsquo;s a good sign, not a gap.
         </p>
@@ -605,7 +612,7 @@ function ReviewStep({ activity, onDone }) {
       {activity.prompt && (
         <div className="mb-5">
           <Instructions activity={activity} />
-          <LessonTask activity={activity} />
+          <LessonTask activity={activity} lessonId={lessonId} />
         </div>
       )}
       <p className="micro">
@@ -747,21 +754,17 @@ const STEPS = {
 };
 
 /** Anything without a purpose-built exercise still has to be completable. */
-function GenericStep({ activity, onDone }) {
+function GenericStep({ activity, lessonId, onDone }) {
   return (
     <div>
       <Instructions activity={activity} />
-      {activity.prompt && (
-        <Glossed as="p" className="mt-3 text-[17px] font-medium">
-          {activity.prompt}
-        </Glossed>
-      )}
+      <LessonTask activity={activity} lessonId={lessonId} />
       <StepFooter onDone={onDone} label="Finish this step" />
     </div>
   );
 }
 
-export default function LessonStep({ activity, voice, onDone }) {
+export default function LessonStep({ activity, lessonId, voice, onDone }) {
   const Component = STEPS[activity.kind] ?? GenericStep;
-  return <Component activity={activity} voice={voice} onDone={onDone} />;
+  return <Component activity={activity} lessonId={lessonId} voice={voice} onDone={onDone} />;
 }

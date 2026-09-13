@@ -269,7 +269,7 @@ export default function LessonRunner() {
         key={activity.id}
         className={cx("animate-rise mt-5", busy && "pointer-events-none opacity-60")}
       >
-        <LessonStep activity={activity} voice={voice} onDone={complete} />
+        <LessonStep activity={activity} lessonId={lesson.id} voice={voice} onDone={complete} />
       </div>
 
       {(currentIndex > 0 || lookingBack || review) && (

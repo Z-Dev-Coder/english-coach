@@ -77,6 +77,31 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return Response(self.get_serializer(lesson).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=["get"], url_path="activities/(?P<activity_id>[^/.]+)/exercise")
+    def exercise(self, request, pk=None, activity_id=None):
+        """The step's choose-the-answer items, with an answer key and explanations.
+
+        The key is generated once and stored on the activity, so the learner can
+        check answers every time they come back without another model call.
+        """
+        from apps.lessons.exercises import answer_key, parse_choice_items
+
+        lesson = self.get_object()
+        activity = get_object_or_404(lesson.activities, pk=activity_id)
+        stored = (activity.params or {}).get("exercise")
+        if stored:
+            return Response({"items": stored, "checkable": True})
+
+        keyed = answer_key(activity.prompt)
+        if keyed:
+            params = dict(activity.params or {})
+            params["exercise"] = keyed
+            activity.params = params
+            activity.save(update_fields=["params"])
+            return Response({"items": keyed, "checkable": True})
+
+        return Response({"items": parse_choice_items(activity.prompt), "checkable": False})
+
     @action(detail=True, methods=["post"], url_path="activities/(?P<activity_id>[^/.]+)/complete")
     def complete_activity(self, request, pk=None, activity_id=None):
         lesson = self.get_object()

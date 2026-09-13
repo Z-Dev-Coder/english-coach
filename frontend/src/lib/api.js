@@ -143,6 +143,8 @@ export const api = {
   lesson: (id) => request(`/lessons/${id}/`),
   regenerateLesson: (body = {}) =>
     request("/lessons/regenerate/", { method: "POST", body }),
+  lessonExercise: (lessonId, activityId) =>
+    request(`/lessons/${lessonId}/activities/${activityId}/exercise/`),
   completeActivity: (lessonId, activityId) =>
     request(`/lessons/${lessonId}/activities/${activityId}/complete/`, { method: "POST" }),
   learnerContext: () => request("/learner-context/"),
