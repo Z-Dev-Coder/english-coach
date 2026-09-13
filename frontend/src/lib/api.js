@@ -181,6 +181,10 @@ export const api = {
   scene: (id) => request(`/content/scenes/${id}/`),
   nextScene: () => request("/content/scenes/next/"),
   completeScene: (id) => request(`/content/scenes/${id}/complete/`, { method: "POST" }),
+  videos: () => request("/content/videos/"),
+  video: (id) => request(`/content/videos/${id}/`),
+  nextVideo: () => request("/content/videos/next/"),
+  completeVideo: (id) => request(`/content/videos/${id}/complete/`, { method: "POST" }),
 
   // --- Mistake bank ---
   mistakes: (params = {}) => {

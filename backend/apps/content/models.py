@@ -149,6 +149,60 @@ class Scene(models.Model):
         return f"{self.title} ({self.level})"
 
 
+class VideoLesson(models.Model):
+    """A real YouTube video, watched on YouTube, with our study notes around it.
+
+    The app never plays or copies the video. It links out and adds what a
+    teacher would: what the video is about, the expressions worth catching,
+    what to listen for at which moment, and questions to answer after watching.
+    All of that is our own writing. The video's transcript is read once to write
+    the notes and is not kept.
+    """
+
+    video_id = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=300)
+    channel = models.CharField(max_length=120)
+    level = models.CharField(max_length=2, choices=CEFR.choices, default=CEFR.B1)
+    kind = models.CharField(max_length=40, blank=True, help_text="Conversation, street interviews, talk…")
+    duration_seconds = models.PositiveIntegerField(default=0)
+    summary = models.TextField(blank=True)
+    expressions = models.JSONField(default=list, blank=True, help_text="[{expression, meaning, example}]")
+    listen_for = models.JSONField(default=list, blank=True, help_text="[{time, note}] moments worth catching.")
+    questions = models.JSONField(default=list, blank=True)
+    speaking_prompt = models.TextField(blank=True)
+    prepared_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["level", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.level})"
+
+    @property
+    def url(self) -> str:
+        return f"https://www.youtube.com/watch?v={self.video_id}"
+
+    @property
+    def thumbnail(self) -> str:
+        return f"https://i.ytimg.com/vi/{self.video_id}/hqdefault.jpg"
+
+
+class VideoProgress(models.Model):
+    """That a learner finished a video lesson."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="video_progress"
+    )
+    video = models.ForeignKey(VideoLesson, on_delete=models.CASCADE, related_name="progress")
+    completed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "video"], name="uniq_video_progress")
+        ]
+
+
 class SceneProgress(models.Model):
     """That a learner finished a scene. One row per learner per scene."""
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import Glossed from "../components/Glossed";
 import MoviesTV from "../components/MoviesTV";
+import YouTubeLessons from "../components/YouTubeLessons";
 import { api } from "../lib/api";
 import Icon from "../lib/icons";
 import { cx } from "../lib/cx";
@@ -401,6 +402,7 @@ export default function RealWorld() {
         {[
           { key: "today", label: "Today in English", icon: "world" },
           { key: "dialogue", label: "Movies & TV", icon: "film" },
+          { key: "youtube", label: "Watch on YouTube", icon: "play" },
         ].map((item) => (
           <button
             key={item.key}
@@ -430,6 +432,16 @@ export default function RealWorld() {
             "Add all to review, so those words come back on schedule instead of being forgotten.",
           ]}
         />
+      ) : tab === "youtube" ? (
+        <HowTo
+          id="youtube"
+          title="Learn from real videos on YouTube"
+          steps={[
+            "Each video is picked for your level — real people, real speed.",
+            "Learn the expressions first, then watch on YouTube. Tap a time to jump to a moment worth catching.",
+            "Answer the questions, talk about it out loud, and move on to the next video.",
+          ]}
+        />
       ) : (
         <HowTo
           id="dialogue"
@@ -442,7 +454,9 @@ export default function RealWorld() {
         />
       )}
 
-      {tab === "dialogue" ? (
+      {tab === "youtube" ? (
+        <YouTubeLessons AddToReview={AddToReview} />
+      ) : tab === "dialogue" ? (
         <div className="space-y-8">
           <MoviesTV voice={voice} AddToReview={AddToReview} />
           <section>

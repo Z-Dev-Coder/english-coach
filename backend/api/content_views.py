@@ -243,3 +243,65 @@ class SceneViewSet(viewsets.ReadOnlyModelViewSet):
 
         scenes.complete_scene(request.user, self.get_object())
         return Response({"done": True})
+
+
+class VideoLessonSerializer(serializers.ModelSerializer):
+    url = serializers.CharField(read_only=True)
+    thumbnail = serializers.CharField(read_only=True)
+    prepared = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.content.models import VideoLesson
+
+        model = VideoLesson
+        fields = [
+            "id", "video_id", "title", "channel", "level", "kind", "duration_seconds",
+            "url", "thumbnail", "summary", "expressions", "listen_for", "questions",
+            "speaking_prompt", "prepared",
+        ]
+
+    def get_prepared(self, video) -> bool:
+        return video.prepared_at is not None
+
+
+class VideoLessonViewSet(viewsets.ReadOnlyModelViewSet):
+    """Watch on YouTube: real videos at the learner's level, with a lesson around each."""
+
+    serializer_class = VideoLessonSerializer
+
+    def get_queryset(self):
+        from apps.content.models import VideoLesson
+
+        return VideoLesson.objects.all()
+
+    def list(self, request):
+        from apps.content import videos
+
+        level, items = videos.videos_for(request.user)
+        done = videos.done_ids(request.user)
+        return Response({
+            "level": level,
+            "videos": [{**VideoLessonSerializer(v).data, "done": v.id in done} for v in items],
+        })
+
+    def retrieve(self, request, pk=None):
+        from apps.content import videos
+
+        video = self.get_object()
+        return Response({**VideoLessonSerializer(video).data, "done": video.id in videos.done_ids(request.user)})
+
+    @action(detail=False, methods=["get"])
+    def next(self, request):
+        from apps.content import videos
+
+        video = videos.next_video(request.user)
+        if video is None:
+            return Response({"detail": "No videos available."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({**VideoLessonSerializer(video).data, "done": video.id in videos.done_ids(request.user)})
+
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        from apps.content import videos
+
+        videos.complete(request.user, self.get_object())
+        return Response({"done": True})
