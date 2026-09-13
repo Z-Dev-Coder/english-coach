@@ -134,7 +134,9 @@ export default function Shadowing() {
   const play = () => {
     if (!guide?.text) return;
     setPlayError(null);
-    setOffset(0);
+    // With real timings nothing is lit until the speaker's first word, so a
+    // programme intro doesn't sit on the first phrase for 15 seconds.
+    setOffset(guide.audio_url && guide.timings?.length ? -1 : 0);
     setPlaying(true);
     recorder.clear();
     // Recording runs for the whole pass, so the learner can hear their own
