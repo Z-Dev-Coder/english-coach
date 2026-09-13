@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.profiles.constants import CEFR_ORDER
@@ -29,14 +30,20 @@ def ensure_library() -> None:
     for entry in json.loads(LIBRARY.read_text(encoding="utf-8")):
         video = existing.get(entry["video_id"])
         if video is None:
-            video = VideoLesson.objects.create(
-                video_id=entry["video_id"],
-                title=entry["title"][:300],
-                channel=entry["channel"][:120],
-                level=entry["level"],
-                kind=entry.get("kind", "")[:40],
-                duration_seconds=int(entry.get("duration_seconds") or 0),
-            )
+            # The page asks for the next video and the list at the same moment, so two
+            # requests can load a new library together; the loser just reads the row.
+            try:
+                with transaction.atomic():
+                    video = VideoLesson.objects.create(
+                        video_id=entry["video_id"],
+                        title=entry["title"][:300],
+                        channel=entry["channel"][:120],
+                        level=entry["level"],
+                        kind=entry.get("kind", "")[:40],
+                        duration_seconds=int(entry.get("duration_seconds") or 0),
+                    )
+            except IntegrityError:
+                video = VideoLesson.objects.get(video_id=entry["video_id"])
         notes = entry.get("notes")
         if notes and video.prepared_at is None:
             # Notes written with the library travel with it, so every install has them.
