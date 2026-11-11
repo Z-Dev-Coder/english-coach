@@ -240,6 +240,9 @@ def generate_lesson(context: dict) -> str:
         f"- {block['skill']}: {block['minutes']} minutes" for block in context.get("plan", [])
     )
 
+    recent_themes = "\n".join(f"- {theme}" for theme in context.get("recent_themes") or [])
+    recent_themes_block = f"\nRecent themes (do NOT repeat these):\n{recent_themes}" if recent_themes else ""
+
     return f"""Design today's English lesson for one specific learner.
 
 LEARNER
@@ -247,7 +250,7 @@ Overall level: {context.get('overall_level', 'B1')}
 Target level: {context.get('target_level', 'C1')}
 Weakest skills: {weak}
 Recent mistakes to work on: {mistakes}
-Interests: {interests}
+Interests: {interests}{recent_themes_block}
 Vocabulary due for review today: {context.get('due_count', 0)}
 Time available: {context.get('total_minutes', 30)} minutes
 

@@ -93,6 +93,13 @@ def learner_context(user, minutes: int | None = None) -> dict:
         for m in persistent(user, limit=3)
     ]
 
+    recent_themes = list(
+        Lesson.objects.filter(user=user)
+        .exclude(theme="")
+        .order_by("-date", "-id")
+        .values_list("theme", flat=True)[:5]
+    )
+
     return {
         "overall_level": profile.overall_level,
         "target_level": profile.target_level,
@@ -104,6 +111,7 @@ def learner_context(user, minutes: int | None = None) -> dict:
         "total_minutes": sum(block.minutes for block in plan),
         "plan": [{"skill": block.skill, "minutes": block.minutes} for block in plan],
         "skill_scores": {sp.skill: round(sp.score) for sp in skills},
+        "recent_themes": recent_themes,
     }
 
 
@@ -129,7 +137,7 @@ def _recently_used_passage_ids(user) -> list[int]:
             lesson__date__gte=cutoff,
             kind__in=("listening", "reading"),
         )
-        .order_by("-lesson__date", "-position")
+        .order_by("-lesson__date", "-lesson_id", "-position")
         .values_list("params", flat=True)
     )
 
@@ -191,7 +199,7 @@ def _writing_prompt_for(user) -> str:
         LessonActivity.objects.filter(
             lesson__user=user, lesson__date__gte=cutoff, kind="writing"
         )
-        .order_by("-lesson__date", "-position")
+        .order_by("-lesson__date", "-lesson_id", "-position")
         .values_list("prompt", flat=True)
     )
 

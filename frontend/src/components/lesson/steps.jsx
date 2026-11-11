@@ -193,7 +193,7 @@ function ListeningStep({ activity, voice, onDone }) {
       <ErrorNote error={error} />
 
       {result && (
-        <Verdict good={result.score >= 80} title={`${Math.round(result.score)}% match`}>
+        <Verdict good={result.accuracy * 100 >= 80} title={`${Math.round(result.accuracy * 100)}% match`}>
           <p className="text-ink-2 dark:text-white/70">{sentence}</p>
         </Verdict>
       )}
